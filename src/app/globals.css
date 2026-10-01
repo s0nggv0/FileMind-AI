@@ -1,0 +1,96 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--foreground);
+  --color-popover: var(--card);
+  --color-popover-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--primary);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--border);
+  --color-ring: var(--primary);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+:root {
+  color-scheme: light;
+  --background: #f7f8f6;
+  --foreground: #18201d;
+  --card: #ffffff;
+  --primary: #0f766e;
+  --primary-foreground: #ffffff;
+  --secondary: #edf0ed;
+  --muted: #f0f3f0;
+  --muted-foreground: #66716b;
+  --accent: #e6f2ed;
+  --destructive: #b63838;
+  --border: #e3e8e4;
+  --radius: 0.625rem;
+  --elevation-dialog: 0 16px 48px rgba(24, 32, 29, 0.13);
+}
+
+.dark {
+  color-scheme: dark;
+  --background: #151a18;
+  --foreground: #ecf2ee;
+  --card: #1d2420;
+  --primary: #8bd0bd;
+  --primary-foreground: #132a21;
+  --secondary: #28312c;
+  --muted: #222a25;
+  --muted-foreground: #a5b3aa;
+  --accent: #253d32;
+  --destructive: #f18f8f;
+  --border: #334038;
+  --elevation-dialog: 0 16px 48px rgba(0, 0, 0, 0.28);
+}
+
+@layer base {
+  * { @apply border-border; }
+  body { @apply bg-background text-foreground antialiased; }
+  button, input, textarea { font: inherit; }
+  button:not(:disabled), a { -webkit-tap-highlight-color: transparent; }
+  button:not(:disabled) { cursor: pointer; }
+  input, textarea { caret-color: var(--primary); }
+  h1, h2, h3 { text-wrap: balance; letter-spacing: -0.025em; }
+  p { text-wrap: pretty; }
+  ::selection { background: var(--accent); color: var(--foreground); }
+  :focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
+  ::-webkit-scrollbar { width: 7px; height: 7px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 8px; }
+}
+
+@layer utilities {
+  .content-width { @apply mx-auto w-full max-w-6xl; }
+  .panel { @apply rounded-xl border border-border bg-card; }
+  .text-balance { text-wrap: balance; }
+  .graph-canvas { background-color: var(--card); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

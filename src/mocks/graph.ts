@@ -1,0 +1,71 @@
+import type { DemoGraphEdge, DemoGraphNode } from "@/types";
+
+export const demoGraphNodes: DemoGraphNode[] = [
+  { id: "concept-knowledge", label: "知识管理", kind: "concept", x: 460, y: 235 },
+  { id: "concept-rag", label: "RAG", kind: "concept", x: 250, y: 190 },
+  { id: "concept-ml", label: "机器学习", kind: "concept", x: 635, y: 155 },
+  {
+    id: "graph-ai-course",
+    label: "人工智能课程笔记",
+    kind: "document",
+    x: 760,
+    y: 95,
+    documentId: "doc-ai-course",
+  },
+  {
+    id: "graph-rag-research",
+    label: "RAG 文献阅读",
+    kind: "document",
+    x: 115,
+    y: 95,
+    documentId: "doc-rag-research",
+  },
+  {
+    id: "graph-project-proposal",
+    label: "挑战赛项目计划",
+    kind: "document",
+    x: 440,
+    y: 80,
+    documentId: "doc-project-proposal",
+  },
+  {
+    id: "graph-ml-lab",
+    label: "机器学习实验报告",
+    kind: "document",
+    x: 755,
+    y: 325,
+    documentId: "doc-ml-lab",
+  },
+  {
+    id: "graph-team-notes",
+    label: "项目讨论记录",
+    kind: "document",
+    x: 555,
+    y: 395,
+    documentId: "doc-team-notes",
+  },
+  {
+    id: "graph-system-sketch",
+    label: "知识管理架构草图",
+    kind: "document",
+    x: 225,
+    y: 355,
+    documentId: "doc-system-sketch",
+  },
+];
+
+export const demoGraphEdges: DemoGraphEdge[] = [
+  { source: "graph-ai-course", target: "concept-ml", label: "介绍" },
+  { source: "graph-ai-course", target: "graph-ml-lab", label: "相关实验" },
+  { source: "graph-ai-course", target: "concept-rag", label: "关联主题" },
+  { source: "graph-rag-research", target: "concept-rag", label: "研究" },
+  { source: "graph-rag-research", target: "concept-knowledge", label: "应用场景" },
+  { source: "graph-rag-research", target: "graph-project-proposal", label: "技术参考" },
+  { source: "graph-project-proposal", target: "concept-knowledge", label: "产品方向" },
+  { source: "graph-project-proposal", target: "graph-team-notes", label: "规划依据" },
+  { source: "graph-project-proposal", target: "graph-system-sketch", label: "架构参考" },
+  { source: "graph-ml-lab", target: "concept-ml", label: "实验" },
+  { source: "graph-team-notes", target: "concept-knowledge", label: "需求讨论" },
+  { source: "graph-system-sketch", target: "concept-knowledge", label: "架构展示" },
+  { source: "graph-system-sketch", target: "concept-rag", label: "检索流程" },
+];
