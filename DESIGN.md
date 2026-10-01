@@ -13,3 +13,14 @@ The user approved the architectural design and explicitly authorized Phase 1. Th
 - Cmd/Ctrl+K opens the accessible command dialog. Mobile navigation uses a focus-managed dialog. Settings includes state previews and local theme controls.
 
 Phase 1 surface contract: the shell is shared; Workspace has the strongest import affordance, Search centers a natural-language input, Graph prioritizes relation exploration. Dashboard remains a compact foundation. Landing and complete dashboard content belong to Phase 2.
+
+## Phase 2 surface contract
+
+Landing inherits the palette and type system with a centered, two-line product promise and a working local demonstration. Dashboard keeps the product shell and uses open lists, an insight panel, a compact timeline and topic chips. No metric-card grid or decorative chart.
+
+- Primary Surface: card background, border, 16px radius; contains a complete task such as the Agent demo or insight review.
+- Secondary Surface: muted background, 16px radius; provides a quiet comparison or graph canvas.
+- Interactive Surface: accent on hover, 8px radius; applies to rows and controls within a task.
+- Marketing headings use 48–64px on desktop and 36px on mobile. Content sections share the 64/96px spacing rhythm.
+- Playback runs once, pauses when offscreen, supports pause/replay, and becomes a complete static preview with reduced motion. Graph selection supports focus and click as well as hover.
+- Landing samples are a separate demonstration. Dashboard counts derive from the shared Library fixtures. All activity is explicitly a dated sample snapshot.

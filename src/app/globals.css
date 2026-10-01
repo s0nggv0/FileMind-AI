@@ -28,6 +28,11 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  --radius-surface: 1rem;
+  --radius-interactive: 0.5rem;
+  --color-surface-primary: var(--card);
+  --color-surface-secondary: var(--muted);
+  --color-surface-interactive: var(--accent);
 }
 
 :root {
@@ -84,7 +89,15 @@
   .panel { @apply rounded-xl border border-border bg-card; }
   .text-balance { text-wrap: balance; }
   .graph-canvas { background-color: var(--card); }
+  .surface-primary { @apply rounded-surface border border-border bg-surface-primary; }
+  .surface-secondary { @apply rounded-surface bg-surface-secondary; }
+  .surface-interactive { @apply rounded-interactive transition-colors hover:bg-surface-interactive; }
+  .marketing-width { @apply mx-auto w-full max-w-6xl px-5 sm:px-8; }
+  .marketing-section { @apply scroll-mt-24 py-16 sm:py-24; }
+  .section-title { @apply text-3xl font-medium leading-tight tracking-tight sm:text-4xl; }
 }
+
+html { scroll-behavior: smooth; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
