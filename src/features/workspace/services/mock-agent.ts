@@ -22,6 +22,8 @@ function delay(ms: number, signal: AbortSignal) {
 export class MockAgentEngine implements AgentEngine {
   private contexts = new Map<string, Context>();
   constructor(private pace = 440, private parser = parseDocument) {}
+  restoreRun(run: AgentRun) { this.contexts.set(run.id, { run: structuredClone(run), controller: new AbortController(), fault: "none", faultUsed: false, busy: false }); }
+  getRun(id: string) { return this.contexts.get(id)?.run; }
   createRun(documents: ParsedDocument[], fault: DemoFault = "none") {
     const run: AgentRun = { id: crypto.randomUUID(), status: "planning", simulation: true, startedAt: Date.now(), documents: structuredClone(documents), steps: [], progress: 0, activity: [] };
     this.contexts.set(run.id, { run, controller: new AbortController(), fault, faultUsed: false, busy: false });
@@ -121,7 +123,7 @@ export class MockAgentEngine implements AgentEngine {
     context.listener = onUpdate; context.busy = true; context.run.status = "applying"; this.publish(context);
     try {
       await delay(this.pace * 2, context.controller.signal);
-      context.run.result = structuredClone(plan); context.run.status = "completed"; context.run.completedAt = Date.now();
+      context.run.result = structuredClone({ ...plan, relationships: plan.relationships.filter(r => r.decision !== "ignored") }); context.run.status = "completed"; context.run.completedAt = Date.now();
       this.log(context, "Plan applied to this browser session only"); this.publish(context);
     } catch (error) {
       if (!context.controller.signal.aborted) { context.run.status = "failed"; context.run.error = error instanceof Error ? error.message : "Unable to apply plan"; this.publish(context); }

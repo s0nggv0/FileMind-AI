@@ -48,7 +48,7 @@ test("real mixed files → visible tools → editable review → session Library
   await page.getByLabel("New tag for course-notes.txt").fill("Custom tag"); await page.getByRole("button", { name: "Add tag to course-notes.txt", exact: true }).click();
   await page.getByRole("button", { name: "Remove tag Notes from course-notes.txt", exact: true }).click();
   const rename = page.getByRole("article").filter({ hasText: "project-report-final.docx" }); await rename.getByRole("button", { name: "Ignore", exact: true }).click();
-  const duplicate = page.getByRole("article").filter({ hasText: "Potential duplicate" }).filter({ hasText: "report.docx" }); await duplicate.getByRole("button", { name: "Accept", exact: true }).click();
+  const duplicate = page.getByRole("article").filter({ hasText: "Exact duplicate" }).filter({ hasText: "report.docx" }); await duplicate.getByRole("button", { name: "Accept", exact: true }).click();
   await capture(page, "review-desktop");
   for (const width of [1280, 768]) { await page.setViewportSize({ width, height: 900 }); await capture(page, `review-${width}`); }
   await page.setViewportSize({ width: 390, height: 844 }); await capture(page, "review-mobile");

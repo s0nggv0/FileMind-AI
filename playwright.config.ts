@@ -6,7 +6,7 @@ const executablePath = process.env.PLAYWRIGHT_BROWSER_EXECUTABLE ?? (existsSync(
 
 export default defineConfig({
   testDir: "./tests/e2e", timeout: 45_000, fullyParallel: true, workers: 2,
-  use: { baseURL: "http://127.0.0.1:3073", browserName: "chromium", headless: true, viewport: { width: 1440, height: 900 }, launchOptions: { executablePath } },
-  webServer: { command: "npm run start -- --hostname 127.0.0.1 --port 3073", url: "http://127.0.0.1:3073", reuseExistingServer: true, timeout: 30_000 },
+  use: { baseURL: "http://127.0.0.1:3074", browserName: "chromium", headless: true, viewport: { width: 1440, height: 900 }, launchOptions: { executablePath } },
+  webServer: { command: "npm run start -- --hostname 127.0.0.1 --port 3074", url: "http://127.0.0.1:3074", reuseExistingServer: false, timeout: 30_000 },
   reporter: "list",
 });

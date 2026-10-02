@@ -3,9 +3,11 @@
 import { create } from "zustand";
 import type { AgentEngine, AgentRun, Decision, DemoFault, OrganizationPlan, ParsedDocument, ProposalDocument } from "@/types/workspace";
 import { registerFile, releaseDocument, releaseFile, validateFiles } from "../services/file-parser";
-import { MockAgentEngine } from "../services/mock-agent";
+import { WorkspaceAgentEngine } from "../services/workspace-agent";
 
 interface WorkspaceState {
+  initialized: boolean; persistent: boolean; engineLabel: string; workspaceId?: string; saveStatus: "local" | "saving" | "saved" | "error";
+  initialize: (id?: string) => Promise<void>; continueLocally: () => Promise<void>;
   documents: ParsedDocument[]; errors: string[]; run: AgentRun | null; proposal: OrganizationPlan | null;
   applied: OrganizationPlan[]; fault: DemoFault;
   addFiles: (files: File[]) => void; removeFile: (id: string) => void; clearFiles: () => void;
@@ -17,12 +19,35 @@ interface WorkspaceState {
 }
 export function createWorkspaceStore(engine: AgentEngine) {
   return create<WorkspaceState>((set, get) => {
+    let timer: ReturnType<typeof setTimeout> | undefined; let generation = 0;
+    const autosave = () => {
+      if (!get().persistent || !engine.saveProposal) return;
+      clearTimeout(timer); set({ saveStatus: "saving" }); const version = ++generation;
+      timer = setTimeout(async () => {
+        const proposal = get().proposal; if (!proposal) return;
+        try { await engine.saveProposal!(proposal); if (version === generation) set({ saveStatus: "saved" }); }
+        catch (error) { if (version === generation) set({ saveStatus: "error", errors: [error instanceof Error ? error.message : "Workspace could not be saved."] }); }
+      }, 500);
+    };
     const locked = () => get().run !== null;
     const update = (run: AgentRun) => {
       if (get().run?.id !== run.id) return;
       set({ run, documents: run.documents, ...(run.status === "waiting_for_review" ? { proposal: run.result ?? null } : {}) });
     };
     return {
+      initialized: !engine.initialize, persistent: false, engineLabel: "Local-only Demo", saveStatus: "local",
+      initialize: async (id) => {
+        if (get().initialized && (!id || get().workspaceId === id)) return;
+        try {
+          const session = await engine.initialize?.(id); if (!session) return;
+          const snapshot = session.snapshot;
+          set({ initialized: true, persistent: session.persistent, engineLabel: session.label, saveStatus: session.persistent ? "saved" : "local", workspaceId: snapshot?.id, ...(snapshot ? { documents: snapshot.documents, run: snapshot.run, proposal: snapshot.proposal, applied: snapshot.run?.status === "completed" && snapshot.run.result ? [snapshot.run.result] : get().applied } : {}) });
+        } catch (error) { set({ initialized: true, errors: [error instanceof Error ? error.message : "Workspace could not be restored."] }); }
+      },
+      continueLocally: async () => {
+        if (!engine.continueLocally) return; const documents = get().documents;
+        await engine.continueLocally(documents, run => { set({ run, documents: run.documents, proposal: run.result ?? null }); });
+      },
       documents: [], errors: [], run: null, proposal: null, applied: [], fault: "none",
       addFiles: (files) => {
         if (locked()) return;
@@ -33,9 +58,11 @@ export function createWorkspaceStore(engine: AgentEngine) {
       clearFiles: () => { if (!locked()) { get().documents.forEach((document) => releaseDocument(document.id)); set({ documents: [], errors: [] }); } },
       setFault: (fault) => { if (!locked()) set({ fault }); },
       start: async () => {
-        if (locked() || !get().documents.length) return;
+        if (!get().initialized || locked() || !get().documents.length) return;
         const run = engine.createRun(get().documents, get().fault); set({ run, proposal: null, errors: [] });
+        if (get().persistent) set({ saveStatus: "saving" });
         await engine.executeRun(run.id, update);
+        if (get().persistent) set({ workspaceId: engine.getWorkspaceId?.(), saveStatus: get().run?.status === "failed" ? "error" : "saved" });
       },
       cancel: () => { const run = get().run; if (run) engine.cancelRun(run.id); },
       restart: async () => {
@@ -51,28 +78,35 @@ export function createWorkspaceStore(engine: AgentEngine) {
         const proposal = get().proposal;
         if (!proposal || get().run?.status !== "waiting_for_review") return;
         set({ proposal: { ...proposal, documents: proposal.documents.map((document) => document.id === id ? { ...document, ...patch } : document) } });
+        autosave();
       },
       decide: (kind, id, decision) => {
         const proposal = get().proposal;
         if (!proposal || get().run?.status !== "waiting_for_review") return;
         set({ proposal: { ...proposal, [kind]: proposal[kind].map((item) => item.id === id ? { ...item, decision } : item) } });
+        autosave();
       },
       apply: async () => {
         const { run, proposal } = get();
         if (!run || !proposal || run.status !== "waiting_for_review") return;
-        const plan = { ...proposal, documents: proposal.documents.map((document) => ({ ...document, name: document.renameDecision === "accepted" && document.suggestedName ? document.suggestedName : document.originalName })), relationships: proposal.relationships.filter((item) => item.decision !== "ignored") };
-        await engine.applyPlan(run.id, plan, update);
+        clearTimeout(timer); ++generation;
+        set({ run: { ...run, status: "applying" } });
+        const plan = { ...proposal, documents: proposal.documents.map((document) => ({ ...document, name: document.renameDecision === "accepted" && document.suggestedName ? document.suggestedName : document.originalName })) };
+        try { await engine.applyPlan(run.id, plan, update); }
+        catch (error) { set({ run, saveStatus: "error", errors: [error instanceof Error ? error.message : "Plan could not be applied."] }); return; }
         if (get().run?.id === run.id && get().run?.status === "completed") {
-          set({ applied: [...get().applied, structuredClone(plan)] });
+          set({ applied: [...get().applied, structuredClone({ ...plan, relationships: plan.relationships.filter(item => item.decision !== "ignored") })], saveStatus: get().persistent ? "saved" : "local" });
           get().documents.forEach((document) => releaseFile(document.id));
         }
       },
       reset: () => {
+        clearTimeout(timer); ++generation;
         const run = get().run; if (run) engine.disposeRun(run.id);
+        engine.resetWorkspace?.();
         get().documents.forEach((document) => releaseDocument(document.id));
-        set({ documents: [], errors: [], run: null, proposal: null, fault: "none" });
+        set({ documents: [], errors: [], run: null, proposal: null, fault: "none", workspaceId: undefined });
       },
     };
   });
 }
-export const useWorkspaceStore = createWorkspaceStore(new MockAgentEngine());
+export const useWorkspaceStore = createWorkspaceStore(new WorkspaceAgentEngine());
