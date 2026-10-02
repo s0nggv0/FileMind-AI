@@ -1,6 +1,6 @@
 # FileMind AI
 
-面向高校学习、研究与项目资料的 AI 文件管理产品。本仓库当前完成 **Phase 1：项目基础架构与页面骨架**，提供导航、主题、文件库筛选及知识图谱等界面演示，尚未连接 AI API 或数据库。
+面向高校学习、研究与项目资料的 AI 文件管理产品。本仓库当前完成 **Phase 2：Landing Page 与个人知识 Dashboard**。首页提供可暂停与重播的 Agent 演示、四项能力交互、知识关联与清理审阅；Dashboard 展示示例知识空间的资料状态、Insights、最近资料、活动与主题。尚未连接 AI API 或数据库。
 
 ## 本地启动
 
@@ -44,10 +44,10 @@ shadcn/ui 已通过 `components.json` 配置别名、样式和 Lucide 图标；�
 
 ## 页面路由
 
-| 路由 | 页面 | Phase 1 范围 |
+| 路由 | 页面 | 当前范围 |
 | --- | --- | --- |
-| `/` | 入口 | 重定向到 `/workspace` |
-| `/dashboard` | Overview | 派生指标、资料概览、示例活动 |
+| `/` | Landing | 独立 Marketing Layout、九个产品介绍与演示模块 |
+| `/dashboard` | Overview | 知识概览、AI Insight、最近资料、活动时间线、主题与三个快捷入口 |
 | `/workspace` | Workspace | 本地文件选择与信息预览、Agent 流程骨架 |
 | `/library` | Library | 示例文件列表、关键词与分类筛选 |
 | `/search` | AI Search | 提问框、建议问题及来源卡片布局 |
@@ -55,7 +55,7 @@ shadcn/ui 已通过 `components.json` 配置别名、样式和 Lucide 图标；�
 | `/cleanup` | Smart Cleanup | 整理建议与差异预览 |
 | `/settings` | Settings | 主题偏好和基础状态展示 |
 
-所有业务示例均来自独立数据层。Overview 中的文件数、分类数、关系数与待审阅数由数组计算，页面组件不直接保存业务 Mock 数据。
+所有业务示例均来自独立数据层。Dashboard 的文件数、主题数、关系数与待审阅数由数组计算，页面组件不直接保存业务 Mock 数据。首页的 12 文件样例与 Dashboard 的 6 份资料是独立演示数据集；两处均明确标注演示范围。
 
 ## 目录职责
 
@@ -83,9 +83,9 @@ docs/
 
 页面与基础 Layout 优先使用 Server Components；命令面板、主题、移动导航、文件选择、筛选和图谱交互在局部 Client Components 中实现。示例数据从 `services/demo-repository.ts` 读取后传给功能组件，使将来的数据库接入可以保持清晰的数据边界。错误边界按 Next.js 要求使用 Client Component。
 
-完整创建文件索引见 [Phase 1 文件清单](docs/phase-checklists/phase1-files.md)，验收记录见 [Phase 1 检查表](docs/phase-checklists/phase-1.md)。
+完整基础文件索引见 [Phase 1 文件清单](docs/phase-checklists/phase1-files.md)。历史验收记录见 [Phase 1 检查表](docs/phase-checklists/phase-1.md)，本阶段的新增与修改文件、组件结构、验收结果和实现边界见 [Phase 2 检查表](docs/phase-checklists/phase2.md)。
 
-当前已通过 `npm run build`、`npm run typecheck` 和 `npm run lint`。七个页面在 1440、1280、768 和 390px 宽度下均已检查；命令面板、焦点返回、本地选文件、详情、图谱节点键盘选择、主题和矮屏导航已验证。当前本机预览使用 `http://127.0.0.1:3071`。
+当前已通过 `npm run build`、`npm run typecheck` 和 `npm run lint`。Phase 2 的 Landing 与 Dashboard 已在 1440、1280、768 和 390px 宽度验收，13 个内部链接均返回 200，Agent 播放控制、清理审阅、图谱键盘选择、深色主题、减少动态效果与移动导航均通过，浏览器控制台零错误。Phase 1 的七个产品页面及基础交互验收记录仍保留。当前本机生产预览使用 `http://127.0.0.1:3071`。
 
 ## 基础交互
 
@@ -94,6 +94,9 @@ docs/
 - Sidebar 显示当前路由；移动端通过 Topbar 按钮打开导航。
 - Library 对示例文档提供本地关键词和分类筛选。
 - Workspace 可以选择、拖放和移除本地文件，校验格式及大小，并预览文件信息。
+- Landing Agent 使用预设样例自动播放一次，支持暂停、继续与重播；系统减少动态效果时显示完整静态结果。
+- Landing 提供命名建议、预设语义结果、知识节点与清理差异的局部交互，状态刷新后重置。
+- Dashboard 最近资料、活动与主题使用已有 Library 详情预览；没有尚未实现的详情路由。
 - Loading、Empty、Error 和 Skeleton 为可复用组件；路由级 loading/error 已预留。
 
 ## 当前实现边界
@@ -102,7 +105,7 @@ docs/
 
 当前不包含真实 AI 调用、数据库、认证、文件存储、Embedding、语义检索、Agent 工具执行或清理恢复。知识图谱使用独立示例数据和 SVG/浏览器布局，尚未集成 React Flow。示例图谱关系和活动不代表真实模型推断或后台执行结果。
 
-后续阶段将在用户明确请求后开展。**Phase 2 只准备实现 Landing 与 Dashboard 的正式内容**；本阶段完成后停止，不自动接入 AI、数据库或进入下一阶段。
+后续阶段将在用户明确请求后开展。**Phase 2 已完成，当前停止于此阶段**；Phase 3 的真实 AI Workspace 尚未开始，不自动接入 AI、数据库或进入下一阶段。
 
 ## Git 提交约定
 
