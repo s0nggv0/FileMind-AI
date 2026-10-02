@@ -14,12 +14,12 @@ export function GraphPreview({ nodes, edges, documents, dataset = "example" }: {
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-4"><div className="flex items-center gap-4 text-xs text-muted-foreground"><span className="flex items-center gap-2"><span className="size-2 rounded-full bg-primary" />概念</span><span className="flex items-center gap-2"><span className="size-2 rounded-sm border border-muted-foreground" />文件</span></div><span className="text-xs text-muted-foreground">{nodes.length} 个节点 · {edges.length} 条示例关联</span></div>
+      <div className="flex flex-wrap items-center justify-between gap-4"><div className="flex items-center gap-4 text-xs text-muted-foreground"><span className="flex items-center gap-2"><span className="size-2 rounded-full bg-primary" />概念</span><span className="flex items-center gap-2"><span className="size-2 rounded-sm border border-muted-foreground" />文件</span></div><span className="text-xs text-muted-foreground">{nodes.length} 个节点 · {edges.length} 条{dataset === "workspace" ? "规则" : "示例"}关联</span></div>
       <div className="grid overflow-hidden rounded-2xl border border-border bg-card xl:grid-cols-[minmax(0,1fr)_280px]">
         <section className="min-w-0">
           <div className="flex items-center gap-2 border-b border-border px-5 py-4"><Network size={16} className="text-primary" /><h2 className="text-sm font-medium">点选一个节点，沿着连接继续探索。</h2></div>
           <div className="overflow-x-auto bg-[radial-gradient(var(--border)_1px,transparent_1px)] bg-size-[22px_22px]">
-            <svg viewBox="0 0 900 500" className="min-w-150 w-full" aria-label="示例知识图谱，支持鼠标点击或 Tab 与 Enter 选择节点" role="group">
+            <svg viewBox="0 0 900 500" className="min-w-150 w-full" aria-label={dataset === "workspace" ? "本地规则知识图谱，支持鼠标点击或 Tab 与 Enter 选择节点" : "示例知识图谱，支持鼠标点击或 Tab 与 Enter 选择节点"} role="group">
               {edges.map((edge) => {
                 const source = nodes.find((node) => node.id === edge.source);
                 const target = nodes.find((node) => node.id === edge.target);
