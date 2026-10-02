@@ -1,0 +1,13 @@
+{
+  "passed": true,
+  "checkedAt": "2026-10-02T16:22:48.243Z",
+  "fixtureMode": "explicit Mock",
+  "unicodeAndSpaces": true,
+  "rootNodeModulesRequired": false,
+  "globalNodeRequired": false,
+  "chunksRestored": true,
+  "vectorsRestored": true,
+  "citationRestored": true,
+  "searchAfterCopy": true,
+  "simultaneousDatabasesIsolated": true
+}
