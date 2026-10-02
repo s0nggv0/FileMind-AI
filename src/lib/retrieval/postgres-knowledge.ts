@@ -36,7 +36,7 @@ export class PostgresKnowledgeRepository {
       insert into filemind.document_chunks(id,user_id,workspace_id,document_id,chunk_index,content,content_hash,page_start,page_end,line_start,line_end,paragraph_start,paragraph_end,heading_path,char_start,char_end,token_estimate,chunk_version,lexical_tokens)
       select (v->>'id')::uuid,$1,$3,$2,(v->>'chunkIndex')::integer,v->>'content',v->>'contentHash',(v->>'pageStart')::integer,(v->>'pageEnd')::integer,(v->>'lineStart')::integer,(v->>'lineEnd')::integer,(v->>'paragraphStart')::integer,(v->>'paragraphEnd')::integer,array(select jsonb_array_elements_text(v->'headingPath')),(v->>'charStart')::integer,(v->>'charEnd')::integer,(v->>'tokenEstimate')::integer,v->>'chunkVersion',array(select jsonb_array_elements_text(v->'tokens'))
       from jsonb_array_elements($6::jsonb) v where exists(select 1 from owned)
-      on conflict(id) do update set updated_at=now() returning id`, [document.userId, document.id, document.workspaceId, generation, chunks.map(c => c.id), chunks.map(c => ({ ...c, tokens: lexicalTokens(c.content) }))]);
+      on conflict(id) do update set updated_at=now() returning id`, [document.userId, document.id, document.workspaceId, generation, chunks.map(c => c.id), JSON.stringify(chunks.map(c => ({ ...c, tokens: lexicalTokens(c.content) })))]);
     if (result.rows.length !== chunks.length) throw new Error("Document changed during chunking");
     return chunks;
   }
