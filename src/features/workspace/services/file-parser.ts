@@ -23,6 +23,9 @@ export function registerFile(file: File): ParsedDocument {
   return { id, name: file.name, type, mimeType: file.type || uploadConfig.mimeTypes[extension][0], size: file.size, parseStatus: "ready", metadata: { addedAt: new Date().toISOString() } };
 }
 export function getDocumentContent(document: ParsedDocument) { return contents.get(document.contentRef ?? "") ?? ""; }
+export function getOriginalFile(id: string) { return files.get(id); }
+export function restoreDocumentContent(id: string, text: string) { contents.set(id, text); }
+async function hashBytes(bytes: ArrayBuffer) { return Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)), b => b.toString(16).padStart(2, "0")).join(""); }
 export function releaseDocument(id: string) { files.delete(id); contents.delete(id); }
 export function releaseFile(id: string) { files.delete(id); }
 export function parserResourceCounts() { return { files: files.size, contents: contents.size }; }
@@ -30,7 +33,10 @@ export function parserResourceCounts() { return { files: files.size, contents: c
 export async function parseDocument(document: ParsedDocument, signal: AbortSignal): Promise<ParsedDocument> {
   signal.throwIfAborted();
   const file = files.get(document.id);
-  if (!file) throw new Error("Original file is no longer available. Select it again.");
+  if (!file) {
+    if (contents.has(document.id)) return { ...document, contentRef: document.id, parseStatus: "completed", parseError: undefined };
+    throw new Error("Original file is no longer available. Select it again.");
+  }
   let text = ""; let pageCount: number | undefined; let width: number | undefined; let height: number | undefined;
   let truncated = false; let warnings: string[] = [];
   if (document.type === "txt" || document.type === "md") {
@@ -67,5 +73,9 @@ export async function parseDocument(document: ParsedDocument, signal: AbortSigna
   truncated ||= text.length > uploadConfig.maxContentCharacters;
   text = text.slice(0, uploadConfig.maxContentCharacters);
   contents.set(document.id, text);
-  return { ...document, parseStatus: "completed", parseError: undefined, contentRef: document.id, pageCount, metadata: { ...document.metadata, characters: text.length, width, height, truncated, warnings } };
+  const contentHash = await hashBytes(await file.arrayBuffer());
+  const normalized = text.normalize("NFKC").replace(/\s+/g, " ").trim();
+  const normalizedTextHash = normalized && !truncated ? await hashBytes(new TextEncoder().encode(normalized).buffer) : undefined;
+  signal.throwIfAborted();
+  return { ...document, contentHash, normalizedTextHash, parseStatus: "completed", parseError: undefined, contentRef: document.id, pageCount, metadata: { ...document.metadata, characters: text.length, width, height, truncated, warnings } };
 }
