@@ -97,3 +97,14 @@ test("real SQL index, cached embeddings, lexical matching, RLS, stale invalidati
     assert.equal((await db.query<{ n: number }>("select count(*)::integer as n from filemind.document_chunks")).rows[0].n, 0);
   } finally { await db.close(); }
 });
+
+test("duplicate live batch indices never silently associate a vector with the wrong text", async () => {
+  const requests: string[][] = [];
+  const provider = new DashScopeEmbeddingProvider({ apiKey: "fixture", baseURL: "https://fixture.aliyuncs.com/v1", model: "configured-model", dimensions: 64, fetch: async (_url, init) => {
+    const { input } = JSON.parse(String(init?.body)); requests.push(input);
+    return Response.json({ data: input.map((text: string) => ({ index: 0, embedding: Array(64).fill(text === "first" ? 1 : 2) })) });
+  } });
+  const result = await provider.embedDocuments(["first", "second"]);
+  assert.deepEqual(requests, [["first", "second"], ["first"], ["second"]]);
+  assert.equal(result[0].vector[0], 1); assert.equal(result[1].vector[0], 2);
+});

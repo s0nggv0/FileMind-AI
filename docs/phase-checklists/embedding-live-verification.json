@@ -1,0 +1,56 @@
+{
+  "REAL_EMBEDDING_VERIFIED": true,
+  "checkedAt": "2026-10-02T15:44:24.786Z",
+  "provider": "dashscope",
+  "model": "qwen3.7-text-embedding-flash",
+  "dimensions": 1024,
+  "httpStatus": 200,
+  "errorCode": null,
+  "queryLatencyMs": 170,
+  "documentLatencyMs": 688,
+  "matchingDocumentFirst": true,
+  "responseShape": [
+    {
+      "dataArray": true,
+      "count": 2,
+      "indices": [
+        0,
+        0
+      ],
+      "dimensions": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "dataArray": true,
+      "count": 1,
+      "indices": [
+        0
+      ],
+      "dimensions": [
+        1024
+      ]
+    },
+    {
+      "dataArray": true,
+      "count": 1,
+      "indices": [
+        0
+      ],
+      "dimensions": [
+        1024
+      ]
+    },
+    {
+      "dataArray": true,
+      "count": 1,
+      "indices": [
+        0
+      ],
+      "dimensions": [
+        1024
+      ]
+    }
+  ]
+}
