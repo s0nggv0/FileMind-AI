@@ -95,3 +95,12 @@ test("store locks mutations, edits proposal, applies once, retains Library snaps
   assert.equal(store.getState().applied[0].duplicates[0].decision, "accepted");
   store.getState().reset(); assert.equal(store.getState().documents.length, 0); assert.equal(store.getState().applied[0].documents.length, 2);
 });
+test("retry transport failure becomes a recoverable failed state instead of an unhandled rejection", async () => {
+  const engine = new MockAgentEngine(1); const store = createWorkspaceStore(engine);
+  store.getState().addFiles([file()]); store.getState().setFault("tool"); await store.getState().start();
+  const failed = store.getState().run!.steps.find(step => step.status === "failed")!;
+  engine.retryStep = async () => { throw new Error("Workspace storage is temporarily unavailable."); };
+  await store.getState().retry(failed.id);
+  assert.equal(store.getState().run?.status, "failed"); assert.equal(store.getState().saveStatus, "error"); assert.match(store.getState().errors[0], /storage/);
+  store.getState().reset();
+});

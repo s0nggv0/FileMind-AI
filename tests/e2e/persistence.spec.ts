@@ -66,3 +66,13 @@ test("LLM transport failure offers explicit local fallback and preserves human r
   await expect(page.getByRole("heading", { name: "Organization Proposal" })).toBeVisible(); await expect(page.getByText("AI analysis unavailable — using basic local organization.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Apply organization plan" })).toBeVisible(); expect(errors).toEqual([]);
 });
+test("persistent retry saves review before immediate apply and survives refresh", async ({ page }) => {
+  const errors: string[] = []; page.on("pageerror", error => errors.push(error.message));
+  const transport = await persistentTransport(page);
+  await page.goto("/workspace"); await page.getByLabel("Choose local files").setInputFiles([textFile()]);
+  await page.getByText("Demo controls · test error recovery").click(); await page.getByLabel("Demo failure").selectOption("tool");
+  await page.getByRole("button", { name: "Organize with FileMind" }).click(); await page.getByRole("button", { name: "Retry step" }).click();
+  await expect(page.getByRole("heading", { name: "Organization Proposal" })).toBeVisible(); expect(transport.snapshot().run?.status).toBe("waiting_for_review");
+  await page.getByRole("button", { name: "Apply organization plan" }).click(); await expect(page.getByRole("heading", { name: "Workspace organized" })).toBeVisible();
+  await page.reload(); await expect(page.getByRole("heading", { name: "Workspace organized" })).toBeVisible(); expect(errors).toEqual([]);
+});
