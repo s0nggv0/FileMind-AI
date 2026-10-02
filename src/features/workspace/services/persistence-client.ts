@@ -17,7 +17,7 @@ export class PersistenceClient {
   async initialize(id?: string) {
     const config = z.object({ persistent: z.boolean(), intelligence: z.boolean(), label: z.string() }).parse(await requestJSON("/api/workspace-config"));
     Object.assign(this, config);
-    if (id && !config.persistent) throw new Error("Configure Supabase to restore saved workspaces.");
+    if (id && !config.persistent) throw new Error("Set up persistent storage to restore saved workspaces.");
     if (id) { this.snapshot = WorkspaceSnapshotSchema.parse(await requestJSON(`/api/workspaces/${id}`)); for (const d of this.snapshot.documents) { d.contentRef = d.id; restoreDocumentContent(d.id, this.snapshot.texts[d.id] ?? ""); } }
     return { snapshot: this.snapshot, persistent: this.persistent, label: this.label };
   }

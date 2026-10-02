@@ -26,7 +26,7 @@ export class LLMAgentEngine implements AgentEngine {
         catch { signal.throwIfAborted(); document.parseStatus = "failed"; document.parseError = "Unable to parse this document. Retry or skip it."; step.status = "failed"; step.error = document.parseError; emit(); return; }
         emit();
       }
-      if (!this.persistence.persistent) throw new Error("Configure Supabase to use FileMind Intelligence, or continue with local organization.");
+      if (!this.persistence.persistent) throw new Error("Set up persistent storage to use FileMind Intelligence, or continue with local organization.");
       await this.persistence.prepare(context.run.documents); signal.throwIfAborted();
       const snapshot = this.persistence.snapshot!;
       const response = await fetch("/api/ai/agent", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ workspaceId: snapshot.id, revision: snapshot.revision, runId: id }), signal });

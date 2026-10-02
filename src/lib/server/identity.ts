@@ -5,8 +5,9 @@ import { z } from "zod";
 
 const developmentSecret = randomBytes(32).toString("hex");
 function secret() {
-  const configured = process.env.WORKSPACE_SESSION_SECRET;
-  if (process.env.NODE_ENV === "production" && !configured && process.env.NEXT_PUBLIC_SUPABASE_URL) throw new Error("WORKSPACE_SESSION_SECRET is required for persistent workspaces.");
+  const configured = process.env.WORKSPACE_SESSION_SECRET?.trim() || undefined;
+  if (configured && Buffer.byteLength(configured, "utf8") < 32) throw new Error("WORKSPACE_SESSION_SECRET must contain at least 32 bytes.");
+  if (process.env.NODE_ENV === "production" && !configured && process.env.DATABASE_URL) throw new Error("WORKSPACE_SESSION_SECRET is required for persistent workspaces.");
   return configured ?? developmentSecret;
 }
 export async function getUserId(create = false) {

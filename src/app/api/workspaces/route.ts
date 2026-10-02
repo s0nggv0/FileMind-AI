@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { getUserId } from "@/lib/server/identity";
 import { workspaceRepository } from "@/lib/server/workspace-repository";
-import { persistenceConfigured } from "@/lib/server/supabase";
+import { persistenceConfigured } from "@/lib/server/database";
 import { apiError, readJSON, sameOrigin } from "@/lib/server/http";
 export async function GET() {
   try {
