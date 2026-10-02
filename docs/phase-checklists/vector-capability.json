@@ -1,0 +1,9 @@
+{
+  "checkedAt": "2026-10-02T15:12:22.801Z",
+  "database": "filemind_ai",
+  "verifiedOwnInstance": true,
+  "vectorAvailable": false,
+  "vectorEnabled": false,
+  "backend": "PortableVectorStore",
+  "error": null
+}
