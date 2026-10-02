@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion, useInView, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion, useInView } from "framer-motion";
 import { Check, Circle, Orbit, Pause, Play, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DocumentTypeIcon } from "@/components/common/document-type-icon";
 import { cn } from "@/lib/utils";
+import { useMotionPreference } from "@/hooks/use-motion-preference";
 import type { AgentStage, LandingFile } from "@/types/presentation";
 
 type AgentDemoProps = {
@@ -17,7 +18,7 @@ type AgentDemoProps = {
 export function AgentDemo({ stages, files, metrics }: AgentDemoProps) {
   const container = useRef<HTMLDivElement>(null);
   const inView = useInView(container, { amount: 0.25 });
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useMotionPreference();
   const [step, setStep] = useState(0);
   const [paused, setPaused] = useState(false);
   const current = reducedMotion ? stages.length - 1 : step;

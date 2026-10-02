@@ -1,15 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
 import { ArrowRight, RotateCcw, WandSparkles } from "lucide-react";
 import { DocumentTypeIcon } from "@/components/common/document-type-icon";
 import { Button } from "@/components/ui/button";
+import { useMotionPreference } from "@/hooks/use-motion-preference";
 import type { DocumentType } from "@/types";
 
 export function OrganizeDemo({ examples }: { examples: { before: string; after: string; type: DocumentType }[] }) {
   const [organized, setOrganized] = useState(false);
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useMotionPreference();
   return (
     <div className="surface-secondary p-5 sm:p-6">
       <div className="mb-4 flex items-center justify-between"><span className="text-xs text-muted-foreground">{organized ? "After · 命名建议" : "Before · 散落的文件"}</span><Button variant="ghost" size="sm" onClick={() => setOrganized(!organized)} aria-label={organized ? "还原命名演示" : "整理命名演示"}>{organized ? <RotateCcw /> : <WandSparkles />}{organized ? "Reset" : "Organize"}</Button></div>

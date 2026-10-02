@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { useMotionPreference } from "@/hooks/use-motion-preference";
 import type { RelationshipEdge, RelationshipNode } from "@/types/presentation";
 
 type RelationshipDemoProps = {
@@ -14,7 +15,7 @@ type RelationshipDemoProps = {
 export function RelationshipDemo({ nodes, edges, compact = false }: RelationshipDemoProps) {
   const [selected, setSelected] = useState<string | null>(null);
   const [hovered, setHovered] = useState<string | null>(null);
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useMotionPreference();
   const active = hovered ?? selected;
   const shownNodes = compact ? nodes.filter((node) => node.mobile) : nodes;
   const visibleEdges = edges.filter((edge) => shownNodes.some((node) => node.id === edge.source) && shownNodes.some((node) => node.id === edge.target));
@@ -29,7 +30,7 @@ export function RelationshipDemo({ nodes, edges, compact = false }: Relationship
             const source = shownNodes.find((node) => node.id === edge.source)!;
             const target = shownNodes.find((node) => node.id === edge.target)!;
             const highlight = edge.source === active || edge.target === active;
-            return <motion.path key={`${edge.source}-${edge.target}`} d={`M ${source.x} ${source.y} L ${target.x} ${target.y}`} fill="none" vectorEffect="non-scaling-stroke" stroke="currentColor" strokeWidth={highlight ? 1.8 : 1} className={cn(highlight ? "text-primary" : "text-border", !compact && (!source.mobile || !target.mobile) && "max-sm:hidden")} initial={{ pathLength: reducedMotion ? 1 : 0 }} whileInView={{ pathLength: 1 }} viewport={{ once: true }} transition={{ duration: reducedMotion ? 0 : 0.55, delay: reducedMotion ? 0 : index * 0.08 }} />;
+            return <motion.path key={`${edge.source}-${edge.target}`} d={`M ${source.x} ${source.y} L ${target.x} ${target.y}`} fill="none" vectorEffect="non-scaling-stroke" stroke="currentColor" strokeWidth={highlight ? 1.8 : 1.25} className={cn(highlight ? "text-primary" : "text-muted-foreground/70", !compact && (!source.mobile || !target.mobile) && "max-sm:hidden")} initial={{ opacity: reducedMotion ? 1 : 0.35 }} animate={reducedMotion ? { opacity: 1 } : undefined} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: reducedMotion ? 0 : 0.4, delay: reducedMotion ? 0 : index * 0.08 }} />;
           })}
         </svg>
         {shownNodes.map((node, index) => (
