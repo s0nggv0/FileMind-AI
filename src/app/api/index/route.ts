@@ -1,0 +1,24 @@
+import { z } from "zod";
+import { apiError, readJSON, sameOrigin } from "@/lib/server/http";
+import { getUserId } from "@/lib/server/identity";
+import { database, persistenceConfigured } from "@/lib/server/database";
+import { indexKnowledge, refreshIndexVersions } from "@/lib/server/knowledge";
+import { WorkspaceError } from "@/lib/workspace/authorization";
+export async function GET() {
+  try {
+    const userId = await getUserId();
+    if (!userId || !persistenceConfigured()) return Response.json({ documents: [] });
+    await refreshIndexVersions({ userId });
+    const result = await database.query(userId, `select d.id,d.display_name as name,d.index_status as status,d.index_error_code as "errorCode",(select count(*)::integer from filemind.document_chunks c where c.user_id=$1 and c.document_id=d.id) as chunks from filemind.documents d where d.user_id=$1 order by d.created_at desc limit 1500`, [userId]);
+    return Response.json({ documents: result.rows }, { headers: { "cache-control": "no-store" } });
+  } catch (error) { return apiError(error); }
+}
+export async function POST(request: Request) {
+  try {
+    sameOrigin(request);
+    const userId = await getUserId();
+    if (!userId || !persistenceConfigured()) throw new WorkspaceError("NOT_FOUND", "Import and save documents first.", 404);
+    const body = z.object({ workspaceId: z.uuid().optional(), documentId: z.uuid().optional() }).strict().parse(await readJSON(request, 4096));
+    return Response.json({ results: await indexKnowledge({ userId, workspaceId: body.workspaceId }, body.documentId) });
+  } catch (error) { return apiError(error); }
+}

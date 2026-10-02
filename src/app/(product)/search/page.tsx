@@ -1,9 +1,10 @@
 import { PageHeader } from "@/components/common/page-header";
-import { DemoNote } from "@/components/common/demo-note";
 import { Reveal } from "@/components/motion/reveal";
-import { SearchPreview } from "@/features/search/search-preview";
-import { getDemoDocuments, getDemoSearchSuggestions } from "@/services/demo-repository";
+import { KnowledgeSearch } from "@/features/search/knowledge-search";
+import { persistenceConfigured } from "@/lib/server/database";
+import { getUserId } from "@/lib/server/identity";
 
-export default function SearchPage() {
-  return <Reveal className="space-y-7"><PageHeader title="从一句问题，回到原始资料。" description="用自然语言探索知识，让答案与来源始终在一起。" /><DemoNote>检索界面预览 · 未接入 Embedding、向量检索或 AI 回答。</DemoNote><SearchPreview suggestions={getDemoSearchSuggestions()} documents={getDemoDocuments()} /></Reveal>;
+export default async function SearchPage() {
+  await getUserId();
+  return <Reveal className="space-y-7"><PageHeader title="从一句问题，回到原始资料。" description="检索你的知识库，用原文核对每个回答。" /><KnowledgeSearch persistent={persistenceConfigured()} mock={process.env.AI_ENGINE === "mock" || process.env.EMBEDDING_PROVIDER === "mock"} /></Reveal>;
 }

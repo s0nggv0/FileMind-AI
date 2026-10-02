@@ -5,6 +5,7 @@ import { apiError, readJSON, sameOrigin } from "@/lib/server/http";
 import { recoverSnapshot, OrganizationProposalSchema, WorkspaceSnapshotSchema } from "@/lib/workspace/schemas";
 import { validateReview, WorkspaceError } from "@/lib/workspace/authorization";
 import { sanitizeFilename } from "@/lib/ai/input-guard";
+import { scheduleKnowledgeIndex } from "@/lib/server/knowledge";
 type Context = { params: Promise<{ id: string }> };
 async function owned(context: Context) {
   const id = z.uuid().parse((await context.params).id); const user = await getUserId();
@@ -25,7 +26,9 @@ export async function PUT(request: Request, context: Context) {
     if (snapshot.documents.length && (snapshot.documents.length !== next.documents.length || snapshot.documents.some(d => !next.documents.some(item => item.id === d.id)))) throw new WorkspaceError("INVALID_STATE", "Saved document identities cannot be changed.");
     if (next.documents.some(d => { const old = snapshot.documents.find(p => p.id === d.id); return old && (old.name !== d.name || old.type !== d.type || old.size !== d.size || old.mimeType !== d.mimeType); })) throw new WorkspaceError("INVALID_STATE", "Original document metadata is immutable.");
     if (next.documents.some(d => d.storagePath && d.storagePath !== snapshot.documents.find(p => p.id === d.id)?.storagePath)) throw new WorkspaceError("INVALID_STATE", "Storage references are server-owned.");
-    return Response.json(await workspaceRepository.save(user, next));
+    const saved = await workspaceRepository.save(user, next);
+    if (next.run?.status === "completed") scheduleKnowledgeIndex({ userId: user, workspaceId: next.id });
+    return Response.json(saved);
   } catch (error) { return apiError(error); }
 }
 export async function PATCH(request: Request, context: Context) {
@@ -44,6 +47,8 @@ export async function PATCH(request: Request, context: Context) {
         snapshot.run.status = "completed"; snapshot.run.completedAt = Date.now(); snapshot.run.result = structuredClone({ ...snapshot.proposal, relationships: snapshot.proposal.relationships.filter(r => r.decision !== "ignored") });
       }
     }
-    return Response.json(await workspaceRepository.save(user, snapshot));
+    const saved = await workspaceRepository.save(user, snapshot);
+    if (body.action === "apply") scheduleKnowledgeIndex({ userId: user, workspaceId: snapshot.id });
+    return Response.json(saved);
   } catch (error) { return apiError(error); }
 }

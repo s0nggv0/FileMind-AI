@@ -52,7 +52,7 @@ export class PostgresKnowledgeRepository {
       (select count(*)::float from unnest($3::text[]) q where q=any(c.lexical_tokens)) as score
       from filemind.document_chunks c join filemind.documents d on d.id=c.document_id and d.user_id=c.user_id
       where c.user_id=$1 and ($2::uuid is null or c.workspace_id=$2) and c.chunk_version=$4 and d.index_status in ('embedding','ready','failed') and c.lexical_tokens && $3::text[]
-      order by score desc,c.id limit $5`, [scope.userId, scope.workspaceId ?? null, tokens, CHUNK_VERSION, retrievalConfig.lexicalTopK]);
+      order by score desc,d.display_name,c.chunk_index,c.id limit $5`, [scope.userId, scope.workspaceId ?? null, tokens, CHUNK_VERSION, retrievalConfig.lexicalTopK]);
     return z.array(EvidenceSchema).parse(result.rows);
   }
   async getSource(scope: RetrievalScope, chunkId: string) {

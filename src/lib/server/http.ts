@@ -1,9 +1,9 @@
 import "server-only";
 import { z } from "zod";
 import { WorkspaceError } from "@/lib/workspace/authorization";
+import { validateRequestOrigin } from "@/lib/workspace/request-origin";
 export function sameOrigin(request: Request) {
-  const origin = request.headers.get("origin");
-  if (origin && origin !== new URL(request.url).origin) throw new WorkspaceError("INVALID_STATE", "Request origin is not allowed.", 403);
+  validateRequestOrigin(request, process.env.WORKSPACE_ORIGIN);
 }
 export async function readJSON(request: Request, maxBytes = 32 * 1024 * 1024): Promise<unknown> {
   if (Number(request.headers.get("content-length")) > maxBytes) throw new WorkspaceError("INVALID_STATE", "Request is too large.", 413);
