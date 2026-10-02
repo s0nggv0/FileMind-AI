@@ -5,11 +5,12 @@ export type ParseStatus = "ready" | "processing" | "completed" | "failed" | "ski
 export interface ParsedDocument {
   id: string; name: string; type: DocumentType; mimeType: string; size: number;
   contentRef?: string; pageCount?: number; parseStatus: ParseStatus; parseError?: string;
+  contentHash?: string; normalizedTextHash?: string; storagePath?: string;
   metadata: { addedAt: string; characters?: number; width?: number; height?: number; truncated?: boolean; warnings?: string[] };
 }
 export type RunStatus = "idle" | "planning" | "running" | "waiting_for_review" | "applying" | "completed" | "failed" | "cancelled";
 export type StepStatus = "pending" | "running" | "completed" | "failed" | "skipped";
-export type AgentTool = "read_document" | "summarize_document" | "classify_document" | "generate_tags" | "detect_duplicates" | "build_relationships" | "generate_organization_plan";
+export type AgentTool = "read_document" | "analyze_document" | "summarize_document" | "classify_document" | "generate_tags" | "generate_filename" | "detect_duplicates" | "build_relationships" | "generate_organization_plan";
 export interface AgentStep {
   id: string; title: string; description: string; tool: AgentTool; status: StepStatus; progress: number;
   startedAt?: number; completedAt?: number; input: { documentId?: string }; output?: string; error?: string;
@@ -19,11 +20,13 @@ export interface ProposalDocument {
   id: string; originalName: string; name: string; category: string; tags: string[]; summary: string;
   suggestedName?: string; renameDecision: Decision; document: ParsedDocument;
 }
-export interface DuplicateCandidate { id: string; documentIds: string[]; reason: string; decision: Decision }
-export interface KnowledgeConnection { id: string; source: string; target: string; reason: string; decision: Decision }
-export interface OrganizationPlan { documents: ProposalDocument[]; duplicates: DuplicateCandidate[]; relationships: KnowledgeConnection[]; simulation: true }
+export interface DuplicateCandidate { id: string; documentIds: string[]; reason: string; decision: Decision; kind?: "exact" | "text" | "name" }
+export interface KnowledgeConnection { id: string; source: string; target: string; reason: string; decision: Decision; kind?: "rule-based" | "ai-inferred" }
+export interface OrganizationPlan { documents: ProposalDocument[]; duplicates: DuplicateCandidate[]; relationships: KnowledgeConnection[]; simulation: boolean; summary?: string }
 export interface AgentRun {
-  id: string; status: RunStatus; simulation: true; startedAt: number; completedAt?: number;
+  id: string; status: RunStatus; simulation: boolean; startedAt: number; completedAt?: number;
+  engine?: "mock" | "llm"; model?: string; promptVersion?: string; interrupted?: boolean; fallback?: string;
+  usage?: { promptTokens: number; completionTokens: number; totalTokens: number };
   documents: ParsedDocument[]; steps: AgentStep[]; progress: number;
   activity: { id: string; at: number; message: string }[]; result?: OrganizationPlan; error?: string;
 }
