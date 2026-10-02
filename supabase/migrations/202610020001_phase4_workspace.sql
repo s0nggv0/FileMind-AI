@@ -82,6 +82,7 @@ begin
     values((r->>'id')::uuid,p_user,wid,coalesce(r->>'engine','mock'),r->>'model',r->>'promptVersion',r->>'status',to_timestamp((r->>'startedAt')::double precision/1000),to_timestamp((r->>'completedAt')::double precision/1000),r->>'error',(r->'usage'->>'promptTokens')::integer,(r->'usage'->>'completionTokens')::integer,(r->'usage'->>'totalTokens')::integer,r)
     on conflict(id) do update set status=excluded.status,completed_at=excluded.completed_at,error_message=excluded.error_message,prompt_tokens=excluded.prompt_tokens,completion_tokens=excluded.completion_tokens,total_tokens=excluded.total_tokens,run_json=excluded.run_json;
     for s in select value from jsonb_array_elements(r->'steps') loop
+      if exists(select 1 from agent_steps where id=(s->>'id')::uuid and (user_id<>p_user or workspace_id<>wid or run_id<>(r->>'id')::uuid)) then raise exception 'step_not_owned'; end if;
       insert into agent_steps(id,user_id,workspace_id,run_id,position,tool_name,status,input,output,started_at,completed_at,error_message)
       values((s->>'id')::uuid,p_user,wid,(r->>'id')::uuid,pos,s->>'tool',s->>'status',s->'input',s->'output',to_timestamp((s->>'startedAt')::double precision/1000),to_timestamp((s->>'completedAt')::double precision/1000),s->>'error')
       on conflict(id) do update set status=excluded.status,output=excluded.output,completed_at=excluded.completed_at,error_message=excluded.error_message;

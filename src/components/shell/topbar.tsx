@@ -19,6 +19,6 @@ export function Topbar() {
       <span className="hidden text-sm text-muted-foreground md:inline">我的知识空间</span><ChevronRight className="hidden size-3.5 text-muted-foreground md:inline" />
       {Icon && <Icon className="size-4 shrink-0 text-muted-foreground" />}<span className="truncate text-sm font-medium">{item?.label ?? "Settings"}</span>
     </div>
-    <div className="flex shrink-0 items-center gap-3"><span className="hidden rounded-md border px-2 py-1 text-[11px] text-muted-foreground sm:inline">Demo</span><Button variant="outline" className="gap-2 text-muted-foreground" aria-label="打开命令面板" onClick={() => setCommandOpen(true)}><Search /><span className="hidden sm:inline">搜索与导航</span><kbd className="ml-3 hidden rounded border bg-background px-1.5 py-0.5 font-mono text-[10px] lg:inline">⌘ / Ctrl K</kbd></Button></div>
+    <div className="flex shrink-0 items-center gap-3"><span className="hidden rounded-md border px-2 py-1 text-[11px] text-muted-foreground sm:inline">FileMind</span><Button variant="outline" className="gap-2 text-muted-foreground" aria-label="打开命令面板" onClick={() => setCommandOpen(true)}><Search /><span className="hidden sm:inline">搜索与导航</span><kbd className="ml-3 hidden rounded border bg-background px-1.5 py-0.5 font-mono text-[10px] lg:inline">⌘ / Ctrl K</kbd></Button></div>
   </header>;
 }

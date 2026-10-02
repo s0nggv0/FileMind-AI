@@ -1,4 +1,5 @@
 import type { DocumentType } from "./documents";
+import type { WorkspaceSnapshot } from "@/lib/workspace/schemas";
 
 export type ParseStatus = "ready" | "processing" | "completed" | "failed" | "skipped";
 // Native Files and extracted text live in the parser service, never in this contract.
@@ -33,6 +34,11 @@ export interface AgentRun {
 export type DemoFault = "none" | "parse" | "tool" | "agent";
 export type RunListener = (run: AgentRun) => void;
 export interface AgentEngine {
+  initialize?(workspaceId?: string): Promise<{ snapshot: WorkspaceSnapshot | null; persistent: boolean; label: string }>;
+  saveProposal?(plan: OrganizationPlan): Promise<void>;
+  continueLocally?(documents: ParsedDocument[], onUpdate: RunListener): Promise<void>;
+  resetWorkspace?(): void;
+  getWorkspaceId?(): string | undefined;
   createRun(documents: ParsedDocument[], fault?: DemoFault): AgentRun;
   executeRun(runId: string, onUpdate: RunListener): Promise<void>;
   cancelRun(runId: string): void;

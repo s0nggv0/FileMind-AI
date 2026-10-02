@@ -3,6 +3,7 @@ import { z } from "zod";
 import type { AgentRun, AgentStep, AgentTool, OrganizationPlan, ParsedDocument } from "@/types/workspace";
 import type { WorkspaceSnapshot } from "@/lib/workspace/schemas";
 import { OrganizationProposalSchema } from "@/lib/workspace/schemas";
+import { WorkspaceError } from "@/lib/workspace/authorization";
 import { buildOrganizationPlan, buildRelationships, detectDuplicates } from "@/features/workspace/services/organization-rules";
 import type { AIProvider, AIUsage } from "./provider";
 import { analyzeDocument } from "./document-analysis";
@@ -27,6 +28,7 @@ export class LLMAgentRunner {
     const run: AgentRun = { id: runId, status: "planning", simulation: false, engine: "llm", model: provider.models.main, promptVersion: `${PLANNER_PROMPT_VERSION}/${DOCUMENT_PROMPT_VERSION}/${ORGANIZATION_PROMPT_VERSION}`, startedAt: Date.now(), documents: snapshot.documents, steps: [], progress: 0, activity: [], usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 } };
     const analyses = new Map<string, DocumentAnalysis>(); const read = new Set<string>();
     let duplicateDone = false; let relationshipsDone = false; let plan: OrganizationPlan | undefined; let calls = 0;
+    const toolFailures = new Map<string, number>();
     const usage = (value: AIUsage) => { run.usage!.promptTokens += value.promptTokens; run.usage!.completionTokens += value.completionTokens; run.usage!.totalTokens += value.totalTokens; };
     const log = (message: string) => { run.activity.push({ id: crypto.randomUUID(), at: Date.now(), message }); };
     // Serialize publishes even when analysis workers complete concurrently.
@@ -119,7 +121,7 @@ export class LLMAgentRunner {
           if (!Object.hasOwn(handlers, call.name)) throw new AIError("STRUCTURED_OUTPUT", "Planner requested an unavailable tool.", false, provider.name);
           let result: unknown;
           try { result = await handlers[call.name](call.input); }
-          catch (error) { signal.throwIfAborted(); const ai = normalizeAIError(error, provider.name); if (!ai.retryable || ai.code !== "STRUCTURED_OUTPUT") throw ai; result = { error: ai.message, retryable: true }; }
+          catch (error) { signal.throwIfAborted(); if (error instanceof WorkspaceError) throw error; const ai = normalizeAIError(error, provider.name); const failed = (toolFailures.get(call.name) ?? 0) + 1; toolFailures.set(call.name, failed); if (!ai.retryable || ai.code !== "STRUCTURED_OUTPUT" || failed > aiLimits.maxToolRetries) throw ai; result = { error: ai.message, retryable: true }; }
           messages.push({ role: "tool", content: [{ type: "tool-result", toolCallId: call.id, toolName: call.name, output: { type: "json", value: JSON.parse(JSON.stringify(result)) } }] });
           if (plan) break;
         }
@@ -127,6 +129,7 @@ export class LLMAgentRunner {
       if (!plan) throw new AIError("STEP_LIMIT", "Agent reached its step limit.", false, provider.name);
       run.result = plan; run.status = "waiting_for_review"; run.progress = 100; log("Proposal ready · AI proposes, you decide");
     } catch (error) {
+      if (error instanceof WorkspaceError) throw error;
       if (requestSignal.aborted) { run.status = "cancelled"; log("Run interrupted or cancelled · no background execution"); }
       else {
         const ai = normalizeAIError(error, provider.name); run.fallback = "AI analysis unavailable — using basic local organization."; run.error = undefined;

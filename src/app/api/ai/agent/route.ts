@@ -10,6 +10,7 @@ export const maxDuration = 300;
 export async function POST(request: Request) {
   try {
     sameOrigin(request); const input = z.object({ workspaceId: z.uuid(), runId: z.uuid(), revision: z.number().int().nonnegative() }).parse(await readJSON(request, 1024));
+    if (process.env.AI_ENGINE !== "llm") throw new WorkspaceError("INVALID_STATE", "FileMind Intelligence is disabled in this environment.", 409);
     const userId = await getUserId(); if (!userId) throw new WorkspaceError("NOT_FOUND", "Workspace not found.", 404);
     let snapshot = await workspaceRepository.get(userId, input.workspaceId);
     if (snapshot.revision !== input.revision) throw new WorkspaceError("CONFLICT", "Workspace changed. Reload before analysis.", 409);

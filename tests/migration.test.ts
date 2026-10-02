@@ -20,6 +20,12 @@ test("empty PostgreSQL migration, atomic persistence, revision conflicts and ten
     assert.equal((await db.query<{ text_content: string }>("select text_content from documents where user_id=$1 and workspace_id=$2", [user,id])).rows[0].text_content, "notes");
     await assert.rejects(db.query("select save_workspace($1,$2,$3)", [user,review,0]), /revision_conflict/);
     await assert.rejects(db.query("select save_workspace($1,$2,$3)", [attacker,review,1]), /workspace_not_found/);
+    const otherId = crypto.randomUUID(); const foreignStep = crypto.randomUUID();
+    const other = WorkspaceSnapshotSchema.parse({ ...initial, id: otherId, run: { id: crypto.randomUUID(), engine: "mock", status: "running", simulation: true, startedAt: Date.now(), documents: [], activity: [], progress: 0, steps: [{ id: foreignStep, tool: "read_document", title: "Read", description: "Read", status: "completed", progress: 100, input: {} }] } });
+    await db.query("insert into workspaces(id,user_id,name,snapshot) values($1,$2,$3,$4)", [otherId,attacker,"Other",{ ...other, run: null }]);
+    await db.query("select save_workspace($1,$2,$3)", [attacker,other,0]);
+    await assert.rejects(db.query("select save_workspace($1,$2,$3)", [user,{ ...review, run: { ...review.run!, steps: other.run!.steps } },1]), /step_not_owned/);
+    assert.equal((await db.query<{ revision: number }>("select revision from workspaces where id=$1", [id])).rows[0].revision, 1);
     const completed = { ...review, revision: 1, run: { ...review.run!, status: "completed", completedAt: Date.now() } };
     await db.query("select save_workspace($1,$2,$3)", [user,completed,1]);
     assert.equal((await db.query("select tag from document_tags")).rows.length, 1);
