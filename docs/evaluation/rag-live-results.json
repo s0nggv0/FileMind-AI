@@ -1,0 +1,418 @@
+{
+  "live": true,
+  "REAL_RAG_E2E_VERIFIED": true,
+  "checkedAt": "2026-10-02T16:15:24.408Z",
+  "configuration": {
+    "chunkTargetTokens": 800,
+    "chunkMaxTokens": 1000,
+    "overlapTokens": 100,
+    "vectorTopK": 20,
+    "lexicalTopK": 20,
+    "rrfK": 60,
+    "candidateLimit": 15,
+    "evidenceLimit": 7,
+    "minimumCosine": 0.35,
+    "minimumLexicalCoverage": 0.2,
+    "contextMaxCharacters": 24000,
+    "chunkVersion": "chunk-v1",
+    "reranker": "deterministic",
+    "backend": "PortableVectorStore"
+  },
+  "embedding": {
+    "provider": "dashscope",
+    "model": "qwen3.7-text-embedding-flash",
+    "dimensions": 1024,
+    "mock": false
+  },
+  "metrics": {
+    "vector": {
+      "hitAt1": 1,
+      "hitAt5": 1,
+      "mrr": 1
+    },
+    "lexical": {
+      "hitAt1": 1,
+      "hitAt5": 1,
+      "mrr": 1
+    },
+    "hybrid": {
+      "hitAt1": 1,
+      "hitAt5": 1,
+      "mrr": 1
+    }
+  },
+  "retrievalNoAnswerAccuracy": 0.6666666666666666,
+  "noAnswerAccuracy": 1,
+  "queries": [
+    {
+      "query": "Query Key Value",
+      "kind": "exact keyword",
+      "expected": [
+        "transformer.md",
+        "bert.md"
+      ],
+      "noAnswer": false,
+      "predictedNoAnswer": false,
+      "ranks": {
+        "vector": 1,
+        "lexical": 1,
+        "hybrid": 1
+      }
+    },
+    {
+      "query": "What asks which information a token needs?",
+      "kind": "paraphrase",
+      "expected": [
+        "transformer.md"
+      ],
+      "noAnswer": false,
+      "predictedNoAnswer": false,
+      "ranks": {
+        "vector": 1,
+        "lexical": 1,
+        "hybrid": 1
+      }
+    },
+    {
+      "query": "How does self attention aggregate token content?",
+      "kind": "semantic question",
+      "expected": [
+        "transformer.md"
+      ],
+      "noAnswer": false,
+      "predictedNoAnswer": false,
+      "ranks": {
+        "vector": 1,
+        "lexical": 1,
+        "hybrid": 1
+      }
+    },
+    {
+      "query": "BERT 和 Transformer 如何使用 QKV？",
+      "kind": "multi-document",
+      "expected": [
+        "bert.md",
+        "transformer.md"
+      ],
+      "noAnswer": false,
+      "predictedNoAnswer": false,
+      "ranks": {
+        "vector": 1,
+        "lexical": 1,
+        "hybrid": 1
+      }
+    },
+    {
+      "query": "双向编码器如何学习被隐藏的词元？",
+      "kind": "Chinese paraphrase",
+      "expected": [
+        "bert.md"
+      ],
+      "noAnswer": false,
+      "predictedNoAnswer": false,
+      "ranks": {
+        "vector": 1,
+        "lexical": 1,
+        "hybrid": 1
+      }
+    },
+    {
+      "query": "React immutable state updates",
+      "kind": "English exact",
+      "expected": [
+        "react.md"
+      ],
+      "noAnswer": false,
+      "predictedNoAnswer": false,
+      "ranks": {
+        "vector": 1,
+        "lexical": 1,
+        "hybrid": 1
+      }
+    },
+    {
+      "query": "What preserves the identity of items when a list is rerendered?",
+      "kind": "paraphrase",
+      "expected": [
+        "react.md"
+      ],
+      "noAnswer": false,
+      "predictedNoAnswer": false,
+      "ranks": {
+        "vector": 1,
+        "lexical": 1,
+        "hybrid": 1
+      }
+    },
+    {
+      "query": "为什么不能在浏览器保存 API key？",
+      "kind": "mixed language",
+      "expected": [
+        "nextjs.md"
+      ],
+      "noAnswer": false,
+      "predictedNoAnswer": false,
+      "ranks": {
+        "vector": 1,
+        "lexical": 1,
+        "hybrid": 1
+      }
+    },
+    {
+      "query": "What prepares initial HTML before browser interaction?",
+      "kind": "semantic question",
+      "expected": [
+        "nextjs.md"
+      ],
+      "noAnswer": false,
+      "predictedNoAnswer": false,
+      "ranks": {
+        "vector": 1,
+        "lexical": 1,
+        "hybrid": 1
+      }
+    },
+    {
+      "query": "数据库索引优化覆盖索引减少回表",
+      "kind": "Chinese keyword",
+      "expected": [
+        "indexes.md"
+      ],
+      "noAnswer": false,
+      "predictedNoAnswer": false,
+      "ranks": {
+        "vector": 1,
+        "lexical": 1,
+        "hybrid": 1
+      }
+    },
+    {
+      "query": "How can a query avoid reading the table after using an index?",
+      "kind": "paraphrase",
+      "expected": [
+        "indexes.md"
+      ],
+      "noAnswer": false,
+      "predictedNoAnswer": false,
+      "ranks": {
+        "vector": 1,
+        "lexical": 1,
+        "hybrid": 1
+      }
+    },
+    {
+      "query": "EXPLAIN composite B-tree index",
+      "kind": "English keyword",
+      "expected": [
+        "indexes.md"
+      ],
+      "noAnswer": false,
+      "predictedNoAnswer": false,
+      "ranks": {
+        "vector": 1,
+        "lexical": 1,
+        "hybrid": 1
+      }
+    },
+    {
+      "query": "stale updates revision optimistic concurrency",
+      "kind": "English keyword",
+      "expected": [
+        "transactions.md"
+      ],
+      "noAnswer": false,
+      "predictedNoAnswer": false,
+      "ranks": {
+        "vector": 1,
+        "lexical": 1,
+        "hybrid": 1
+      }
+    },
+    {
+      "query": "如何避免不同租户读取对方资料？",
+      "kind": "Chinese semantic",
+      "expected": [
+        "transactions.md"
+      ],
+      "noAnswer": false,
+      "predictedNoAnswer": false,
+      "ranks": {
+        "vector": 1,
+        "lexical": 1,
+        "hybrid": 1
+      }
+    },
+    {
+      "query": "TCP 序列号确认重传",
+      "kind": "mixed keyword",
+      "expected": [
+        "tcp.md"
+      ],
+      "noAnswer": false,
+      "predictedNoAnswer": false,
+      "ranks": {
+        "vector": 1,
+        "lexical": 1,
+        "hybrid": 1
+      }
+    },
+    {
+      "query": "What regulates sending speed when a network is overloaded?",
+      "kind": "semantic question",
+      "expected": [
+        "tcp.md"
+      ],
+      "noAnswer": false,
+      "predictedNoAnswer": false,
+      "ranks": {
+        "vector": 1,
+        "lexical": 1,
+        "hybrid": 1
+      }
+    },
+    {
+      "query": "域名解析缓存 TTL",
+      "kind": "Chinese keyword",
+      "expected": [
+        "dns.md"
+      ],
+      "noAnswer": false,
+      "predictedNoAnswer": false,
+      "ranks": {
+        "vector": 1,
+        "lexical": 1,
+        "hybrid": 1
+      }
+    },
+    {
+      "query": "Why can a changed website address stay stale in a resolver?",
+      "kind": "paraphrase",
+      "expected": [
+        "dns.md"
+      ],
+      "noAnswer": false,
+      "predictedNoAnswer": false,
+      "ranks": {
+        "vector": 1,
+        "lexical": 1,
+        "hybrid": 1
+      }
+    },
+    {
+      "query": "风险登记表 里程碑 依赖关系",
+      "kind": "Chinese keyword",
+      "expected": [
+        "planning.md"
+      ],
+      "noAnswer": false,
+      "predictedNoAnswer": false,
+      "ranks": {
+        "vector": 1,
+        "lexical": 1,
+        "hybrid": 1
+      }
+    },
+    {
+      "query": "How do we track evidence for accepting a deliverable?",
+      "kind": "semantic question",
+      "expected": [
+        "retrospective.md"
+      ],
+      "noAnswer": false,
+      "predictedNoAnswer": false,
+      "ranks": {
+        "vector": 1,
+        "lexical": 1,
+        "hybrid": 1
+      }
+    },
+    {
+      "query": "What makes an index faster?",
+      "kind": "ambiguous",
+      "expected": [
+        "indexes.md"
+      ],
+      "noAnswer": false,
+      "predictedNoAnswer": false,
+      "ranks": {
+        "vector": 1,
+        "lexical": 1,
+        "hybrid": 1
+      }
+    },
+    {
+      "query": "它与 BERT 有什么关系？",
+      "kind": "follow-up",
+      "expected": [
+        "bert.md",
+        "transformer.md"
+      ],
+      "noAnswer": false,
+      "predictedNoAnswer": false,
+      "ranks": {
+        "vector": 1,
+        "lexical": 1,
+        "hybrid": 1
+      }
+    },
+    {
+      "query": "我的资料里量子纠缠有哪些解释？",
+      "kind": "no answer",
+      "expected": [],
+      "noAnswer": true,
+      "predictedNoAnswer": false,
+      "ranks": {}
+    },
+    {
+      "query": "What are the side effects of a new migraine medication?",
+      "kind": "no answer",
+      "expected": [],
+      "noAnswer": true,
+      "predictedNoAnswer": true,
+      "ranks": {}
+    },
+    {
+      "query": "火星农业如何灌溉？",
+      "kind": "no answer",
+      "expected": [],
+      "noAnswer": true,
+      "predictedNoAnswer": true,
+      "ranks": {}
+    }
+  ],
+  "sample": {
+    "documents": 10,
+    "queries": 25,
+    "answerableQueries": 22,
+    "noAnswerQueries": 3,
+    "evaluatedGroundedAnswers": 1
+  },
+  "citationValidity": 1,
+  "liveCitationCount": 3,
+  "answerErrorCode": null,
+  "liveNoAnswerPassed": true,
+  "noAnswerResults": [
+    {
+      "query": "我的资料里量子纠缠有哪些解释？",
+      "passed": true,
+      "errorCode": null
+    },
+    {
+      "query": "What are the side effects of a new migraine medication?",
+      "passed": true,
+      "errorCode": null
+    },
+    {
+      "query": "火星农业如何灌溉？",
+      "passed": true,
+      "errorCode": null
+    }
+  ],
+  "latency": {
+    "queryEmbedding": 182.89480000000003,
+    "vector": 12.156999999999243,
+    "lexical": 2.8955000000005384,
+    "rerank": 0.3371000000006461,
+    "llm": 4802.855
+  }
+}
