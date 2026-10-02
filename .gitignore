@@ -1,6 +1,7 @@
 node_modules/
 .next/
 .npm-cache/
+.filemind/
 out/
 *.tsbuildinfo
 .env*

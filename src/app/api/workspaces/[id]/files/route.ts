@@ -2,10 +2,11 @@ import { createHash } from "node:crypto";
 import { z } from "zod";
 import { uploadConfig } from "@/config/upload";
 import { getUserId } from "@/lib/server/identity";
-import { getSupabase } from "@/lib/server/supabase";
+import { getFileStorage } from "@/lib/server/file-storage";
 import { workspaceRepository } from "@/lib/server/workspace-repository";
 import { sameOrigin, apiError } from "@/lib/server/http";
 import { WorkspaceError } from "@/lib/workspace/authorization";
+export const runtime = "nodejs";
 
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
@@ -26,11 +27,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     if (!uploadConfig.extensions.includes(extension) || !uploadConfig.mimeTypes[extension]?.includes(document.mimeType) || file.size !== document.size || file.size > uploadConfig.maxFileBytes) throw new WorkspaceError("INVALID_STATE", "Invalid upload metadata.");
     const bytes = Buffer.from(await file.arrayBuffer()); const hash = createHash("sha256").update(bytes).digest("hex");
     if (document.contentHash && hash !== document.contentHash) throw new WorkspaceError("INVALID_STATE", "File checksum mismatch.");
-    const path = `${user}/${id}/${documentId}/original.${extension}`;
-    if (!document.storagePath) {
-      const result = await getSupabase().storage.from("documents").upload(path, bytes, { contentType: document.mimeType, upsert: false });
-      if (result.error && !result.error.message.includes("already exists")) throw new WorkspaceError("UNAVAILABLE", "File could not be stored. Retry the upload.", 503);
-    }
+    const path = await getFileStorage().putOriginal({ userId: user, workspaceId: id, documentId, extension, bytes });
     document.storagePath = path; document.contentHash = hash;
     return Response.json(await workspaceRepository.save(user, snapshot));
   } catch (error) { return apiError(error); }
