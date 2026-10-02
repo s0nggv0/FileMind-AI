@@ -19,7 +19,7 @@ export class SDKAIProvider implements AIProvider {
   }
   async callTools(input: Parameters<AIProvider["callTools"]>[0]) {
     try {
-      const result = await generateText({ model: this.model("main"), system: input.system, messages: input.messages, tools: input.tools, toolChoice: "required", maxRetries: 0, maxOutputTokens: aiLimits.maxOutputTokens, abortSignal: AbortSignal.any([input.signal, AbortSignal.timeout(aiLimits.providerTimeoutMs)]), providerOptions: { openai: { parallelToolCalls: false, store: false } } });
+      const result = await generateText({ model: this.model("main"), system: input.system, messages: input.messages, tools: input.tools, toolChoice: "required", maxRetries: 0, maxOutputTokens: aiLimits.maxOutputTokens, abortSignal: AbortSignal.any([input.signal, AbortSignal.timeout(aiLimits.providerTimeoutMs)]) });
       return { calls: result.toolCalls.map(call => ({ name: call.toolName, id: call.toolCallId, input: call.input })), messages: result.response.messages, usage: usage(result.usage) };
     } catch (e) { throw normalizeAIError(e, this.name); }
   }

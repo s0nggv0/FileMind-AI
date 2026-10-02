@@ -1,10 +1,10 @@
 import { test, expect } from "@playwright/test";
 import { pdfFixture, docxFile, textFile } from "../e2e/fixtures";
 // Explicit opt-in command. Uploads only synthetic documents, and uses paid AI.
-test("live Supabase + OpenAI: mixed documents → review → autosave → apply → recovery", async ({ page, context }) => {
+test("live persistent storage + Kimi: mixed documents → review → autosave → apply → recovery", async ({ page, context }) => {
   const errors: string[] = []; page.on("pageerror", error => errors.push(error.message)); page.on("console", event => { if (event.type() === "error") errors.push(event.text()); });
   const config = await (await context.request.get("/api/workspace-config")).json();
-  expect(config.persistent, "Configure Supabase before running test:live").toBe(true);
+  expect(config.persistent, "Configure a supported persistence backend before running test:live").toBe(true);
   expect(config.intelligence, "Set AI_ENGINE=llm before running test:live").toBe(true);
   await page.goto("/workspace");
   await page.getByLabel("Choose local files").setInputFiles([
