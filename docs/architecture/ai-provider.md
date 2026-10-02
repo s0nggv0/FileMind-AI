@@ -1,12 +1,14 @@
 # Phase 4 AI Provider 与 Agent
 
-UI → Workspace Domain → AgentEngine → 服务器 Agent API → AIProvider → SDK Adapter → OpenAI。组件不 import Provider SDK，不根据厂商选择实现。WorkspaceAgentEngine 在服务边界读取服务器配置，选择 MockAgentEngine 或 LLMAgentEngine。真实凭据仅存在 `.env.local` 和服务器 `server-only` 工厂中。客户端只请求同源 API。
+UI → Workspace Domain → AgentEngine → 服务器 Agent API → AIProvider → SDK Adapter → Kimi。组件不 import Provider SDK，不根据厂商选择实现。WorkspaceAgentEngine 在服务边界读取服务器配置，选择 MockAgentEngine 或 LLMAgentEngine。真实凭据仅存在 `.env.local` 和服务器 `server-only` 工厂中。客户端只请求同源 API。
 
 ## Provider 与模型
 
-`AIProvider` 定义 `generateText`、`generateObject`、`streamText`、`callTools`，返回统一输出和 usage。`SDKAIProvider` 使用 AI SDK 7 的 `generateText` + `Output.object`，Zod 验证结构。OpenAI 工厂使用官方 adapter 的 Chat Completions；避免绑定某家业务返回格式。工厂未来可注册 Gemini / DeepSeek adapter，本阶段仅实现 OpenAI；设置其他 provider 会明确报告配置错误。
+`AIProvider` 定义 `generateText`、`generateObject`、`streamText`、`callTools`，返回统一输出和 usage。`SDKAIProvider` 使用 AI SDK 7 的 `generateText` + `Output.object`，Zod 验证结构。Kimi 工厂使用 @ai-sdk/openai-compatible 的 Chat Completions，服务地址默认 https://api.moonshot.cn/v1。运行时只读取 KIMI_API_KEY，已移除 OpenAI adapter 和旧密钥配置。
 
-`models.ts` 集中读取 `AI_PROVIDER`、`AI_MODEL`、`AI_SMALL_MODEL`。默认 `openai` / `gpt-4.1-mini`；small 留空复用 main。主模型负责 Planner 和组织计划，小模型负责每个文档一次结构化分析，得到摘要、分类、3–8 个标签、命名建议与置信度。`summarize_document`、`classify_document`、`generate_tags`、`generate_filename` 是这次调用的公开逻辑步骤，不是四次付费请求。
+`models.ts` 集中读取 `AI_PROVIDER`、`AI_MODEL`、`AI_SMALL_MODEL`。默认 kimi / kimi-k2.6；small 留空复用 main。当前只适配 kimi-k2.6，未经支持的型号或 Provider 在调用前报告配置错误。主模型负责 Planner 和组织计划，small 角色负责每个文档一次结构化分析，得到摘要、分类、3–8 个标签、命名建议与置信度。四个公开逻辑步骤复用结果，不是四次付费请求。
+
+适配显式发送 thinking={type:disabled}。K2.6 的思考模式与 required 工具选择不兼容；非思考模式符合当前不展示隐藏推理的产品流程。使用 strict JSON Schema，并继续执行 Zod、ID 和分类等业务校验。未传 OpenAI 专有 store/parallel_tool_calls 参数；工具执行仍由 Registry 按顺序控制。
 
 ## Agent 执行
 
@@ -34,6 +36,6 @@ NDJSON 只流式返回公开 Run 事件，不展示模型 Token 或 reasoning。
 
 ## 验证与配置限制
 
-无服务配置时 `AI_ENGINE=mock` 完全可运行。自动化测试使用 SDK Mock 和 OpenAI HTTP 格式 fixture 验证 adapter、真实工具协议、输出错误、重试、未知工具拒绝、明确降级和队列限制；它们不等同于收费 Provider 端到端验收。用户尚未配置任何凭据，真实 OpenAI 云端调用待配置后验收。
+无服务配置时 `AI_ENGINE=mock` 完全可运行。自动化测试使用 SDK Mock 和 Kimi HTTP 格式 fixture，验证服务地址、Bearer 凭据、非思考模式、严格结构、工具选择、流式可见文本、错误安全处理及重试。它们不等同于收费 Provider 端到端验收。用户尚未配置 Key，真实 Kimi 调用待配置后验收。
 
-官方实现依据：[AI SDK Structured Output](https://ai-sdk.dev/docs/ai-sdk-core/generating-structured-data)、[Tool Calling](https://ai-sdk.dev/docs/ai-sdk-core/tools-and-tool-calling)、[OpenAI GPT-4.1 mini](https://developers.openai.com/api/docs/models/gpt-4.1-mini)。
+官方实现依据：[AI SDK 兼容 Provider](https://ai-sdk.dev/providers/openai-compatible-providers)、[Kimi K2.6](https://platform.kimi.com/docs/guide/kimi-k2-6-quickstart)、[结构输出](https://platform.kimi.com/docs/guide/response_format)、[工具约束](https://platform.kimi.com/docs/guide/use-tool-choice)。

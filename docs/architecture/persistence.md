@@ -1,35 +1,51 @@
-# Phase 4 Persistent Workspace
+# Phase 4 Persistent Workspace — PostgreSQL
 
-迁移：`supabase/migrations/202610020001_phase4_workspace.sql`，从空 Supabase PostgreSQL 创建 profiles、workspaces、documents、agent_runs、agent_steps、organization_proposals、document_tags、document_relations 和私有 documents bucket。无 pgvector。迁移依赖 Supabase 自带 auth/storage schema 与标准角色。
+当前使用普通 PostgreSQL、pg 连接池和服务端私有文件目录。Supabase SDK、配置和依赖其 auth/storage schema 的迁移已从当前实现移除，历史提交保留。迁移为 `database/migrations/202610020001_workspace.sql`；`npm run db:migrate` 建立 filemind schema、8 张业务表和迁移记录，不需要额外扩展。
 
-## 身份和隔离
+## 身份和权限
 
-不开发 OAuth。服务器为每个浏览器签发不同 UUID Demo 用户，用 HMAC 签名的 HttpOnly / SameSite Strict Cookie 识别；生产持久化要求 `WORKSPACE_SESSION_SECRET`，HTTPS 默认 Secure。开发没有 secret 时使用进程内随机 secret，因此开发服务重启会失去旧身份；需要跨重启恢复时配置固定随机 secret。清除 Cookie、换浏览器或丢失 secret 不会恢复同一身份。本阶段没有账号找回与跨设备同步。
+服务器为每个浏览器签发 UUID Demo 用户，以 HMAC 签名的 HttpOnly / SameSite Strict Cookie 识别。生产持久化要求固定 WORKSPACE_SESSION_SECRET，至少 32 字节；HTTPS 使用 Secure Cookie。开发未配置 Secret 时使用进程内随机值，重启后旧身份失效。清除 Cookie、换浏览器或丢失 Secret 不会恢复同一身份。没有 OAuth、账号找回或跨设备同步。
 
-Service Role 仅在 `server-only` 模块创建。所有仓库查询同时筛选 user_id 与 workspace_id，Agent Tool 的 documentId 必须存在于已授权快照。Apply 重新校验用户、版本、review 状态、文档集及建议引用，不能增加、删除文档或篡改原始元数据。各表含 user_id，复合外键防止跨租户关联；RLS 使用 auth.uid() 为未来 Auth 提供基础，当前 Demo 通过服务器权限边界访问。RPC 仅授予 service_role，anon/authenticated 不能调用。
+数据库连接串只在 server-only 模块读取。使用专用、非超级用户的数据库所有者或已授权应用角色。每个查询在同一连接上开启事务，用参数化 set_config 设置事务级 filemind.user_id，随后执行查询并提交；异常回滚，清理失败时丢弃连接，避免向下一个请求泄露身份上下文。连接池最大 5、连接超时 10 秒、SQL 超时 45 秒。
 
-## 原文件、文本与 JSON
+8 张业务表启用 ENABLE / FORCE ROW LEVEL SECURITY，按事务身份匹配 profiles.id 或 user_id。FORCE 也约束普通表所有者；PostgreSQL 超级用户和 BYPASSRLS 角色仍能绕过，故不能把管理员连接当作常规应用连接。数据库凭据只掌握在可信服务器或管理员手中，浏览器不能设置数据库上下文。
 
-上传流程是 Browser → 有界同源安全上传 Route → Supabase Storage。文件最大 20 MB，bucket 私有，无公开对象策略。Key 是 `userId/workspaceId/documentId/original.ext`，不使用原文件名做唯一 Key；服务器验证工作空间归属、扩展名、MIME、大小与 SHA-256，禁止覆盖已有对象。用户上传原文件永不被 Agent 修改或删除。
+仓库查询显式筛选 user_id / workspace_id，Agent Tool 的 documentId 只识别已授权快照。复合外键阻止跨用户或工作空间引用；save_workspace 还验证参数用户等于事务身份。函数取消 PUBLIC 执行权限，应用数据库所有者保留调用能力；使用另一个运行角色时须显式授予 schema、表和函数权限。
 
-沿用浏览器 PDF/DOCX/TXT/MD Parser，图片只读取尺寸。正文最大 250,000 字符，暂存 documents.text_content；metadata、parse_status、文件/归一化文本哈希和 storage_path 也持久化。截断正文不用于 Text duplicate 判断，空正文不算文本重复。Phase 5 应拆 document_chunks，并把正文主存储转为分块引用；目前正文不会无限增长，snapshot 不复制正文。
+## 原文件、正文和快照
 
-workspaces.status 仅 draft/processing/review/completed。`snapshot` 是有界领域恢复快照，保存当前 Run 与 Proposal；documents、agent_runs、agent_steps、organization_proposals、tags 与 relations 同时规范化到对应表。数据库 JSON 全部由 Zod 校验后读取；不用 `as OrganizationPlan`。`save_workspace` 在同一事务锁 Workspace，检查 expected revision，并原子写入快照和规范化表。多标签页冲突返回 409，不最后写入覆盖。旧 Run 记录保留；Phase 4 没有复杂版本历史 UI。
+上传流程是 Browser → 有界同源上传 Route → 私有文件目录。FILE_STORAGE_ROOT 默认 .filemind/storage，不在 public 目录内，不受网页静态服务暴露。存储 Key 是 userId/workspaceId/documentId/original.ext，不把原文件名用于路径。服务器验证归属、扩展名、MIME、20 MB 上限、大小与 SHA-256。
 
-## 恢复、审核和 Apply
+文件先写入同目录随机临时文件，再以拒绝覆盖的硬链接原子发布。相同路径重复上传须匹配大小和哈希，其他内容返回冲突；临时文件在发布后清理。逐层拒绝符号链接与非法目录，文件权限请求 0600 / 目录 0700；Windows 实际权限继承部署环境的 ACL。Agent 不修改或删除原文件。
 
-保持 `/workspace` 新建流程，通过 `/workspace?workspace=<UUID>` 恢复。Dashboard Recent Workspaces 链接可再次进入。GET 从当前用户服务器快照和 documents 正文重建 parser content references。
+PDF/DOCX/TXT/MD 在浏览器解析，图片只读取尺寸。正文最多 250,000 字符，写入 documents.text_content；metadata、parse_status、哈希和 storage_path 同时保存。截断正文不用于 Text duplicate 判断，空正文不算重复。真实 Kimi 只接收有界提取文本，不接收这些原始二进制文件。
 
-- waiting_for_review：恢复 Proposal，包括分类、标签和各项接受/忽略状态。
-- completed：恢复已应用文档和有效关系，Library / Graph 可直接读取保存结果。
-- planning/running/applying：恢复为 failed + interrupted 显示 **Run interrupted**；不宣称后台仍在执行。**Resume analysis** 在同一 Workspace 新建 Run，重用已保存正文。成功 AI 分析可通过缓存复用，Planner 会重新运行。
+workspaces.status 为 draft/processing/review/completed。snapshot 保存恢复用的 Run / Proposal，正文不在快照中重复保存；documents、agent_runs、agent_steps、organization_proposals、tags 与 relations 同时规范化到对应表。数据库 JSON 用 Zod 校验，pg 返回的 Date 转为 UTC ISO 格式。
 
-Review 用 500 ms debounce 自动保存，并显示 Saving / Saved / Save failed。Mock 持久化等待最终 Run 保存后才开放 Review。Apply 使用服务器 PATCH 再次验证，事务更新元数据、标签、有效关系、Proposal 与 Run；不改动 Storage 原文件，不执行重复删除。Apply 携带当前编辑后的完整 Proposal，因此即使 debounce 尚未触发也不会丢失最后修改。
+save_workspace 在同一事务锁定工作空间，检查 expected revision，并原子保存快照和各表。多标签页冲突返回 409，失败全部回滚，旧 Run 保留。原文件落盘和数据库事务是两个操作；上传后保存失败可用同一路径、相同内容重试。上传孤儿对象自动清理尚未实现。
 
-Local-only Demo 不上传、不持久化；刷新清空 Session。Supabase 模式准确提示 **Files are securely stored in your workspace for processing.**；AI 模式会向 Provider 发送有界提取文本。原文件进入私有 Storage，不直接发送给模型。无云配置时 Dashboard 真实统计为 0；示例与 Demo Insights 显式展开。Library 的预置示例可切换。
+## 恢复、审核和展示
 
-## 测试与限制
+通过 `/workspace?workspace=<UUID>` 恢复，Dashboard Recent Workspaces 提供入口。GET 从当前用户数据库结果重建快照与正文引用。
 
-PGlite 运行实际 PostgreSQL 迁移，模拟 Supabase auth/storage 前置环境，验证空库建表、事务保存、版本冲突、租户拒绝与私有 bucket 设置。生产 Playwright 使用持久化接口 fixture 验证上传、自动保存、刷新 Review/Completed、Interrupted Resume 和错误提示。这不能替代真实 Supabase Storage/RLS 云端联调，用户尚无项目配置，该项待配置验收。
+- waiting_for_review：恢复分类、标签、接受/忽略状态及整理建议。
+- completed：恢复已应用文件信息和有效关系，Library / Graph 读取保存结果。
+- planning/running/applying：恢复为 failed + interrupted，显示 Run interrupted；Resume 在同一 Workspace 新建 Run，重用保存的正文与成功分析缓存。
 
-当前最多展示最近 50 个 Workspaces / 1500 份资料；没有分页 UI、完整 Auth、跨设备账号、后台队列、原文件下载界面或上传孤儿对象清理任务。刷新仍处于客户端解析或尚未保存的阶段，未保存的内容无法恢复。断线后的保存以最后成功事务为准；看到 Saved 后刷新可恢复。Supabase 超时 45 秒，失败不会伪装成功。
+Review 以 500 ms debounce 自动保存，显示 Saving / Saved / Save failed。Apply 验证版本、review 状态、完整文档集及引用，仅允许审核范围内的变化；在事务中更新元数据、标签、关系、Proposal 和 Run。Apply 携带最新完整 Proposal，避免遗漏尚未触发自动保存的最后修改。原文件持续保留。
+
+Dashboard 统计使用当前用户数据库 COUNT，展示最近 50 个 Workspaces；Library 查询最多 1500 份资料和标签，Graph 展示规则关系。Local-only Demo 不上传、不持久化，刷新清空 Session；Persistent workspace 的保存与失败提示反映实际状态。
+
+## 迁移和部署
+
+迁移命令读取 .env.local，在单个事务和 advisory lock 内按文件顺序应用 SQL。schema_migrations 记录名称和 SHA-256，Windows/Linux 换行归一化；重复运行跳过已应用版本，已应用内容被修改则拒绝执行。程序不创建数据库，不删除其他项目数据；连接前由使用者选择专用 FileMind 数据库。
+
+复用现有 PostgreSQL 服务时，新增独立数据库即可；数据库、角色和 schema 的层级不同，不需要每个项目重新安装服务。详情见 [配置说明](../setup/postgresql-kimi.md)。
+
+私有文件目录需要持久磁盘并与数据库一起备份。适合本机或持久磁盘的 Node.js 主机；无服务器临时文件系统或多实例没有共享磁盘时，应另外接入对象存储。当前未实现 OSS/COS/S3 adapter、原文件下载 UI 或文件自动清理。
+
+## 验证边界
+
+PGlite 在无 Supabase 前置条件下运行实际 PostgreSQL 迁移和真实仓库逻辑，使用非超级用户、表所有者身份验证 FORCE RLS、跨用户读取/伪造保存/文档与 Step ID 拒绝、事务回滚、版本冲突和恢复。迁移重跑、换行和校验和保护也经验证；文件测试使用真实私有临时目录检查原子写入、重试、拒绝覆盖和路径约束。
+
+生产 Playwright 使用持久化接口 fixture 验证审核、Apply、刷新、Resume、错误提示与本地 Parser。这些测试不等同于真实 PostgreSQL 服务 TCP/TLS、部署磁盘和 Kimi 收费接口联调；真实验收需要用户填写 DATABASE_URL 和 KIMI_API_KEY 后显式运行 test:live。停止于 Phase 4。
