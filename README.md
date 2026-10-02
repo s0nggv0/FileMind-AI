@@ -1,121 +1,97 @@
 # FileMind AI
 
-面向高校学习、研究与项目资料的 AI 文件管理产品。本仓库当前完成 **Phase 3：本地 AI Workspace 与 Agent Workflow Simulation**。支持真实本地文件选择和解析、可见的 Agent 演示执行、Organization Review 和 Human-in-the-loop 确认，应用后的结果可在 Library 和 Graph 查看。首页与 Dashboard 继续保留 Phase 2 演示。尚未连接真实 LLM、Embedding、RAG、Remote Storage 或数据库。
+面向高校学习、研究与项目资料的 AI 文件管理产品。Phase 4 已实现 Persistent Workspace 和 Real LLM Agent Foundation 的代码与离线验收。**当前用户尚未配置 Supabase / OpenAI，真实云端端到端验收仍待配置，不能视为完全达到 Phase 4 完成标准。**
 
-## 本地启动
+保留 Next.js 16.3.8 / React 19.3.0 / TypeScript strict、Tailwind、shadcn/ui、Framer Motion、Zustand 与既有本地 PDF/DOCX/TXT/MD Parser。真实 Agent 基于 AI SDK 7、OpenAI adapter、Zod 和 Supabase。没有 Embedding、pgvector、RAG、OCR、Vision、完整 OAuth 或后台 Job。
 
-需要 Node.js **22.13.0 或以上**（PDF.js 要求），以及 npm。依赖安装在当前项目的 `node_modules`，不会全局安装 Next.js 或 UI 库。
+## Development / Mock Mode
+
+需要 Node.js 22.13.0+。
 
 ```powershell
-npm install
+npm ci
 npm run dev
 ```
 
-开发服务启动后，访问终端输出的地址；默认地址为 `http://localhost:3000`。项目不需要配置 AI 或数据库环境变量。
+没有 `.env.local` 时直接运行 Local-only Demo：不上传文件，规则分析与人工审核可用，刷新清空 Session。默认 AI_ENGINE=mock。配置 Supabase 后，Mock Engine 也支持原文件、正文、Run、Proposal 持久化与恢复。
+
+## Environment Variables
+
+复制 `.env.example` 为 `.env.local`，不要提交 `.env.local` 或真实凭据。
+
+| 变量 | 填写内容 | 需要场景 |
+| --- | --- | --- |
+| NEXT_PUBLIC_SUPABASE_URL | Supabase 项目的 HTTPS URL | 持久化 |
+| SUPABASE_SERVICE_ROLE_KEY | 项目 API 设置中的服务器 service_role / secret key | 持久化，仅服务器 |
+| WORKSPACE_SESSION_SECRET | 至少 32 字节随机密钥，长期保留 | 持久化身份跨重启恢复；生产必需 |
+| NEXT_PUBLIC_SUPABASE_ANON_KEY | anon / publishable key | 本阶段服务器方案不需要，可留空 |
+| AI_ENGINE | mock 或 llm | 默认 mock；真实 AI 填 llm |
+| AI_PROVIDER | openai | 本阶段仅实现 OpenAI |
+| AI_MODEL | gpt-4.1-mini 或可用的结构输出/工具调用模型 | Planner 与计划 |
+| AI_SMALL_MODEL | 可留空，复用 AI_MODEL | 文档分析 |
+| OPENAI_API_KEY | OpenAI 项目 API Key | 真实 AI，仅服务器 |
+| WORKSPACE_COOKIE_SECURE | true | HTTPS；本地 HTTP 生产预览可设 false |
+| GEMINI_API_KEY / DEEPSEEK_API_KEY | 留空 | 未来 adapter 预留 |
+
+生成 WORKSPACE_SESSION_SECRET：`node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"`。把结果写入本地环境文件，不发送到聊天。没有 NEXT_PUBLIC 的模型密钥变量。Service Role 不进入客户端 bundle。
+
+## Supabase Setup / Database Migration
+
+1. 创建 Supabase 项目，在 API 设置取得项目 URL 和服务器密钥，写入 `.env.local`。
+2. 执行版本管理的 SQL：`supabase/migrations/202610020001_phase4_workspace.sql`。可以把完整 SQL 放入 Supabase SQL Editor 执行；已有 Supabase CLI 的环境也可 link 项目后 `supabase db push`。不手工单独建表。
+3. 迁移创建 profiles、workspaces、documents、agent_runs、agent_steps、organization_proposals、document_tags、document_relations，并创建私有 documents bucket。不要把 bucket 改为 Public。
+4. 配置固定 WORKSPACE_SESSION_SECRET，重启服务。每个浏览器拥有独立服务器签发的 Demo 用户；没有 OAuth。清 Cookie 或换浏览器会产生不同身份。
+5. 先用 AI_ENGINE=mock 检查上传、保存和刷新，确认持久化后再启用 LLM。
+
+原文件由同源安全上传 API 写入私有 Storage。路径是 userId/workspaceId/documentId/original.ext。PDF/DOCX 不直接发送给模型，仍在浏览器解析。云端模式会存储原文件与提取正文；真实 AI 会将有界提取文本发送给 Provider。UI 准确区分 Local-only Demo 和 Persistent workspace。
+
+## AI Provider Setup / LLM Mode
+
+填入 OPENAI_API_KEY、AI_ENGINE=llm、AI_PROVIDER=openai、AI_MODEL=gpt-4.1-mini，重启 `npm run dev`。AI_SMALL_MODEL 可留空或选择相应可用小模型。至少需要已迁移的 Supabase 项目。
+
+上传 → 本地解析 → 私有持久化 → 真实 Planner Tool Calling → 合并文档分析 → 确定性重复/关系检查 → 严格计划校验 → Review → 自动保存 → Apply → 刷新恢复。Provider 错误会明确降级为 basic local organization，所有原文件保留。模型不会自动 Apply 或删除资料。
+
+## Validation
 
 ```powershell
 npm run typecheck
 npm run lint
-npm run build
-npm run start
 npm run test
+npm run build
 npm run test:e2e
 ```
 
-`typecheck` 检查严格 TypeScript 类型，`lint` 执行 ESLint，`build` 生成生产构建；`start` 需要先完成 `build`。已有锁文件的环境可使用 `npm ci` 重现依赖版本。
+领域测试包含实际 PostgreSQL WASM 迁移与事务测试、OpenAI 请求格式 fixture、Schema / Injection Boundary / 重试 / 降级 / 身份检查。生产浏览器测试使用独立 3074 端口，每次启动当前构建，不复用旧服务器；测试接口 fixture 不请求收费 Provider。
 
-`predev` / `prebuild` 自动准备同源 PDF Worker、CMaps、字体和 Wasm，不使用第三方 CDN。`test` 验证 Workspace 领域状态与恢复；`test:e2e` 在 build 后自动启动/复用 3073 端口生产服务。Windows 使用已安装的 Edge；其他环境可先 `npx playwright install chromium`，也可设置 `PLAYWRIGHT_BROWSER_EXECUTABLE`。
+配置云端服务后可运行 **真实验收**：
 
-项目 `.npmrc` 将 npm 缓存设为本目录的 `.npm-cache`，使用 `registry.npmmirror.com`，并保存精确依赖版本。缓存目录与 `node_modules` 均不应提交到 Git。
-
-## 技术与设计基础
-
-| 项目 | 当前配置 |
-| --- | --- |
-| 应用框架 | Next.js 16.3.8，App Router |
-| 组件运行时 | React / React DOM 19.3.0 |
-| 类型检查 | TypeScript strict |
-| 样式 | Tailwind CSS 4.3.3，PostCSS，CSS 设计变量 |
-| 基础组件 | shadcn/ui `new-york` 风格，本地拥有源码 |
-| 交互基础 | Radix UI、cmdk、class-variance-authority |
-| 图标与动效 | Lucide Icons、Framer Motion |
-| UI 与业务状态 | Zustand，命令面板/导航偏好、Workspace Run、Review 和 Session 结果 |
-| 本地解析 | Mammoth 1.13.0 / PDF.js 6.3.289 / 浏览器 File 与 ImageBitmap API |
-| 主题与反馈 | next-themes、Sonner |
-
-shadcn/ui 已通过 `components.json` 配置别名、样式和 Lucide 图标；基础组件以手工安装方式放在 `src/components/ui`，可以直接审阅和修改。它不是需要在页面运行时加载的独立 UI 服务。
-
-设计系统采用克制的中性色、单一主题强调色、明确的排版层级和边界。颜色、背景、边框与焦点样式集中在 `src/app/globals.css`；按钮、输入、徽章、弹窗、命令面板、提示和骨架共用基础组件。界面提供浅色、深色与系统主题，并尊重系统的减少动态效果偏好。
-
-## 页面路由
-
-| 路由 | 页面 | 当前范围 |
-| --- | --- | --- |
-| `/` | Landing | 独立 Marketing Layout、九个产品介绍与演示模块 |
-| `/dashboard` | Overview | 知识概览、AI Insight、最近资料、活动时间线、主题与三个快捷入口 |
-| `/workspace` | Workspace | 真实本地选择/解析、七工具演示、Review、Apply 和错误恢复 |
-| `/library` | Library | 已应用 Session 文档与示例切换、关键词与分类筛选 |
-| `/search` | AI Search | 提问框、建议问题及来源卡片布局 |
-| `/graph` | Knowledge Graph | 已应用 Run 的规则关系与示例图谱切换 |
-| `/cleanup` | Smart Cleanup | 整理建议与差异预览 |
-| `/settings` | Settings | 主题偏好和基础状态展示 |
-
-所有业务示例均来自独立数据层。Dashboard 的文件数、主题数、关系数与待审阅数由数组计算，页面组件不直接保存业务 Mock 数据。首页的 12 文件样例与 Dashboard 的 6 份资料是独立演示数据集；两处均明确标注演示范围。
-
-## 目录职责
-
-```text
-src/
-  app/                  App Router 页面、Layout、全局样式及路由级状态
-  components/
-    ui/                 本地 shadcn/ui 基础组件
-    shell/              Sidebar、Topbar、品牌与主题 Provider
-    command-palette/    全局命令面板
-    common/             页标题和演示说明等共用内容
-    feedback/           Loading、Empty、Error、Skeleton
-    motion/             动效边界
-  features/             按产品功能拆分的页面内容与交互
-  hooks/                键盘快捷键等浏览器交互
-  lib/                  导航配置与通用工具
-  mocks/                开发阶段的独立演示数据
-  services/             数据访问边界，当前读取 mocks
-  store/                最小化全局 UI 状态
-  types/                严格 TypeScript 数据契约
-docs/
-  superpowers/specs/    已确认的产品与技术设计
-  phase-checklists/     阶段验收记录和文件索引
+```powershell
+npm run test:live
 ```
 
-页面与基础 Layout 优先使用 Server Components；命令面板、主题、移动导航、文件选择、筛选和图谱交互在局部 Client Components 中实现。示例数据从 `services/demo-repository.ts` 读取后传给功能组件，使将来的数据库接入可以保持清晰的数据边界。错误边界按 Next.js 要求使用 Client Component。
+此命令在 3075 启动开发服务，上传四份专用合成 Fixtures：Transformer Notes.pdf、NLP Lecture.md、final2.docx、research.txt，执行真实 LLM、修改审核、刷新、Apply、Library 与无权限访问检查。**会调用收费模型并留下测试 Workspace，只有在你主动运行时才执行。** 当前尚未运行该云端测试。Windows 默认使用已安装 Edge；其他系统安装 Playwright Chromium，或配置 PLAYWRIGHT_BROWSER_EXECUTABLE。
 
-完整基础文件索引见 [Phase 1 文件清单](docs/phase-checklists/phase1-files.md)。历史验收记录见 [Phase 1 检查表](docs/phase-checklists/phase-1.md) 和 [Phase 2 检查表](docs/phase-checklists/phase2.md)。当前状态机、AgentEngine 接口、解析限制、人工审阅语义、测试和提交见 [Phase 3 检查表](docs/phase-checklists/phase3.md)。
+`predev` / `prebuild` 准备同源 PDF Worker/CMaps/字体/Wasm，避免第三方 CDN。生产启动使用 `npm run build` 后 `npm run start`。已有 lockfile 的环境用 npm ci。
 
-当前已通过 `npm run build`、`npm run typecheck`、`npm run lint`，8 项领域测试和 8 项生产浏览器测试通过。Phase 3 的 Workspace 在 1440、1280、768 和 390px 宽度验收，混合文件解析、人工修改、Apply、Library/Graph、取消/重试/跳过、深色主题与减少动态效果通过，浏览器控制台零错误。既有阶段验收记录仍保留。Phase 3 本机生产预览使用 `http://127.0.0.1:3073`。
+## 页面与实现边界
 
-## 基础交互
+| 路由 | 当前行为 |
+| --- | --- |
+| / | 既有产品演示 |
+| /dashboard | 真实保存统计、Recent Workspaces、公开活动；空数据展示 Empty State；示例和 Demo Insights 显式展开 |
+| /workspace | 新 Workspace 或现有本地演示 |
+| /workspace?workspace=UUID | 按当前 Demo 用户从服务器恢复；Interrupted 明确提示 Resume |
+| /library | 已保存基础详情与当前 Session，预置示例可切换 |
+| /graph | 保存的规则关系与显式示例，无语义相似度 |
+| /search /cleanup | 原有演示，不是 RAG 或真实语义检索 |
+| /settings | 主题和界面状态预览 |
 
-- `Cmd + K` 或 `Ctrl + K` 打开和关闭 Command Palette。
-- 命令面板支持键盘搜索、方向键选择和 Enter 跳转；按 Esc 关闭。
-- Sidebar 显示当前路由；移动端通过 Topbar 按钮打开导航。
-- Library 对示例文档提供本地关键词和分类筛选。
-- Workspace 支持选择、拖放、移除和清空，校验格式、MIME、20 MB 与 30 文件上限；TXT/MD/PDF/DOCX 提取纯文本，PNG/JPG/JPEG 读取尺寸。
-- Organize with FileMind 驱动 Planner、实时 Tools / Activity / 文件状态，失败可 Retry/Skip/Restart，执行中可 Cancel。
-- Review 可以移动分类、增删标签、接受/忽略/撤销建议；Apply 只改变本浏览器 Session 数据，原文件不变，结果可在 Library / Graph 查看。
-- Landing Agent 使用预设样例自动播放一次，支持暂停、继续与重播；系统减少动态效果时显示完整静态结果。
-- Landing 提供命名建议、预设语义结果、知识节点与清理差异的局部交互，状态刷新后重置。
-- Dashboard 最近资料、活动与主题使用已有 Library 详情预览；没有尚未实现的详情路由。
-- Loading、Empty、Error 和 Skeleton 为可复用组件；路由级 loading/error 已预留。
+最大 30 文件，每个 20 MB；PDF 200 页 / 250,000 字符。长文 AI 抽样最多 18,000 字符，最多并发 3 次分析，Agent 最多 15 次工具调用、240 秒。不显示隐藏 reasoning。Review 500 ms 自动保存；Apply 原子保存元数据与有效关系，原文件不修改、不删除。
 
-## 当前实现边界
+生产持久化要求稳定 Secret 和浏览器 Cookie。无完整账号、跨设备身份或后台任务；刷新正在执行的 Run 会显示 Interrupted，Resume 重跑 Planner 并复用缓存。未保存的客户端解析数据无法恢复。当前无 Storage 下载 UI、自动清理孤儿对象或分页 UI。
 
-No file is uploaded to a remote server in this phase. 真实文件只在浏览器解析，不执行 HTML/JavaScript/宏；File 与提取正文留在服务层，不放入 Zustand 或 LocalStorage。Reset 释放当前文件与提取正文，已应用的元数据/短摘要快照保留至刷新。
-
-Agent Workflow Simulation 的 `read_document` 执行真实解析，其余分析使用文件名与前 500 字关键词规则；摘要为提取片段。重复候选只依据名称归一化，接受不删除任何文件。图片命名只用日期/ID，没有 OCR 或 Vision。PDF 最多提取 200 页 / 250,000 字符，扫描 PDF 无文字识别、加密 PDF 没有密码输入。人工修改标签/分类不会自动重算原始关系建议，仍需审阅关联。
-
-当前不包含真实 LLM、Embedding、RAG、Remote Storage、Supabase、pgvector、认证、语义相似度或本机文件操作。AI Search 和 Cleanup 仍为原有演示，Graph 复用 SVG 预览，没有 React Flow 或后台数据库。浏览器 DOCX 解压可能占用主线程，尚未完成大型文件压力验证。
-
-**Phase 3 已完成，当前停止于此阶段。** Phase 4 等待用户明确启动；优先设计文档/Run/审阅状态持久化与恢复，再通过可替换 AgentEngine 接入真实能力，不自动开展。
+架构：[AI Provider](docs/architecture/ai-provider.md)、[Persistence](docs/architecture/persistence.md)。验收：[Phase 4](docs/phase-checklists/phase4.md)。既有 [Phase 1](docs/phase-checklists/phase-1.md)、[Phase 2](docs/phase-checklists/phase2.md)、[Phase 3](docs/phase-checklists/phase3.md) 历史保留。Phase 4 后停止，不自动进入 Phase 5。
 
 ## Git 提交约定
 
-比赛要求保留完整 Git 提交历史。后续开发按可独立审阅和验收的改动持续提交，修复与调整单独记录；每次提交前执行对应验证，阶段结束时完成整体检查。已验证的任务提交通过普通 Push 同步到 GitHub 的对应分支。保留既有提交，未经明确要求不重写历史。具体规则见 [AGENTS.md](AGENTS.md)。
+按照 [AGENTS.md](AGENTS.md)，将可独立验收的任务改动持续 Commit，验证后普通 Push；保留已有历史，不 amend/squash/rebase，不提交凭据、依赖或临时验收文件。网络不可达时如实记录本地提交与远端同步差异。
