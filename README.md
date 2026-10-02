@@ -1,10 +1,10 @@
 # FileMind AI
 
-面向高校学习、研究与项目资料的 AI 文件管理产品。本仓库当前完成 **Phase 2：Landing Page 与个人知识 Dashboard**。首页提供可暂停与重播的 Agent 演示、四项能力交互、知识关联与清理审阅；Dashboard 展示示例知识空间的资料状态、Insights、最近资料、活动与主题。尚未连接 AI API 或数据库。
+面向高校学习、研究与项目资料的 AI 文件管理产品。本仓库当前完成 **Phase 3：本地 AI Workspace 与 Agent Workflow Simulation**。支持真实本地文件选择和解析、可见的 Agent 演示执行、Organization Review 和 Human-in-the-loop 确认，应用后的结果可在 Library 和 Graph 查看。首页与 Dashboard 继续保留 Phase 2 演示。尚未连接真实 LLM、Embedding、RAG、Remote Storage 或数据库。
 
 ## 本地启动
 
-需要 Node.js **20.9.0 或以上**，以及 npm。依赖安装在当前项目的 `node_modules`，不会全局安装 Next.js 或 UI 库。
+需要 Node.js **22.13.0 或以上**（PDF.js 要求），以及 npm。依赖安装在当前项目的 `node_modules`，不会全局安装 Next.js 或 UI 库。
 
 ```powershell
 npm install
@@ -18,9 +18,13 @@ npm run typecheck
 npm run lint
 npm run build
 npm run start
+npm run test
+npm run test:e2e
 ```
 
 `typecheck` 检查严格 TypeScript 类型，`lint` 执行 ESLint，`build` 生成生产构建；`start` 需要先完成 `build`。已有锁文件的环境可使用 `npm ci` 重现依赖版本。
+
+`predev` / `prebuild` 自动准备同源 PDF Worker、CMaps、字体和 Wasm，不使用第三方 CDN。`test` 验证 Workspace 领域状态与恢复；`test:e2e` 在 build 后自动启动/复用 3073 端口生产服务。Windows 使用已安装的 Edge；其他环境可先 `npx playwright install chromium`，也可设置 `PLAYWRIGHT_BROWSER_EXECUTABLE`。
 
 项目 `.npmrc` 将 npm 缓存设为本目录的 `.npm-cache`，使用 `registry.npmmirror.com`，并保存精确依赖版本。缓存目录与 `node_modules` 均不应提交到 Git。
 
@@ -35,7 +39,8 @@ npm run start
 | 基础组件 | shadcn/ui `new-york` 风格，本地拥有源码 |
 | 交互基础 | Radix UI、cmdk、class-variance-authority |
 | 图标与动效 | Lucide Icons、Framer Motion |
-| UI 状态 | Zustand，仅管理命令面板和移动导航开关 |
+| UI 与业务状态 | Zustand，命令面板/导航偏好、Workspace Run、Review 和 Session 结果 |
+| 本地解析 | Mammoth 1.13.0 / PDF.js 6.3.289 / 浏览器 File 与 ImageBitmap API |
 | 主题与反馈 | next-themes、Sonner |
 
 shadcn/ui 已通过 `components.json` 配置别名、样式和 Lucide 图标；基础组件以手工安装方式放在 `src/components/ui`，可以直接审阅和修改。它不是需要在页面运行时加载的独立 UI 服务。
@@ -48,10 +53,10 @@ shadcn/ui 已通过 `components.json` 配置别名、样式和 Lucide 图标；�
 | --- | --- | --- |
 | `/` | Landing | 独立 Marketing Layout、九个产品介绍与演示模块 |
 | `/dashboard` | Overview | 知识概览、AI Insight、最近资料、活动时间线、主题与三个快捷入口 |
-| `/workspace` | Workspace | 本地文件选择与信息预览、Agent 流程骨架 |
-| `/library` | Library | 示例文件列表、关键词与分类筛选 |
+| `/workspace` | Workspace | 真实本地选择/解析、七工具演示、Review、Apply 和错误恢复 |
+| `/library` | Library | 已应用 Session 文档与示例切换、关键词与分类筛选 |
 | `/search` | AI Search | 提问框、建议问题及来源卡片布局 |
-| `/graph` | Knowledge Graph | 示例文档与概念关系布局 |
+| `/graph` | Knowledge Graph | 已应用 Run 的规则关系与示例图谱切换 |
 | `/cleanup` | Smart Cleanup | 整理建议与差异预览 |
 | `/settings` | Settings | 主题偏好和基础状态展示 |
 
@@ -83,9 +88,9 @@ docs/
 
 页面与基础 Layout 优先使用 Server Components；命令面板、主题、移动导航、文件选择、筛选和图谱交互在局部 Client Components 中实现。示例数据从 `services/demo-repository.ts` 读取后传给功能组件，使将来的数据库接入可以保持清晰的数据边界。错误边界按 Next.js 要求使用 Client Component。
 
-完整基础文件索引见 [Phase 1 文件清单](docs/phase-checklists/phase1-files.md)。历史验收记录见 [Phase 1 检查表](docs/phase-checklists/phase-1.md)，本阶段的新增与修改文件、组件结构、验收结果和实现边界见 [Phase 2 检查表](docs/phase-checklists/phase2.md)。
+完整基础文件索引见 [Phase 1 文件清单](docs/phase-checklists/phase1-files.md)。历史验收记录见 [Phase 1 检查表](docs/phase-checklists/phase-1.md) 和 [Phase 2 检查表](docs/phase-checklists/phase2.md)。当前状态机、AgentEngine 接口、解析限制、人工审阅语义、测试和提交见 [Phase 3 检查表](docs/phase-checklists/phase3.md)。
 
-当前已通过 `npm run build`、`npm run typecheck` 和 `npm run lint`。Phase 2 的 Landing 与 Dashboard 已在 1440、1280、768 和 390px 宽度验收，13 个内部链接均返回 200，Agent 播放控制、清理审阅、图谱键盘选择、深色主题、减少动态效果与移动导航均通过，浏览器控制台零错误。Phase 1 的七个产品页面及基础交互验收记录仍保留。当前本机生产预览使用 `http://127.0.0.1:3071`。
+当前已通过 `npm run build`、`npm run typecheck`、`npm run lint`，8 项领域测试和 8 项生产浏览器测试通过。Phase 3 的 Workspace 在 1440、1280、768 和 390px 宽度验收，混合文件解析、人工修改、Apply、Library/Graph、取消/重试/跳过、深色主题与减少动态效果通过，浏览器控制台零错误。既有阶段验收记录仍保留。Phase 3 本机生产预览使用 `http://127.0.0.1:3073`。
 
 ## 基础交互
 
@@ -93,7 +98,9 @@ docs/
 - 命令面板支持键盘搜索、方向键选择和 Enter 跳转；按 Esc 关闭。
 - Sidebar 显示当前路由；移动端通过 Topbar 按钮打开导航。
 - Library 对示例文档提供本地关键词和分类筛选。
-- Workspace 可以选择、拖放和移除本地文件，校验格式及大小，并预览文件信息。
+- Workspace 支持选择、拖放、移除和清空，校验格式、MIME、20 MB 与 30 文件上限；TXT/MD/PDF/DOCX 提取纯文本，PNG/JPG/JPEG 读取尺寸。
+- Organize with FileMind 驱动 Planner、实时 Tools / Activity / 文件状态，失败可 Retry/Skip/Restart，执行中可 Cancel。
+- Review 可以移动分类、增删标签、接受/忽略/撤销建议；Apply 只改变本浏览器 Session 数据，原文件不变，结果可在 Library / Graph 查看。
 - Landing Agent 使用预设样例自动播放一次，支持暂停、继续与重播；系统减少动态效果时显示完整静态结果。
 - Landing 提供命名建议、预设语义结果、知识节点与清理差异的局部交互，状态刷新后重置。
 - Dashboard 最近资料、活动与主题使用已有 Library 详情预览；没有尚未实现的详情路由。
@@ -101,11 +108,13 @@ docs/
 
 ## 当前实现边界
 
-本地文件选择不会上传或保存文件，也不会解析文件正文。Workspace 的分析入口、AI Search 的检索入口和 Cleanup 的执行入口尚未接入实际任务；界面中的说明、流程、来源和差异均为演示内容。
+No file is uploaded to a remote server in this phase. 真实文件只在浏览器解析，不执行 HTML/JavaScript/宏；File 与提取正文留在服务层，不放入 Zustand 或 LocalStorage。Reset 释放当前文件与提取正文，已应用的元数据/短摘要快照保留至刷新。
 
-当前不包含真实 AI 调用、数据库、认证、文件存储、Embedding、语义检索、Agent 工具执行或清理恢复。知识图谱使用独立示例数据和 SVG/浏览器布局，尚未集成 React Flow。示例图谱关系和活动不代表真实模型推断或后台执行结果。
+Agent Workflow Simulation 的 `read_document` 执行真实解析，其余分析使用文件名与前 500 字关键词规则；摘要为提取片段。重复候选只依据名称归一化，接受不删除任何文件。图片命名只用日期/ID，没有 OCR 或 Vision。PDF 最多提取 200 页 / 250,000 字符，扫描 PDF 无文字识别、加密 PDF 没有密码输入。人工修改标签/分类不会自动重算原始关系建议，仍需审阅关联。
 
-后续阶段将在用户明确请求后开展。**Phase 2 已完成，当前停止于此阶段**；Phase 3 的真实 AI Workspace 尚未开始，不自动接入 AI、数据库或进入下一阶段。
+当前不包含真实 LLM、Embedding、RAG、Remote Storage、Supabase、pgvector、认证、语义相似度或本机文件操作。AI Search 和 Cleanup 仍为原有演示，Graph 复用 SVG 预览，没有 React Flow 或后台数据库。浏览器 DOCX 解压可能占用主线程，尚未完成大型文件压力验证。
+
+**Phase 3 已完成，当前停止于此阶段。** Phase 4 等待用户明确启动；优先设计文档/Run/审阅状态持久化与恢复，再通过可替换 AgentEngine 接入真实能力，不自动开展。
 
 ## Git 提交约定
 
