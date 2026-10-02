@@ -1,6 +1,10 @@
 import { z } from "zod";
 import { uploadConfig } from "@/config/upload";
 export const DatabaseTimestampSchema = z.iso.datetime({ offset: true }).transform(value => new Date(value).toISOString());
+export const ParsedStructureSchema = z.object({
+  pages: z.array(z.object({ page: z.number().int().positive(), charStart: z.number().int().nonnegative(), charEnd: z.number().int().nonnegative() })).max(uploadConfig.maxPdfPages).optional(),
+  paragraphs: z.array(z.object({ index: z.number().int().positive(), charStart: z.number().int().nonnegative(), charEnd: z.number().int().nonnegative(), heading: z.string().max(uploadConfig.maxContentCharacters).optional(), level: z.number().int().min(1).max(6).optional() })).max(uploadConfig.maxContentCharacters).optional(),
+});
 
 export const DocumentSchema = z.object({
   id: z.uuid(), name: z.string().min(1).max(255), type: z.enum(["pdf", "docx", "txt", "md", "image"]),
@@ -8,7 +12,7 @@ export const DocumentSchema = z.object({
   contentRef: z.string().max(100).optional(), pageCount: z.number().int().positive().optional(),
   parseStatus: z.enum(["ready", "processing", "completed", "failed", "skipped"]), parseError: z.string().max(1000).optional(),
   contentHash: z.string().regex(/^[a-f0-9]{64}$/).optional(), normalizedTextHash: z.string().regex(/^[a-f0-9]{64}$/).optional(), storagePath: z.string().max(600).optional(),
-  metadata: z.object({ addedAt: z.iso.datetime(), characters: z.number().int().nonnegative().max(uploadConfig.maxContentCharacters).optional(), width: z.number().positive().optional(), height: z.number().positive().optional(), truncated: z.boolean().optional(), warnings: z.array(z.string().max(1000)).max(100).optional() }),
+  metadata: z.object({ addedAt: z.iso.datetime(), characters: z.number().int().nonnegative().max(uploadConfig.maxContentCharacters).optional(), width: z.number().positive().optional(), height: z.number().positive().optional(), truncated: z.boolean().optional(), warnings: z.array(z.string().max(1000)).max(100).optional(), structure: ParsedStructureSchema.optional() }),
 });
 const decision = z.enum(["pending", "accepted", "ignored"]);
 export const OrganizationProposalSchema = z.object({

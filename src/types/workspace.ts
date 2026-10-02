@@ -1,5 +1,6 @@
 import type { DocumentType } from "./documents";
 import type { WorkspaceSnapshot } from "@/lib/workspace/schemas";
+import type { ParsedStructure } from "@/lib/retrieval/types";
 
 export type ParseStatus = "ready" | "processing" | "completed" | "failed" | "skipped";
 // Native Files and extracted text live in the parser service, never in this contract.
@@ -7,7 +8,7 @@ export interface ParsedDocument {
   id: string; name: string; type: DocumentType; mimeType: string; size: number;
   contentRef?: string; pageCount?: number; parseStatus: ParseStatus; parseError?: string;
   contentHash?: string; normalizedTextHash?: string; storagePath?: string;
-  metadata: { addedAt: string; characters?: number; width?: number; height?: number; truncated?: boolean; warnings?: string[] };
+  metadata: { addedAt: string; characters?: number; width?: number; height?: number; truncated?: boolean; warnings?: string[]; structure?: ParsedStructure };
 }
 export type RunStatus = "idle" | "planning" | "running" | "waiting_for_review" | "applying" | "completed" | "failed" | "cancelled";
 export type StepStatus = "pending" | "running" | "completed" | "failed" | "skipped";

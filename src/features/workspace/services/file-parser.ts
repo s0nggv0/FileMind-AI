@@ -1,5 +1,6 @@
 import { uploadConfig } from "@/config/upload";
 import type { ParsedDocument } from "@/types/workspace";
+import type { ParsedStructure } from "@/lib/retrieval/types";
 
 const files = new Map<string, File>();
 const contents = new Map<string, string>();
@@ -39,13 +40,27 @@ export async function parseDocument(document: ParsedDocument, signal: AbortSigna
   }
   let text = ""; let pageCount: number | undefined; let width: number | undefined; let height: number | undefined;
   let truncated = false; let warnings: string[] = [];
+  const structure: ParsedStructure = {};
   if (document.type === "txt" || document.type === "md") {
     text = await file.text();
   } else if (document.type === "docx") {
     const mammoth = await import("mammoth/mammoth.browser");
     signal.throwIfAborted();
-    const result = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
-    text = result.value; warnings = result.messages.map((message) => message.message);
+    const result = await mammoth.convertToHtml({ arrayBuffer: await file.arrayBuffer() });
+    // Parse in an inert document; never render converted HTML. Page numbers in
+    // Word depend on layout, so store headings and paragraph offsets only.
+    const dom = new DOMParser().parseFromString(result.value, "text/html");
+    structure.paragraphs = [];
+    for (const node of dom.querySelectorAll("h1,h2,h3,h4,h5,h6,p,li")) {
+      if (node.tagName === "LI" && node.querySelector("p")) continue;
+      const value = node.textContent ?? "";
+      if (!value.trim()) continue;
+      if (text) text += "\n\n";
+      const charStart = text.length; text += value;
+      const level = /^H[1-6]$/.test(node.tagName) ? Number(node.tagName.slice(1)) : undefined;
+      structure.paragraphs.push({ index: structure.paragraphs.length + 1, charStart, charEnd: text.length, ...(level ? { heading: value, level } : {}) });
+    }
+    warnings = result.messages.map((message) => message.message);
   } else if (document.type === "pdf") {
     const pdfjs = await import("pdfjs-dist");
     pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
@@ -56,11 +71,14 @@ export async function parseDocument(document: ParsedDocument, signal: AbortSigna
     try {
       const pdf = await task.promise; pageCount = pdf.numPages;
       const chunks: string[] = [];
+      structure.pages = [];
       for (let page = 1; page <= Math.min(pdf.numPages, uploadConfig.maxPdfPages); page++) {
         signal.throwIfAborted();
         const data = await (await pdf.getPage(page)).getTextContent();
-        const chunk = data.items.map((item) => "str" in item ? item.str : "").join(" ");
+        const chunk = data.items.map((item) => "str" in item ? item.str + (item.hasEOL ? "\n" : " ") : "").join("");
+        const charStart = text.length + (chunks.length ? 1 : 0);
         chunks.push(chunk); text = chunks.join("\n");
+        structure.pages.push({ page, charStart, charEnd: text.length });
         if (text.length >= uploadConfig.maxContentCharacters) { truncated = page < pdf.numPages; break; }
       }
       truncated ||= pdf.numPages > uploadConfig.maxPdfPages;
@@ -72,10 +90,12 @@ export async function parseDocument(document: ParsedDocument, signal: AbortSigna
   signal.throwIfAborted();
   truncated ||= text.length > uploadConfig.maxContentCharacters;
   text = text.slice(0, uploadConfig.maxContentCharacters);
+  if (structure.pages) structure.pages = structure.pages.filter(p => p.charStart < text.length).map(p => ({ ...p, charEnd: Math.min(p.charEnd, text.length) }));
+  if (structure.paragraphs) structure.paragraphs = structure.paragraphs.filter(p => p.charStart < text.length).map(p => ({ ...p, charEnd: Math.min(p.charEnd, text.length) }));
   contents.set(document.id, text);
   const contentHash = await hashBytes(await file.arrayBuffer());
   const normalized = text.normalize("NFKC").replace(/\s+/g, " ").trim();
   const normalizedTextHash = normalized && !truncated ? await hashBytes(new TextEncoder().encode(normalized).buffer) : undefined;
   signal.throwIfAborted();
-  return { ...document, contentHash, normalizedTextHash, parseStatus: "completed", parseError: undefined, contentRef: document.id, pageCount, metadata: { ...document.metadata, characters: text.length, width, height, truncated, warnings } };
+  return { ...document, contentHash, normalizedTextHash, parseStatus: "completed", parseError: undefined, contentRef: document.id, pageCount, metadata: { ...document.metadata, characters: text.length, width, height, truncated, warnings, structure } };
 }
