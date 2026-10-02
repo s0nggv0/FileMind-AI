@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { WorkspaceSnapshotSchema, OrganizationProposalSchema, recoverSnapshot, type WorkspaceSnapshot } from "../src/lib/workspace/schemas";
+import { DatabaseTimestampSchema, WorkspaceSnapshotSchema, OrganizationProposalSchema, recoverSnapshot, type WorkspaceSnapshot } from "../src/lib/workspace/schemas";
 import { authorizeWorkspace, validateReview } from "../src/lib/workspace/authorization";
 import type { AgentRun } from "../src/types/workspace";
 const id = crypto.randomUUID(); const documentId = crypto.randomUUID();
@@ -29,4 +29,9 @@ test("authorization hides foreign workspace and review cannot forge references o
   const state = snapshot(); const edited = structuredClone(proposal); edited.documents[0].category = "Research"; validateReview(state, edited);
   edited.documents[0].originalName = "forged.txt"; assert.throws(() => validateReview(state, edited));
   assert.throws(() => validateReview(snapshot("completed"), proposal));
+});
+test("PostgreSQL timestamp offsets normalize before domain snapshot validation", () => {
+  assert.equal(DatabaseTimestampSchema.parse("2026-10-02T12:30:00+08:00"), "2026-10-02T04:30:00.000Z");
+  assert.equal(DatabaseTimestampSchema.parse("2026-10-02T04:30:00+00:00"), "2026-10-02T04:30:00.000Z");
+  const value = snapshot(); WorkspaceSnapshotSchema.parse({ ...value, updatedAt: DatabaseTimestampSchema.parse("2026-10-02T04:30:00+00:00") });
 });
