@@ -15,6 +15,7 @@ import { agentPlannerPrompt, PLANNER_PROMPT_VERSION } from "./prompts/agent-plan
 import { documentAnalysisPrompt, DOCUMENT_PROMPT_VERSION } from "./prompts/document-analysis";
 import { ORGANIZATION_PROMPT_VERSION, organizationPlanPrompt } from "./prompts/organization-plan";
 import { DocumentAnalysisSchema, OrganizationOutputSchema, type DocumentAnalysis } from "./schemas";
+import { ToolRegistry } from "./tool-registry";
 
 export interface AnalysisCache { get(key: string): Promise<unknown>; set(documentId: string, key: string, value: DocumentAnalysis): Promise<void> }
 export class LLMAgentRunner {
@@ -100,6 +101,7 @@ export class LLMAgentRunner {
         }, () => "Organization proposal ready · changes require your review");
       },
     };
+    const toolRegistry = ToolRegistry.fromSDK(registry, handlers);
     function applyAnalyses() {
       let newCategory: string | undefined;
       base.documents = base.documents.map(d => {
@@ -114,13 +116,13 @@ export class LLMAgentRunner {
     try {
       run.status = "running";
       for (let turn = 0; turn < aiLimits.maxAgentSteps && !plan; turn++) {
-        signal.throwIfAborted(); const response = await provider.callTools({ system: agentPlannerPrompt, messages, tools: registry, signal }); usage(response.usage); messages.push(...response.messages);
+        signal.throwIfAborted(); const response = await provider.callTools({ system: agentPlannerPrompt, messages, tools: toolRegistry.forModel(), signal }); usage(response.usage); messages.push(...response.messages);
         if (!response.calls.length) throw new AIError("STRUCTURED_OUTPUT", "Planner did not choose a tool.", true, provider.name);
         for (const call of response.calls) {
           if (++calls > aiLimits.maxAgentSteps) throw new AIError("STEP_LIMIT", "Agent reached its step limit.", false, provider.name);
-          if (!Object.hasOwn(handlers, call.name)) throw new AIError("STRUCTURED_OUTPUT", "Planner requested an unavailable tool.", false, provider.name);
+          if (!toolRegistry.has(call.name)) throw new AIError("STRUCTURED_OUTPUT", "Planner requested an unavailable tool.", false, provider.name);
           let result: unknown;
-          try { result = await handlers[call.name](call.input); }
+          try { result = await toolRegistry.execute(call.name, call.input); }
           catch (error) { signal.throwIfAborted(); if (error instanceof WorkspaceError) throw error; const ai = normalizeAIError(error, provider.name); const failed = (toolFailures.get(call.name) ?? 0) + 1; toolFailures.set(call.name, failed); if (!ai.retryable || ai.code !== "STRUCTURED_OUTPUT" || failed > aiLimits.maxToolRetries) throw ai; result = { error: ai.message, retryable: true }; }
           messages.push({ role: "tool", content: [{ type: "tool-result", toolCallId: call.id, toolName: call.name, output: { type: "json", value: JSON.parse(JSON.stringify(result)) } }] });
           if (plan) break;

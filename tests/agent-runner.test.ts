@@ -4,6 +4,8 @@ import type { AIProvider } from "../src/lib/ai/provider";
 import { LLMAgentRunner } from "../src/lib/ai/agent-runner";
 import { WorkspaceSnapshotSchema } from "../src/lib/workspace/schemas";
 import { detectDuplicates } from "../src/features/workspace/services/organization-rules";
+import { ToolRegistry } from "../src/lib/ai/tool-registry";
+import { z } from "zod";
 const doc = { id: crypto.randomUUID(), name: "final2.txt", type: "txt" as const, mimeType: "text/plain", size: 30, parseStatus: "completed" as const, metadata: { addedAt: new Date().toISOString() } };
 const analysis = { summary: "Notes about transformers.", category: "Artificial Intelligence", isNewCategory: false, reason: "Contains transformer notes.", tags: ["Transformer", "NLP", "Attention"], confidence: 0.9, filenameSuggestion: { shouldRename: true, suggestedFilename: "Transformer-Notes.txt", reason: "Generic filename." } };
 const usage = { promptTokens: 10, completionTokens: 5, totalTokens: 15 };
@@ -48,4 +50,11 @@ test("duplicates distinguish binary hash, full normalized text and name matches"
   assert.equal(detectDuplicates([{ ...doc, normalizedTextHash: "b".repeat(64) }, { ...other, normalizedTextHash: "b".repeat(64) }])[0].kind, "text");
   assert.equal(detectDuplicates([doc, { ...other, name: doc.name }])[0].kind, "name");
   assert.equal(detectDuplicates([doc, other]).length, 0);
+});
+test("registry validates before execution and cannot execute unknown or malformed tools", async () => {
+  let executions = 0;
+  const registry = new ToolRegistry([{ name: "read_document", description: "Read", inputSchema: z.object({ documentId: z.uuid() }), execute: async input => { executions++; return input; } }]);
+  assert.throws(() => registry.execute("read_document", { documentId: "../../secret" }));
+  assert.throws(() => registry.execute("shell", { command: "delete" }));
+  assert.equal(executions, 0); await registry.execute("read_document", { documentId: doc.id }); assert.equal(executions, 1);
 });

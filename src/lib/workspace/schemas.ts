@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { uploadConfig } from "@/config/upload";
+export const DatabaseTimestampSchema = z.iso.datetime({ offset: true }).transform(value => new Date(value).toISOString());
 
 export const DocumentSchema = z.object({
   id: z.uuid(), name: z.string().min(1).max(255), type: z.enum(["pdf", "docx", "txt", "md", "image"]),
