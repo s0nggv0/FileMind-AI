@@ -72,8 +72,8 @@ export function createWorkspaceStore(engine: AgentEngine) {
         set({ run: null, proposal: null, fault: "none", documents: get().documents.map((document) => ({ ...document, parseStatus: "ready", parseError: undefined })) });
         await get().start();
       },
-      retry: async (id) => { const run = get().run; if (run) await engine.retryStep(run.id, id, update); },
-      skip: async (id) => { const run = get().run; if (run) await engine.skipStep(run.id, id, update); },
+      retry: async (id) => { const run = get().run; if (run) { try { await engine.retryStep(run.id, id, update); } catch (error) { const message = error instanceof Error ? error.message : "Retry could not be saved."; set({ run: { ...(get().run ?? run), status: "failed", error: message }, saveStatus: "error", errors: [message] }); } } },
+      skip: async (id) => { const run = get().run; if (run) { try { await engine.skipStep(run.id, id, update); } catch (error) { const message = error instanceof Error ? error.message : "Skip could not be saved."; set({ run: { ...(get().run ?? run), status: "failed", error: message }, saveStatus: "error", errors: [message] }); } } },
       editDocument: (id, patch) => {
         const proposal = get().proposal;
         if (!proposal || get().run?.status !== "waiting_for_review") return;
