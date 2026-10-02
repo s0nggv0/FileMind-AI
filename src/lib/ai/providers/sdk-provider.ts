@@ -14,6 +14,15 @@ export class SDKAIProvider implements AIProvider {
   async generateObject<T>(input: GenerationInput & { schema: z.ZodType<T> }) {
     try { const result = await generateText({ ...this.settings(input), output: Output.object({ schema: input.schema }) }); return { object: input.schema.parse(result.output), usage: usage(result.usage) }; } catch (e) { throw normalizeAIError(e, this.name); }
   }
+  async generateObjectStream<T>(input: GenerationInput & { schema: z.ZodType<T>; onAnswer: (answer: string) => void }) {
+    try {
+      const result = streamText({ ...this.settings(input), output: Output.object({ schema: input.schema }) });
+      for await (const partial of result.partialOutputStream) {
+        if (partial && typeof partial === "object" && "answer" in partial && typeof partial.answer === "string") input.onAnswer(partial.answer);
+      }
+      return { object: input.schema.parse(await result.output), usage: usage(await result.usage) };
+    } catch (error) { throw normalizeAIError(error, this.name); }
+  }
   async *streamText(input: GenerationInput) {
     try { for await (const part of streamText(this.settings(input)).textStream) yield part; } catch (e) { throw normalizeAIError(e, this.name); }
   }

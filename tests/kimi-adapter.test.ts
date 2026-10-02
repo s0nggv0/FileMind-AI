@@ -63,3 +63,17 @@ test("Kimi streams only visible text in instant mode", async () => {
   for await (const chunk of provider.streamText({ system: "Summarize", prompt: "Data", signal: signal() })) visible += chunk;
   assert.equal(visible, "Visible summary");
 });
+
+test("structured RAG streaming exposes incremental answer text then validates final schema", async () => {
+  const provider = createKimiProvider({ apiKey: "fixture", models: readModelConfig({}), fetch: async (_url, init) => {
+    const body = JSON.parse(String(init?.body)); assert.equal(body.stream, true); assert.equal(body.response_format.type, "json_schema");
+    const pieces = ['{"answer":"Query', ' Key', ' Value [S1]", "valid":true}'];
+    const events: { id: string; object: string; created: number; model: string; choices: { index: number; delta: { content: string }; finish_reason: string | null }[] }[] = pieces.map(content => ({ id: "structured-stream", object: "chat.completion.chunk", created: 1, model: "kimi-k2.6", choices: [{ index: 0, delta: { content }, finish_reason: null }] }));
+    events.push({ id: "structured-stream", object: "chat.completion.chunk", created: 1, model: "kimi-k2.6", choices: [{ index: 0, delta: { content: "" }, finish_reason: "stop" }] });
+    return new Response(events.map(e => `data: ${JSON.stringify(e)}\n\n`).join("") + "data: [DONE]\n\n", { headers: { "content-type": "text/event-stream" } });
+  } });
+  const drafts: string[] = [];
+  const result = await provider.generateObjectStream!({ system: "Use sources", prompt: "QKV", signal: signal(), schema: z.object({ answer: z.string(), valid: z.boolean() }), onAnswer: text => drafts.push(text) });
+  assert.equal(result.object.answer, "Query Key Value [S1]"); assert.equal(result.object.valid, true);
+  assert.ok(drafts.length > 0); assert.equal(drafts.at(-1), "Query Key Value [S1]");
+});

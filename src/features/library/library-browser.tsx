@@ -11,6 +11,7 @@ import { EmptyState } from "@/components/feedback/empty-state";
 import { cn } from "@/lib/utils";
 import { formatDocumentDate } from "@/features/library/document-presentation";
 import type { DemoDocument } from "@/types";
+import { KnowledgeIndex } from "./knowledge-index";
 
 export function LibraryBrowser({ documents, categories, initialSelectedId, dataset = "example", persistent = false }: { documents: DemoDocument[]; categories: string[]; initialSelectedId?: string; dataset?: "example" | "workspace"; persistent?: boolean }) {
   const [query, setQuery] = useState("");
@@ -46,6 +47,7 @@ export function LibraryBrowser({ documents, categories, initialSelectedId, datas
         <DialogContent className="sm:max-w-lg">
           <DialogHeader><DialogTitle className="break-words pr-5 text-base leading-7">{selected?.name}</DialogTitle><DialogDescription>{dataset === "workspace" ? persistent ? "Workspace 资料详情 · 已保存摘要、分类和标签，原文件保留" : "本地提取摘要 · 分类和标签使用演示规则，原文件未修改" : "示例资料详情 · 没有连接真实原文件"}</DialogDescription></DialogHeader>
           {selected && <div className="space-y-6"><div className="grid grid-cols-3 gap-4 rounded-lg bg-muted/60 p-4"><div><p className="text-[11px] text-muted-foreground">分类</p><p className="mt-1.5 text-xs">{selected.category}</p></div><div><p className="text-[11px] text-muted-foreground">大小</p><p className="mt-1.5 text-xs">{selected.size}</p></div><div><p className="text-[11px] text-muted-foreground">更新日期</p><p className="mt-1.5 text-xs">{formatDocumentDate(selected.updatedAt)}</p></div></div><div><h3 className="text-xs font-medium text-muted-foreground">内容摘要</h3><p className="mt-2 text-sm leading-7">{selected.summary}</p></div><div className="flex flex-wrap gap-2">{selected.tags.map((tag) => <Badge key={tag} variant="secondary">{tag}</Badge>)}</div><div className="flex items-center justify-between border-t border-border pt-4"><span className="flex items-center gap-2 text-xs text-muted-foreground"><Network size={15} /> {selected.relations} 条{dataset === "workspace" ? "规则" : "示例"}关联</span><Button variant="outline" size="sm" asChild><Link href={dataset === "workspace" ? "/graph?source=workspace" : "/graph"}>探索图谱 <ArrowUpRight size={14} /></Link></Button></div></div>}
+          {selected && dataset === "workspace" && persistent && <KnowledgeIndex documentId={selected.id} />}
         </DialogContent>
       </Dialog>
     </div>
