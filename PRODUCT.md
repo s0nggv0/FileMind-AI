@@ -8,7 +8,7 @@ web
 
 ## Stack
 
-User specified Next.js App Router, React, TypeScript strict, Tailwind CSS, shadcn/ui, Lucide, Framer Motion and Zustand. Phase 1 has no real AI or database integration.
+Next.js App Router, React, TypeScript strict, Tailwind CSS, shadcn/ui, Lucide, Framer Motion and Zustand, with private PostgreSQL persistence, Kimi and independent DashScope Embedding.
 
 ## Users
 
@@ -20,7 +20,7 @@ Turn scattered documents into searchable, connected personal knowledge. Import â
 
 ## Capabilities and Constraints
 
-Phase 1 provides layout, navigation, a command palette, shared states and page foundations. All sample content comes from independent demo fixtures. Local file selection does not upload or analyze files. No irreversible operations are available. Later phases add real tools, retrieval and private persistence.
+Phase 5 supports local PDF/DOCX/Markdown/TXT parsing, private original-file storage, reviewed organization, versioned knowledge indexing, personal hybrid retrieval, grounded answers and verified source previews. Ask generates answers; Find returns passages. Search uses only the signed browser identity's saved library. Explicit Mock is labeled; missing services show recoverable errors or genuine lexical results. No OCR, internet RAG, full account login or cross-device identity recovery is included. Existing demo fixtures remain separate from personal knowledge.
 
 ## Brand Commitments
 

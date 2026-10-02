@@ -97,3 +97,13 @@ npm run test:live
 ## Git 提交约定
 
 按照 [AGENTS.md](AGENTS.md)，将可独立验收的任务改动持续 Commit，验证后普通 Push；保留已有历史，不 amend/squash/rebase，不提交凭据、依赖或临时验收文件。网络不可达时如实记录本地提交与远端同步差异。
+
+## Phase 5：个人知识检索与引用
+
+已实现结构化分段、独立 DashScope Embedding、便携向量存储、中英文 Hybrid 检索、确定性重排、Kimi 流式回答与数据库原文引用。Ask 回答、Find 查资料；Apply 后索引，Library 查看状态和重试，Search 可更新索引、追问并刷新恢复。
+
+- [检索配置](docs/setup/knowledge-retrieval.md)：Kimi 与 Embedding 分开配置，本机模型为 qwen3.7-text-embedding-flash / 1024 维。
+- [检索架构](docs/architecture/retrieval.md)：Chunk、RLS、缓存、RRF、RAG、引用验证、退回与限制。
+- [Phase 5 验收](docs/phase-checklists/phase5.md)：真实模型、25 个检索问题、无答案、浏览器与便携复制结果。
+
+真实 Gate 0、Embedding、RAG 与引用点击已通过。专用 PostgreSQL 无 pgvector，使用持久化 real[] 的 PortableVectorStore。便携复制包含 Chunk、向量与检索历史；Key 和私人数据不进入 Git。Phase 5 完成后停止，不自动进入 Phase 6。
