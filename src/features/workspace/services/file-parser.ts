@@ -43,7 +43,8 @@ export async function parseDocument(document: ParsedDocument, signal: AbortSigna
   } else if (document.type === "pdf") {
     const pdfjs = await import("pdfjs-dist");
     pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
-    const task = pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()), useSystemFonts: true });
+    const bytes = new Uint8Array(await file.arrayBuffer()); signal.throwIfAborted();
+    const task = pdfjs.getDocument({ data: bytes, useSystemFonts: true, cMapUrl: "/pdfjs/cmaps/", cMapPacked: true, standardFontDataUrl: "/pdfjs/standard_fonts/", wasmUrl: "/pdfjs/wasm/" });
     const abort = () => { void task.destroy().catch(() => {}); };
     signal.addEventListener("abort", abort, { once: true });
     try {
