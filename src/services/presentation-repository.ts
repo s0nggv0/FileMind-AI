@@ -18,6 +18,7 @@ export function getDashboardPresentation() {
   return {
     ...dashboard,
     overview: getDemoOverview(),
+    topicCount: dashboard.dashboardTopics.length,
     recentFiles: [...getDemoDocuments()].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 4),
     snapshot: "2026.09.30",
   };

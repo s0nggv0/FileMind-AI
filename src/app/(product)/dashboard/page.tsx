@@ -1,9 +1,11 @@
-import { PageHeader } from "@/components/common/page-header";
-import { DemoNote } from "@/components/common/demo-note";
-import { Reveal } from "@/components/motion/reveal";
+import type { Metadata } from "next";
+import { DashboardHeader } from "@/features/dashboard/dashboard-header";
 import { Overview } from "@/features/dashboard/overview";
-import { getDemoOverview, getDemoDocuments, getDemoActivities } from "@/services/demo-repository";
+import { getDashboardPresentation } from "@/services/presentation-repository";
+
+export const metadata: Metadata = { title: "Overview" };
 
 export default function DashboardPage() {
-  return <Reveal className="space-y-7"><PageHeader title="先找到，再组织。" description="欢迎来到你的知识空间。让资料之间的联系，逐渐清晰。" /><DemoNote /><Overview overview={getDemoOverview()} documents={getDemoDocuments()} activities={getDemoActivities()} /></Reveal>;
+  const data = getDashboardPresentation();
+  return <div className="space-y-8"><DashboardHeader snapshot={data.snapshot} /><Overview data={data} /></div>;
 }
