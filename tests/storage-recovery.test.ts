@@ -46,6 +46,18 @@ test("upload commit/revision failure, orphan quarantine and missing reconciliati
     await operations.upload(user,await repository.get(user,saved.id),id,"txt",bytes);
     assert.equal((await recovery.reconcile(user)).referenced,1);
     assert.equal((await readdir(join(root,"quarantine",user))).length,1);
+    // A committed removal can lose its response before quarantine. The startup
+    // protocol finishes it once, while retaining all parsed knowledge.
+    const current=await repository.get(user,saved.id);
+    await assert.rejects(operations.removeOriginal(foreign,saved.id,id,current.revision),/not found/);
+    await assert.rejects(operations.removeOriginal(user,saved.id,id,current.revision-1),/changed/);
+    await assert.rejects(operations.removeOriginal(user,saved.id,id,current.revision,async()=>{throw new Error("simulated response loss");}),/response loss/);
+    const removed=await repository.get(user,saved.id);assert.equal(removed.documents[0].storagePath,undefined);assert.equal(removed.documents[0].storageStatus,"not_stored");assert.equal(removed.texts[id],bytes.toString());
+    assert.ok((await storage.readOriginal({userId:user,workspaceId:saved.id,documentId:id,extension:"txt"})).equals(bytes));
+    assert.equal((await recovery.recover(user)).recovered,1);
+    await assert.rejects(storage.readOriginal({userId:user,workspaceId:saved.id,documentId:id,extension:"txt"}),/not found/);
+    assert.equal((await recovery.recover(user)).recovered,0);
+    assert.ok((await storage.readOriginal({userId:foreign,workspaceId:saved.id,documentId:foreignDoc,extension:"txt"})).equals(Buffer.from("foreign")));
     // Do not follow junction ancestors, and do not create children behind them.
     const outside=join(root,"outside"), junction=join(root,"junction"); await mkdir(outside); await symlink(outside,junction,"junction");
     await assert.rejects(ensureStorageDirectory(join(junction,"escape")),/UNSAFE/);

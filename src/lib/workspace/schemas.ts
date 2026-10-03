@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { uploadConfig } from "@/config/upload";
+import { PlannerMetricsSchema } from "../ai/planner-metrics";
 export const DatabaseTimestampSchema = z.iso.datetime({ offset: true }).transform(value => new Date(value).toISOString());
 export const ParsedStructureSchema = z.object({
   knowledgeSections: z.array(z.object({ charStart: z.number().int().nonnegative(), charEnd: z.number().int().nonnegative(), source: z.enum(["ocr", "vision_summary", "concepts", "mixed"]) })).max(100).optional(),
@@ -8,6 +9,7 @@ export const ParsedStructureSchema = z.object({
 });
 
 export const DocumentSchema = z.object({
+  storageStatus: z.enum(["available", "missing", "not_stored"]).optional(),
   id: z.uuid(), name: z.string().min(1).max(255), type: z.enum(["pdf", "docx", "txt", "md", "image"]),
   mimeType: z.string().max(160), size: z.number().int().min(0).max(uploadConfig.maxFileBytes),
   contentRef: z.string().max(100).optional(), pageCount: z.number().int().positive().optional(),
@@ -27,6 +29,7 @@ export const OrganizationProposalSchema = z.object({
   if (plan.duplicates.some(d => d.documentIds.some(id => !ids.has(id))) || plan.relationships.some(r => !ids.has(r.source) || !ids.has(r.target) || r.source === r.target)) ctx.addIssue({ code: "custom", message: "References must belong to this proposal" });
 });
 export const RunSchema = z.object({
+  plannerMetrics:PlannerMetricsSchema.optional(),
   visionUsage: z.object({ requests: z.number().nonnegative(), latencyMs: z.number().nonnegative(), inputTokens: z.number().nonnegative().optional(), outputTokens: z.number().nonnegative().optional(), totalTokens: z.number().nonnegative().optional() }).optional(),
   id: z.uuid(), status: z.enum(["idle", "planning", "running", "waiting_for_review", "applying", "completed", "failed", "cancelled"]), simulation: z.boolean(), startedAt: z.number(), completedAt: z.number().optional(),
   documents: z.array(DocumentSchema).max(30), steps: z.array(z.object({ id: z.uuid(), title: z.string().max(160), description: z.string().max(500), tool: z.enum(["read_document", "analyze_document", "analyze_image", "summarize_document", "classify_document", "generate_tags", "generate_filename", "detect_duplicates", "build_relationships", "generate_organization_plan"]), status: z.enum(["pending", "running", "completed", "failed", "skipped"]), progress: z.number().min(0).max(100), startedAt: z.number().optional(), completedAt: z.number().optional(), input: z.object({ documentId: z.uuid().optional() }), output: z.string().max(3000).optional(), error: z.string().max(1000).optional() })).max(200),

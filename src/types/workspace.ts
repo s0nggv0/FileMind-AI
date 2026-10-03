@@ -1,13 +1,14 @@
 import type { DocumentType } from "./documents";
 import type { WorkspaceSnapshot } from "@/lib/workspace/schemas";
 import type { ParsedStructure } from "@/lib/retrieval/types";
+import type { PlannerMetrics } from "@/lib/ai/planner-metrics";
 
 export type ParseStatus = "ready" | "processing" | "completed" | "failed" | "skipped";
 // Native Files and extracted text live in the parser service, never in this contract.
 export interface ParsedDocument {
   id: string; name: string; type: DocumentType; mimeType: string; size: number;
   contentRef?: string; pageCount?: number; parseStatus: ParseStatus; parseError?: string;
-  contentHash?: string; normalizedTextHash?: string; storagePath?: string;
+  contentHash?: string; normalizedTextHash?: string; storagePath?: string; storageStatus?: "available" | "missing" | "not_stored";
   metadata: { addedAt: string; characters?: number; width?: number; height?: number; truncated?: boolean; warnings?: string[]; structure?: ParsedStructure };
 }
 export type RunStatus = "idle" | "planning" | "running" | "waiting_for_review" | "applying" | "completed" | "failed" | "cancelled";
@@ -26,6 +27,7 @@ export interface DuplicateCandidate { id: string; documentIds: string[]; reason:
 export interface KnowledgeConnection { id: string; source: string; target: string; reason: string; decision: Decision; kind?: "rule-based" | "ai-inferred" | "shared_concept" | "semantic" }
 export interface OrganizationPlan { documents: ProposalDocument[]; duplicates: DuplicateCandidate[]; relationships: KnowledgeConnection[]; simulation: boolean; summary?: string }
 export interface AgentRun {
+  plannerMetrics?: PlannerMetrics;
   id: string; status: RunStatus; simulation: boolean; startedAt: number; completedAt?: number;
   engine?: "mock" | "llm"; model?: string; promptVersion?: string; interrupted?: boolean; fallback?: string;
   usage?: { promptTokens: number; completionTokens: number; totalTokens: number };

@@ -11,4 +11,5 @@ export interface DemoDocument {
   size: string;
   relations: number;
   indexStatus?: string;
+  storageStatus?: "available" | "missing" | "not_stored";
 }
