@@ -12,7 +12,7 @@ Baseline before implementation: 69/69 unit/integration tests, zero TypeScript er
 
 | Requirement | Current status |
 | --- | --- |
-| Atomic writes, operation journal and tenant isolation | Implementation pending |
+| Atomic writes, operation journal and tenant isolation | Foundation implemented; 71/71 offline tests pass. Operation integrations and physical process-kill verification remain pending. |
 | Upload/Apply/Backup Import/Reindex/Internal Delete recovery | Implementation pending |
 | Storage reconciliation, quarantine and missing-file states | Implementation pending |
 | Real import and reindex process-kill drills | Verification pending |
@@ -27,3 +27,11 @@ Baseline before implementation: 69/69 unit/integration tests, zero TypeScript er
 | Chinese installation-path repair/matrix | Cancelled by user; retained known limitation |
 
 Results are recorded only after the corresponding verification completes. A service outage or skipped test cannot be counted as a successful answer, refusal or acceptance.
+
+## Recovery foundation
+
+The owner-scoped journal stores bounded UUID/hash/path-intent metadata, stage, status, timestamps and public error codes. Production leases use separate PostgreSQL sessions and a separate pool, so idle lock owners cannot exhaust the business-transaction pool. Business data and `committed` must share one transaction. Failed commit acknowledgement never authorizes cleaning a persisted committed operation.
+
+Writes use temporary files, file fsync, close and rename. Immutable originals then publish the durable staging file with an atomic no-replace hard link, retaining cross-process no-overwrite protection; staging is removed after publication. Windows testing verifies the old complete file survives a simulated ENOSPC before publication. This is fault injection, not an actual full disk or power-loss test.
+
+Archive export now selects the existing format's explicit columns, excluding new installation-local storage health and operational fields. Existing Phase 7 backup compatibility is retained. Journal, upload/import integration, startup reconciliation and hard-kill acceptance are separate delivery units.

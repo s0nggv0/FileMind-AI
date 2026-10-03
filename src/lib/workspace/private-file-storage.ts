@@ -1,9 +1,10 @@
 import { createHash, randomUUID } from "node:crypto";
-import { link, lstat, mkdir, readFile, realpath, unlink, writeFile } from "node:fs/promises";
+import { link, lstat, mkdir, readFile, realpath, unlink } from "node:fs/promises";
 import { isAbsolute, join, relative, resolve } from "node:path";
 import { z } from "zod";
 import { uploadConfig } from "@/config/upload";
 import { WorkspaceError } from "./authorization";
+import { atomicWriteFile, withPathMutex } from "../reliability/atomic-file";
 
 function contained(root: string, target: string) {
   const path = relative(root, target);
@@ -42,18 +43,27 @@ export class PrivateFileStorage {
         if (!info.isDirectory() || info.isSymbolicLink() || !contained(root, await realpath(directory))) throw new WorkspaceError("UNAVAILABLE", "Private storage directory is invalid.", 503);
       }
       const target = join(directory, `original.${input.extension}`);
-      const temporary = join(directory, `${randomUUID()}.tmp`);
-      try {
-        await writeFile(temporary, input.bytes, { flag: "wx", mode: 0o600 });
-        // Publishing a hard link is atomic and refuses to overwrite an existing original.
-        await link(temporary, target).catch(async error => {
-          if (error.code !== "EEXIST") throw error;
-          const info = await lstat(target);
-          if (!info.isFile() || info.isSymbolicLink() || info.size !== input.bytes.length) throw new WorkspaceError("CONFLICT", "An original file already exists with different content.", 409);
+      await withPathMutex(target, async () => {
+        const existing = await lstat(target).catch(error => { if (error.code !== "ENOENT") throw error; return null; });
+        if (existing) {
+          if (!existing.isFile() || existing.isSymbolicLink() || existing.size !== input.bytes.length) throw new WorkspaceError("CONFLICT", "An original file already exists with different content.", 409);
           const existingHash = createHash("sha256").update(await readFile(target)).digest("hex");
           if (existingHash !== createHash("sha256").update(input.bytes).digest("hex")) throw new WorkspaceError("CONFLICT", "An original file already exists with different content.", 409);
-        });
-      } finally { await unlink(temporary).catch(() => {}); }
+          return;
+        }
+        // Sync/close/rename creates a complete immutable staging file. Atomic
+        // no-replace hard-link publication also protects callers in other
+        // processes; a rename directly over the original could overwrite it.
+        const staged = join(directory, `${randomUUID()}.ready`);
+        try {
+          await atomicWriteFile(staged, input.bytes);
+          await link(staged, target).catch(async error => {
+            if (error.code !== "EEXIST") throw error;
+            const info = await lstat(target);
+            if (!info.isFile() || info.isSymbolicLink() || info.size !== input.bytes.length || createHash("sha256").update(await readFile(target)).digest("hex") !== createHash("sha256").update(input.bytes).digest("hex")) throw new WorkspaceError("CONFLICT", "An original file already exists with different content.", 409);
+          });
+        } finally { await unlink(staged).catch(error => { if (error.code !== "ENOENT") throw error; }); }
+      });
       return key;
     } catch (error) {
       if (error instanceof WorkspaceError) throw error;
