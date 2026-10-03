@@ -1,0 +1,172 @@
+{
+  "stage": "Phase 8 pre-implementation audit",
+  "createdAt": "2026-10-03T11:16:50.597Z",
+  "platform": "win32",
+  "nodeVersion": "v24.18.0",
+  "postgresqlVersion": "17.11",
+  "method": {
+    "entrypoint": "Node spawn(executable, argumentArray)",
+    "windowsHide": true,
+    "encoding": "UTF8",
+    "locale": "C",
+    "authentication": "scram-sha-256",
+    "workspaceTemporaryDirectory": true,
+    "productionDatabaseAccessed": false,
+    "serverStarted": false,
+    "fixedDriveDependency": false
+  },
+  "cases": [
+    {
+      "name": "ascii",
+      "runtime": "ASCII",
+      "dataDirectory": "ascii/data",
+      "dataPathLength": 69,
+      "share": "default runtime share",
+      "exitCode": 0,
+      "initialized": true,
+      "durationMs": 10201,
+      "failureStage": null,
+      "error": null
+    },
+    {
+      "name": "space",
+      "runtime": "ASCII",
+      "dataDirectory": "FileMind Test/data",
+      "dataPathLength": 77,
+      "share": "default runtime share",
+      "exitCode": 0,
+      "initialized": true,
+      "durationMs": 7145,
+      "failureStage": null,
+      "error": null
+    },
+    {
+      "name": "chinese-data",
+      "runtime": "ASCII",
+      "dataDirectory": "知序AI/data",
+      "dataPathLength": 68,
+      "share": "default runtime share",
+      "exitCode": 0,
+      "initialized": true,
+      "durationMs": 7356,
+      "failureStage": null,
+      "error": null
+    },
+    {
+      "name": "chinese-space-data",
+      "runtime": "ASCII",
+      "dataDirectory": "我的 AI 项目/data",
+      "dataPathLength": 72,
+      "share": "default runtime share",
+      "exitCode": 0,
+      "initialized": true,
+      "durationMs": 7015,
+      "failureStage": null,
+      "error": null
+    },
+    {
+      "name": "long-data",
+      "runtime": "ASCII",
+      "dataDirectory": "long/nested-segment/nested-segment/nested-segment/nested-segment/nested-segment/nested-segment/nested-segment/nested-segment/data",
+      "dataPathLength": 188,
+      "share": "default runtime share",
+      "exitCode": 0,
+      "initialized": true,
+      "durationMs": 7822,
+      "failureStage": null,
+      "error": null
+    },
+    {
+      "name": "chinese-runtime-ascii-data",
+      "runtime": "Chinese + Space",
+      "dataDirectory": "runtime-only/data",
+      "dataPathLength": 76,
+      "share": "default runtime share",
+      "exitCode": 1,
+      "initialized": false,
+      "durationMs": 2684,
+      "failureStage": "post-bootstrap initialization",
+      "error": "invalid byte sequence for encoding UTF8: 0xd4 0xcb"
+    },
+    {
+      "name": "chinese-runtime-and-data",
+      "runtime": "Chinese + Space",
+      "dataDirectory": "测试资料 FileMind/data",
+      "dataPathLength": 77,
+      "share": "default runtime share",
+      "exitCode": 1,
+      "initialized": false,
+      "durationMs": 1411,
+      "failureStage": "post-bootstrap initialization",
+      "error": "invalid byte sequence for encoding UTF8: 0xd4 0xcb"
+    },
+    {
+      "name": "unicode-runtime-ascii-share",
+      "runtime": "Chinese + Space",
+      "dataDirectory": "unicode-runtime-ascii-share/data",
+      "dataPathLength": 91,
+      "share": "explicit ASCII (-L)",
+      "exitCode": 0,
+      "initialized": true,
+      "durationMs": 8419,
+      "failureStage": null,
+      "error": null
+    },
+    {
+      "name": "ascii-runtime-unicode-share",
+      "runtime": "ASCII",
+      "dataDirectory": "ascii-runtime-unicode-share/data",
+      "dataPathLength": 91,
+      "share": "explicit Chinese + Space (-L)",
+      "exitCode": 1,
+      "initialized": false,
+      "durationMs": 1447,
+      "failureStage": "post-bootstrap initialization",
+      "error": "invalid byte sequence for encoding UTF8: 0xd4 0xcb"
+    }
+  ],
+  "finding": "The crossed -L control localizes the initialization failure to using a Chinese share path during post-bootstrap. Chinese data paths succeed with an ASCII runtime/share; the exact PostgreSQL source conversion point and a portable production fix remain unverified.",
+  "acceptanceLimit": "Initialization only. Startup, shutdown, Unicode relocation, Search, real RAG and Citation are not verified by this report. An external ASCII -L path is a diagnostic control, not a portable fix.",
+  "baseline": {
+    "head": "47b4653",
+    "branch": "main",
+    "localTrackingAhead": 0,
+    "localTrackingBehind": 0,
+    "unitIntegrationTests": {
+      "passed": 69,
+      "failed": 0
+    },
+    "typescript": {
+      "errors": 0
+    },
+    "eslint": {
+      "errors": 0,
+      "warnings": 0
+    },
+    "build": "not rerun during pre-implementation audit",
+    "browserTests": "not rerun during pre-implementation audit",
+    "sandbox": "Initial subprocess attempts were blocked by spawn EPERM; authorized execution retry completed the probes and tests."
+  },
+  "preservedUserChanges": [
+    {
+      "path": "README.md",
+      "sha256": "8eacd7e32f76cb0c832dbde28642148000894765efe2367068666b8b0ead7d12"
+    },
+    {
+      "path": "docs/architecture/ai-provider.md",
+      "sha256": "ec5666d3b6b66008bcbd6bab25ed744f589f122d22122a5ea7b5176530ec8abb"
+    },
+    {
+      "path": "docs/architecture/persistence.md",
+      "sha256": "3c9a523e568dafbf643abf1a7d9b105240aa3f33144a715e4536f224a656476b"
+    },
+    {
+      "path": "docs/phase-checklists/phase4.md",
+      "sha256": "36d83cd9fd33f444904e3a3a1a2db8a5a67376742920886c830080900eb8c4d3"
+    },
+    {
+      "path": "docs/setup/postgresql-kimi.md",
+      "sha256": "b228729621d94819f71bbdeca5847ab6e0eba21db2bd1a8ee71c795b4666d77b"
+    }
+  ]
+}
