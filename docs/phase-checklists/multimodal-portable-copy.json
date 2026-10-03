@@ -1,0 +1,18 @@
+{
+  "passed": true,
+  "checkedAt": "2026-10-03T02:11:28.965Z",
+  "fixtureMode": "real Kimi Vision + portable OCR + DashScope + grounded Kimi",
+  "unicodeAndSpaces": true,
+  "rootNodeModulesRequired": false,
+  "globalNodeRequired": false,
+  "chunksRestored": true,
+  "vectorsRestored": true,
+  "citationRestored": true,
+  "searchAfterCopy": true,
+  "simultaneousDatabasesIsolated": true,
+  "imageOriginalRestored": true,
+  "imageAnalysisRestored": true,
+  "imageVectorsRestored": true,
+  "imageSearchAfterCopy": true,
+  "portableOCRAfterCopy": true
+}
