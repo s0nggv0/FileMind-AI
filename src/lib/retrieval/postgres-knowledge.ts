@@ -62,6 +62,13 @@ export class PostgresKnowledgeRepository {
     const result = await this.db.query(scope.userId, `select ${evidenceColumns},0::float as score from filemind.document_chunks c join filemind.documents d on d.id=c.document_id and d.user_id=c.user_id where c.user_id=$1 and c.id=$2 and ($3::uuid is null or c.workspace_id=$3)`, [scope.userId, chunkId, scope.workspaceId ?? null]);
     return result.rows.length ? EvidenceSchema.parse(result.rows[0]) : null;
   }
+  async filenameSearch(scope: RetrievalScope, filename: string): Promise<Evidence[]> {
+    const result = await this.db.query(scope.userId, `select ${evidenceColumns},1::float as "lexicalCoverage",1::float as score
+      from filemind.document_chunks c join filemind.documents d on d.id=c.document_id and d.user_id=c.user_id
+      where c.user_id=$1 and ($2::uuid is null or c.workspace_id=$2) and (lower(d.display_name)=lower($3) or lower(d.original_name)=lower($3))
+      and c.chunk_version=$4 order by c.chunk_index,c.id limit $5`, [scope.userId, scope.workspaceId ?? null, filename, CHUNK_VERSION, retrievalConfig.lexicalTopK]);
+    return z.array(EvidenceSchema).parse(result.rows);
+  }
   async cleanup(scope: RetrievalScope, documentId: string) {
     await this.db.query(scope.userId, `with removed as (delete from filemind.document_chunks where user_id=$1 and document_id=$2 and ($3::uuid is null or workspace_id=$3)), relations as (delete from filemind.document_relations where user_id=$1 and (source_id=$2 or target_id=$2) and ($3::uuid is null or workspace_id=$3)), history as (delete from filemind.retrieval_runs where user_id=$1 and ($3::uuid is null or workspace_id=$3)) update filemind.documents set index_status='not_indexed',indexed_at=null,index_generation=null where user_id=$1 and id=$2 and ($3::uuid is null or workspace_id=$3)`, [scope.userId, documentId, scope.workspaceId ?? null]);
   }

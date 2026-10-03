@@ -4,8 +4,9 @@ import type { Evidence, RetrievalScope } from "./types";
 import { locationLabel } from "./types";
 import { retrievalConfig } from "./config";
 import { normalizeAIError } from "../ai/errors";
+import { EvidenceSufficiencyEvaluator } from "./evidence-sufficiency";
 export const NO_ANSWER = "我没有在你的资料中找到足够依据回答这个问题。";
-export const RAGAnswerSchema = z.object({ answer: z.string().min(1).max(16000), citations: z.array(z.object({ sourceId: z.string().regex(/^S[1-9]\d*$/), chunkId: z.uuid(), documentId: z.uuid() })).max(20), confidence: z.enum(["high", "medium", "low"]), insufficientEvidence: z.boolean() });
+export const RAGAnswerSchema = z.object({ answer: z.string().min(1).max(16000), citations: z.array(z.object({ sourceId: z.string().regex(/^S[1-9]\d*$/), chunkId: z.uuid(), documentId: z.uuid() })).max(20), confidence: z.enum(["high", "medium", "low"]), insufficientEvidence: z.boolean(), evidenceDecision: z.object({ supported: z.boolean(), missingInformation: z.array(z.string().max(300)).max(10) }).optional() });
 export type RAGAnswer = z.infer<typeof RAGAnswerSchema>;
 export interface RAGSource extends Evidence { sourceId: string; location: string }
 export class CitationValidationError extends Error {
@@ -39,11 +40,13 @@ export async function validateCitations(answer: RAGAnswer, sources: RAGSource[],
 }
 export async function generateGroundedAnswer(query: string, evidence: Evidence[], scope: RetrievalScope, provider: AIProvider | null, getSource: (scope: RetrievalScope, id: string) => Promise<Evidence | null>, signal: AbortSignal, onAnswer?: (text: string) => void) {
   const { sources, context } = buildRAGContext(evidence);
-  if (!sources.length) return { answer: { answer: NO_ANSWER, citations: [], confidence: "low", insufficientEvidence: true } as RAGAnswer, sources, unavailable: false };
+  const evaluator = new EvidenceSufficiencyEvaluator();
+  const assessment = evaluator.evaluate(evidence);
+  if (!assessment.sufficient) return { answer: { answer: NO_ANSWER, citations: [], confidence: "low", insufficientEvidence: true } as RAGAnswer, sources, unavailable: false, assessment };
   if (!provider) return { answer: null, sources, unavailable: true };
   let validationStarted = false;
   try {
-    const input = { system: ragSystemPrompt, prompt: JSON.stringify({ query, evidence: JSON.parse(context) }), schema: RAGAnswerSchema, signal };
+    const input = { system: ragSystemPrompt + '\nAlso return evidenceDecision:{supported:boolean,missingInformation:string[]}. This is a source-support decision, not hidden reasoning. Check every requested detail against literal source content. General background does not answer a requested exact numeric value or a diagnosis. If a requested value, entity, or interpretation is absent, list the missing detail, set supported:false and insufficientEvidence:true. Never fill missing details with outside knowledge.', prompt: JSON.stringify({ query, evidence: JSON.parse(context) }), schema: RAGAnswerSchema, signal };
     let generated = onAnswer && provider.generateObjectStream ? await provider.generateObjectStream({ ...input, onAnswer }) : await provider.generateObject(input);
     validationStarted = true;
     let repaired = false;
@@ -55,7 +58,9 @@ export async function generateGroundedAnswer(query: string, evidence: Evidence[]
       generated = await provider.generateObject({ ...input, prompt: JSON.stringify({ query, evidence: JSON.parse(context), formatCorrection: `Previous response failed ${error.code}. Every factual sentence in answer MUST end with literal [S#]. Match every marker to citations with exact chunkId/documentId copied from the supplied source. If unsupported, return insufficientEvidence:true and citations:[].` }) });
       await validateCitations(generated.object, sources, scope, getSource); repaired = true;
     }
-    const answer = generated.object.insufficientEvidence ? { answer: NO_ANSWER, citations: [], confidence: "low" as const, insufficientEvidence: true } : generated.object;
-    return { answer, sources, unavailable: false, repaired };
+    const cited = evidence.filter(e => generated.object.citations.some(c => c.chunkId === e.id));
+    const finalAssessment = evaluator.evaluate(cited, generated.object.evidenceDecision ?? { supported: !generated.object.insufficientEvidence, missingInformation: [] });
+    const answer = generated.object.insufficientEvidence || !finalAssessment.sufficient ? { answer: NO_ANSWER, citations: [], confidence: "low" as const, insufficientEvidence: true } : { ...generated.object, confidence: finalAssessment.confidence };
+    return { answer, sources, unavailable: false, repaired, assessment: finalAssessment };
   } catch (error) { return { answer: null, sources, unavailable: true, errorCode: validationStarted ? "CITATION_INVALID" : normalizeAIError(error, provider.name).code, validationReason: error instanceof CitationValidationError ? error.code : undefined }; }
 }
