@@ -2,8 +2,8 @@ import "server-only";
 import { Pool } from "pg";
 import { z } from "zod";
 import { WorkspaceError } from "@/lib/workspace/authorization";
-import { storageFailure, type TenantDatabase } from "@/lib/workspace/postgres-repository";
-import { runTenantQuery } from "@/lib/workspace/tenant-query";
+import { storageFailure, type TransactionalTenantDatabase } from "@/lib/workspace/postgres-repository";
+import { runTenantQuery, runTenantTransaction } from "@/lib/workspace/tenant-query";
 
 const shared = globalThis as typeof globalThis & { filemindPool?: Pool };
 export function persistenceConfigured() { return Boolean(process.env.DATABASE_URL?.trim()); }
@@ -20,10 +20,14 @@ function getPool() {
   }
   return shared.filemindPool;
 }
-export const database: TenantDatabase = {
+export const database: TransactionalTenantDatabase = {
   async query(userId, sql, values) {
     z.uuid().parse(userId);
     const client = await getPool().connect().catch(error => { throw storageFailure(error); });
     return runTenantQuery(client, userId, sql, values);
+  },
+  async transaction(userId, work, consistentRead) {
+    const client = await getPool().connect().catch(error => { throw storageFailure(error); });
+    return runTenantTransaction(client, userId, work, consistentRead);
   },
 };

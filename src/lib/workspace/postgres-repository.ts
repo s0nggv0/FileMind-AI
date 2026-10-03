@@ -4,6 +4,10 @@ import { WorkspaceError } from "./authorization";
 import type { WorkspaceRepository } from "./repository";
 
 export interface TenantDatabase { query(userId: string, sql: string, values?: unknown[]): Promise<{ rows: unknown[] }> }
+export interface TransactionQuery { query(sql: string, values?: unknown[]): Promise<{ rows: unknown[] }> }
+export interface TransactionalTenantDatabase extends TenantDatabase {
+  transaction<T>(userId: string, work: (client: TransactionQuery) => Promise<T>, consistentRead?: boolean): Promise<T>;
+}
 export const PostgresDateSchema = z.preprocess(value => value instanceof Date ? value.toISOString() : value, DatabaseTimestampSchema);
 const WorkspaceRow = z.object({ snapshot: z.record(z.string(), z.unknown()), revision: z.number().int(), updated_at: PostgresDateSchema });
 const DocumentRow = z.object({ id: z.uuid(), text_content: z.string(), storage_path: z.string().nullable() });
