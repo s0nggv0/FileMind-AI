@@ -1,0 +1,16 @@
+{
+  "REAL_MULTIMODAL_E2E_VERIFIED": true,
+  "checkedAt": "2026-10-03T02:21:02.864Z",
+  "transformer": true,
+  "whiteboard": true,
+  "originalBytesMatched": true,
+  "imageUserIsolation": true,
+  "refresh": true,
+  "mobile": true,
+  "injection": true,
+  "crossModal": true,
+  "visionCache": true,
+  "citationRetryUi": true,
+  "visionFailureUi": true,
+  "failureUiMode": "injected API response; real pipeline failure is unit tested"
+}
