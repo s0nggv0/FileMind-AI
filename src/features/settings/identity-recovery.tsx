@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Copy, Download, KeyRound, Loader2 } from "lucide-react";
+import { Copy, Download, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 export function downloadNote(text: string, name: string, type = "text/plain") {
@@ -31,7 +31,7 @@ export function IdentityRecovery() {
     finally { setBusy(false); }
   }
   return <section className="border-t pt-7" aria-labelledby="identity-heading">
-    <div className="flex flex-wrap items-start justify-between gap-3"><div><h2 id="identity-heading" className="text-base font-semibold">Identity &amp; Recovery</h2><p className="mt-2 max-w-2xl text-sm leading-7 text-muted-foreground">清除 Cookie 或更换浏览器后，用恢复密钥找回同一 FileMind 数据库里的身份和知识空间。</p></div><KeyRound size={20} className="mt-1 text-muted-foreground" /></div>
+    <h2 id="identity-heading" className="text-base font-semibold">Identity &amp; Recovery</h2><p className="mt-2 max-w-2xl text-sm leading-7 text-muted-foreground">清除 Cookie 或更换浏览器后，用恢复密钥找回同一 FileMind 数据库里的身份和知识空间。</p>
     <p role="status" className="mt-4 text-sm">{status ? status.configured ? "Recovery configured" : "Recovery not configured" : "Checking recovery status…"}</p>
     {status && !status.available && <p className="mt-2 text-sm text-muted-foreground">请先配置 FileMind 数据库存储，再使用身份恢复。</p>}
     <div className="mt-4 flex flex-wrap gap-3"><Button variant="outline" disabled={busy || !status?.available} onClick={() => void act(status?.configured ? "rotate" : "create")}>{busy && <Loader2 size={15} className="animate-spin" />}{status?.configured ? "Rotate Recovery Key" : "Create recovery key"}</Button></div>

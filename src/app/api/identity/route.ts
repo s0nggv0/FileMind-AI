@@ -17,9 +17,9 @@ export async function POST(request: Request) {
   try {
     sameOrigin(request);
     if (!persistenceConfigured()) throw new WorkspaceError("UNAVAILABLE", "Identity recovery requires FileMind database storage.", 503);
-    const input = z.discriminatedUnion("action", [z.object({ action: z.literal("create") }).strict(), z.object({ action: z.literal("rotate") }).strict(), z.object({ action: z.literal("recover"), key: z.string().max(200) }).strict()]).parse(await readJSON(request, 1024));
+    const input = z.discriminatedUnion("action", [z.object({ action: z.literal("create") }).strict(), z.object({ action: z.literal("rotate") }).strict(), z.object({ action: z.literal("recover"), key: z.unknown().optional() }).strict()]).parse(await readJSON(request, 1024));
     if (input.action === "recover") {
-      await issueIdentityCookie(await service.recover(input.key));
+      await issueIdentityCookie(await service.recover(typeof input.key === "string" ? input.key : ""));
       return Response.json({ recovered: true }, { headers });
     }
     const userId = await getUserId(input.action === "create");
