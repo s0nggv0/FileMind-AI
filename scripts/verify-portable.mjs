@@ -11,9 +11,9 @@ const source = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const target = join(source, "artifacts/portable copy 验收");
 const { Client } = createRequire(join(source, ".next/standalone/server.js"))("pg");
 let workspace; let user; let cookie; let documentId; let storagePath;
-let indexedChunk; let savedSearch;
+let indexedChunk; let savedSearch; let originalRevision; let imageId; let imagePath; let imageAnalysis; let imageVectors;
 let persistedVector;
-const report = { passed: false, checkedAt: new Date().toISOString(), fixtureMode: "explicit Mock", unicodeAndSpaces: true, rootNodeModulesRequired: false, globalNodeRequired: false, chunksRestored: false, vectorsRestored: false, citationRestored: false, searchAfterCopy: false, simultaneousDatabasesIsolated: false };
+const report = { passed: false, checkedAt: new Date().toISOString(), fixtureMode: "real Kimi Vision + portable OCR + DashScope + grounded Kimi", unicodeAndSpaces: true, rootNodeModulesRequired: false, globalNodeRequired: false, chunksRestored: false, vectorsRestored: false, citationRestored: false, searchAfterCopy: false, simultaneousDatabasesIsolated: false, imageOriginalRestored: false, imageAnalysisRestored: false, imageVectorsRestored: false, imageSearchAfterCopy: false, portableOCRAfterCopy: false };
 const alive = new Map();
 const exists = path => access(path).then(() => true, () => false);
 
@@ -31,7 +31,7 @@ function child(root, args) {
 }
 
 async function start(root, port) {
-  const launched = child(root, ["--port", String(port), "--mock"]);
+  const launched = child(root, ["--port", String(port)]);
   alive.set(root, launched);
   for (let attempt = 0; attempt < 120; attempt++) {
     try {
@@ -71,7 +71,7 @@ async function api(port, path, init = {}) {
   const headers = { origin, ...(cookie ? { cookie } : {}), ...(init.body && !(init.body instanceof FormData) ? { "content-type": "application/json" } : {}) };
   const response = await fetch(origin + path, { ...init, headers });
   if (response.headers.get("set-cookie")) cookie = response.headers.get("set-cookie").split(";")[0];
-  assert.equal(response.ok, true, `HTTP persistence request failed with ${response.status}`);
+  assert.equal(response.ok, true, `HTTP persistence request ${init.method ?? "GET"} ${path} failed with ${response.status}`);
   return response.json();
 }
 
@@ -103,7 +103,10 @@ try {
   documentId = randomUUID();
   const bytes = Buffer.from("Synthetic portable document: persists after the entire folder moves.");
   const document = { id: documentId, name: "relocation.txt", type: "txt", mimeType: "text/plain", size: bytes.length, parseStatus: "completed", contentHash: createHash("sha256").update(bytes).digest("hex"), metadata: { addedAt: new Date().toISOString(), characters: bytes.length } };
-  await api(3083, `/api/workspaces/${workspace}`, { method: "PUT", body: JSON.stringify({ ...snapshot, documents: [document], texts: { [documentId]: bytes.toString() } }) });
+  const imageBytes = await readFile(join(source, "tests/fixtures/rag-hard/images/transformer-slide.png"));
+  imageId = randomUUID();
+  const imageDocument = { id: imageId, name: "transformer-slide.png", type: "image", mimeType: "image/png", size: imageBytes.length, parseStatus: "completed", contentHash: createHash("sha256").update(imageBytes).digest("hex"), metadata: { addedAt: new Date().toISOString() } };
+  await api(3083, `/api/workspaces/${workspace}`, { method: "PUT", body: JSON.stringify({ ...snapshot, documents: [document, imageDocument], texts: { [documentId]: bytes.toString() } }) });
   const form = new FormData();
   form.set("documentId", documentId); form.set("file", new Blob([bytes], { type: "text/plain" }), "relocation.txt");
   const saved = await api(3083, `/api/workspaces/${workspace}/files`, { method: "POST", body: form });
@@ -116,7 +119,7 @@ try {
     const role = (await client.query("select rolsuper,rolcreatedb,rolcreaterole,rolbypassrls from pg_roles where rolname='filemind_user'")).rows[0];
     assert.deepEqual(role, { rolsuper: false, rolcreatedb: false, rolcreaterole: false, rolbypassrls: false });
     assert.equal((await client.query("select count(*)::int as n from pg_database where datname='yunxiu'")).rows[0].n, 0);
-    assert.equal((await client.query("select count(*)::int as n from information_schema.tables where table_schema='filemind'")).rows[0].n, 12);
+    assert.equal((await client.query("select count(*)::int as n from information_schema.tables where table_schema='filemind'")).rows[0].n, 13);
   });
   await db(source, async client => {
     assert.equal((await client.query("select count(*)::int as n from filemind.workspaces")).rows[0].n, 0);
@@ -125,7 +128,15 @@ try {
     assert.equal((await client.query("select count(*)::int as n from filemind.workspaces")).rows[0].n, 1);
     await client.query("rollback");
   }, true);
+  const imageForm = new FormData(); imageForm.set("documentId", imageId); imageForm.set("file", new Blob([imageBytes], { type: "image/png" }), "transformer-slide.png");
+  const imageSaved = await api(3083, `/api/workspaces/${workspace}/files`, { method: "POST", body: imageForm });
+  imagePath = imageSaved.documents.find(d => d.id === imageId).storagePath;
   await api(3083, "/api/index", { method: "POST", body: JSON.stringify({ workspaceId: workspace }) });
+  imageAnalysis = (await api(3083, `/api/images/${imageId}`)).analysis;
+  assert.equal(imageAnalysis.visionStatus, "ready"); assert.equal(imageAnalysis.ocrStatus, "ready");
+  assert.match(imageAnalysis.ocr.text, /Self Attention/i);
+  originalRevision = (await api(3083, `/api/workspaces/${workspace}`)).revision;
+  await db(source, async client => { imageVectors = (await client.query("select chunk_id,embedding,dimensions,model,provider from filemind.chunk_embeddings where user_id=$1 and document_id=$2 order by chunk_id", [user, imageId])).rows; assert.ok(imageVectors.length); });
   const search = await fetch("http://127.0.0.1:3083/api/search", { method: "POST", headers: { origin: "http://127.0.0.1:3083", cookie, "content-type": "application/json" }, body: JSON.stringify({ query: "Synthetic portable document", mode: "ask", workspaceId: workspace }) });
   const events = (await search.text()).split("\n\n").filter(line => line.startsWith("data: ")).map(line => JSON.parse(line.slice(6)));
   savedSearch = events.find(e => e.type === "result")?.data;
@@ -142,6 +153,9 @@ try {
   const restored = await api(3084, `/api/workspaces/${workspace}`);
   assert.equal(restored.texts[documentId], bytes.toString());
   assert.equal((await readFile(join(target, ".filemind/storage", storagePath))).equals(bytes), true);
+  assert.equal((await readFile(join(target, ".filemind/storage", imagePath))).equals(imageBytes), true); report.imageOriginalRestored = true;
+  assert.deepEqual((await api(3084, `/api/images/${imageId}`)).analysis, imageAnalysis); report.imageAnalysisRestored = true;
+  await db(target, async client => { assert.deepEqual((await client.query("select chunk_id,embedding,dimensions,model,provider from filemind.chunk_embeddings where user_id=$1 and document_id=$2 order by chunk_id", [user, imageId])).rows, imageVectors); }); report.imageVectorsRestored = true;
   const restoredSearch = await api(3084, `/api/search?runId=${savedSearch.id}`);
   assert.deepEqual(restoredSearch.answer.citations, savedSearch.answer.citations);
   assert.equal((await api(3084, `/api/search?chunkId=${indexedChunk.id}`)).content, indexedChunk.content);
@@ -151,8 +165,17 @@ try {
   const copiedSearch = await fetch("http://127.0.0.1:3084/api/search", { method: "POST", headers: { origin: "http://127.0.0.1:3084", cookie, "content-type": "application/json" }, body: JSON.stringify({ query: "Synthetic portable document", mode: "ask", workspaceId: workspace }) });
   const copiedEvents = (await copiedSearch.text()).split("\n\n").filter(line => line.startsWith("data: ")).map(line => JSON.parse(line.slice(6)));
   assert.equal(copiedEvents.find(e => e.type === "result")?.data.answer.citations[0].chunkId, indexedChunk.id); report.searchAfterCopy = true;
-  const changed = await api(3084, `/api/workspaces/${workspace}`, { method: "PUT", body: JSON.stringify({ ...restored, name: "Moved folder verified" }) });
-  assert.equal(changed.revision, restored.revision + 1);
+  const imageSearch = await fetch("http://127.0.0.1:3084/api/search", { method: "POST", headers: { origin: "http://127.0.0.1:3084", cookie, "content-type": "application/json" }, body: JSON.stringify({ query: "我的 Transformer 截图中 Query、Key、Value 分别有什么作用？", mode: "ask", workspaceId: workspace }) });
+  const imageEvents = (await imageSearch.text()).split("\n\n").filter(line => line.startsWith("data: ")).map(line => JSON.parse(line.slice(6)));
+  assert.ok(imageEvents.find(e => e.type === "result")?.data.answer?.citations.some(c => c.documentId === imageId)); report.imageSearchAfterCopy = true;
+  // Remove only the synthetic OCR cache so the moved standalone must actually run its bundled worker/languages.
+  await db(target, async client => { await client.query("update filemind.multimodal_analysis set analysis=jsonb_set(analysis,'{ocrCacheKey}',to_jsonb('synthetic-retry'::text)) where user_id=$1 and document_id=$2", [user, imageId]); });
+  await api(3084, "/api/index", { method: "POST", body: JSON.stringify({ documentId: imageId }) });
+  const copiedAnalysis = (await api(3084, `/api/images/${imageId}`)).analysis;
+  assert.equal(copiedAnalysis.usage.requests, 0); assert.equal(copiedAnalysis.ocrStatus, "ready"); assert.match(copiedAnalysis.ocr.text, /Self Attention/i); report.portableOCRAfterCopy = true;
+  const currentRestored = await api(3084, `/api/workspaces/${workspace}`);
+  const changed = await api(3084, `/api/workspaces/${workspace}`, { method: "PUT", body: JSON.stringify({ ...currentRestored, name: "Moved folder verified" }) });
+  assert.equal(changed.revision, currentRestored.revision + 1);
   await db(target, async client => {
     const pidBytes = (await client.query("select pg_read_binary_file('postmaster.pid') as pid_bytes")).rows[0].pid_bytes;
     assert.equal(databasePathMatches(parsePostmasterPid(pidBytes).directory, resolve(target, ".filemind/postgresql/data")), true);
@@ -160,7 +183,7 @@ try {
   await start(source, 3083);
   const original = await api(3083, `/api/workspaces/${workspace}`);
   assert.equal(original.name, "Synthetic relocation verification");
-  assert.equal(original.revision, saved.revision);
+  assert.equal(original.revision, originalRevision);
   const sourcePort = JSON.parse(await readFile(join(source, ".filemind/postgresql/instance.json"), "utf8")).port;
   const targetPort = JSON.parse(await readFile(join(target, ".filemind/postgresql/instance.json"), "utf8")).port;
   assert.notEqual(sourcePort, targetPort);
@@ -181,5 +204,5 @@ try {
     try { await cleanup(root); } catch {}
     try { await stop(root); } catch {}
   }
-  await writeFile(join(source, "docs/phase-checklists/rag-portable-copy.json"), JSON.stringify(report, null, 2) + "\n");
+  await writeFile(join(source, "docs/phase-checklists/multimodal-portable-copy.json"), JSON.stringify(report, null, 2) + "\n");
 }
