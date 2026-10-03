@@ -1,0 +1,3 @@
+A reference cannot outlive its owner
+
+The synthetic Rust study note explains that a borrowed reference must remain valid while its owner exists. A lifetime annotation describes a relationship between reference lifetimes; it does not extend an allocation's actual lifetime. Returning a reference to a local value that is destroyed at function exit is rejected. An owned result can instead transfer ownership to the caller. The note uses get_view() as the example API and distinguishes a borrow from an owning clone.

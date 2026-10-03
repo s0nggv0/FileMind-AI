@@ -1,0 +1,3 @@
+An unchanged representation needs no body
+
+The synthetic HTTP lesson records an ETag validator from a prior representation. A client sends it in If-None-Match when revalidating a GET request. If the representation still matches, the server responds 304 and omits the representation body. The client reuses its stored body under the applicable caching rules. A weak validator expresses semantic equivalence rather than byte-for-byte identity. A validator is not an authorization credential.

@@ -1,0 +1,3 @@
+A skipped question has a reason
+
+The synthetic visitor survey routes respondents to a question only when a prior answer makes it applicable. A skipped field is stored as not applicable with the routing reason, not as a numeric zero. Missing because a person declined and missing because a branch was skipped are different states. Analysis preserves those distinctions. The survey version is attached to each response so a changed branch rule does not silently alter the meaning of old records.

@@ -1,0 +1,3 @@
+A trend can reverse after grouping
+
+The synthetic statistics class compares two fictional workshops. Workshop A has a higher completion rate within both easy and difficult tasks, yet its aggregate rate can be lower if it receives many more difficult tasks. This is a grouping reversal known as Simpson's paradox. The lesson inspects task composition before interpreting a pooled comparison. Grouping by an inappropriate variable can create new bias, so the reversal alone does not select a causal explanation.

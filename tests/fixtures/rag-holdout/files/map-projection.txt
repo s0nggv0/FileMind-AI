@@ -1,0 +1,3 @@
+A flat map must sacrifice something
+
+The synthetic cartography note compares projections that preserve different geometric properties. A conformal projection preserves local angles but can distort area. An equal-area projection preserves area comparisons but changes some shapes. Neither removes every distortion when mapping a curved surface to a plane. The lesson selects a projection according to the map's purpose and states that purpose beside its scale and extent.

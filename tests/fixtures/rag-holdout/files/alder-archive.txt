@@ -1,0 +1,3 @@
+Parity fragments in the archive
+
+The synthetic Alder archive splits an object into six data fragments and adds three parity fragments. A supported erasure code reconstructs the object from any six surviving fragments. Losing four fragments exceeds this configuration's recovery budget. This saves storage compared with keeping nine complete replicas, but reconstruction consumes network and compute work. The policy records fragment placement across separate failure domains. A checksum detects corrupt bytes before a fragment participates in reconstruction.

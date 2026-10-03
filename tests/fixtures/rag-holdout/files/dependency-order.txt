@@ -1,0 +1,3 @@
+A prerequisite blocks a task's start
+
+The synthetic workshop schedule records prerequisites separately from team availability. A paint curing task cannot start before the previous coat is applied, even when a worker is free. A resource calendar describes when that worker is available. The two constraints are combined to produce the schedule. The lesson avoids replacing a dependency with an arbitrary target date and records the reason whenever a task moves.

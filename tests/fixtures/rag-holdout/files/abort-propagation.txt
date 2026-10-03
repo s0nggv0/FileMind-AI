@@ -1,0 +1,3 @@
+Cancellation is cooperative
+
+The synthetic Fetch note shares an AbortSignal with a request and a parser. Aborting the controller tells both stages to stop. The parser checks the signal between expensive steps because cancellation does not automatically interrupt arbitrary synchronous work. AbortController is not a timeout by itself; the lesson creates a separate deadline signal. The catch path distinguishes cancellation from a network failure so a user-requested stop does not appear as a service outage.

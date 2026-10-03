@@ -1,0 +1,3 @@
+Adding a node to a ring
+
+The synthetic Osprey cache places keys on a consistent hashing ring. A key belongs to the next node clockwise from its hash. Adding one node moves keys in the interval it takes over, rather than redistributing every key by a modulo operation. Multiple virtual nodes per physical machine reduce skew. The cache still measures load because equal key counts do not imply equal request rates. Replicas are placed on distinct machines, not merely different positions belonging to the same machine.

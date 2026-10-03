@@ -1,0 +1,3 @@
+Calibrate each probe's offset
+
+The synthetic greenhouse lab compares a moisture probe with a reference measurement at several controlled conditions. A constant offset can be corrected, but a nonlinear response needs more than subtracting one number. The calibration file is probe-calibration-v3.md. Soil composition and temperature can alter the response, so the lab records conditions and verifies the correction after installation. Calibration does not guarantee the probe will never drift later.

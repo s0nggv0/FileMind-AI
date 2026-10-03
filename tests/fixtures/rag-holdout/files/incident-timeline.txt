@@ -1,0 +1,3 @@
+Keep observations separate from hypotheses
+
+The synthetic Otter incident journal records timestamped observations before a proposed explanation. It links each observation to a measured source and labels later hypotheses as tentative. A timeline can show that a configuration change preceded an outage without proving it caused the outage. The review records which evidence supports or contradicts each hypothesis. Corrections append a note to preserve what responders knew at each point.

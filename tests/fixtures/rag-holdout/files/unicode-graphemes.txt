@@ -1,0 +1,3 @@
+One displayed character may be many code points
+
+The synthetic typography note distinguishes bytes, Unicode code points and grapheme clusters. A user-perceived character can contain a base letter and combining marks, or a sequence joined into one emoji. Slicing by code point can still split such a displayed character. Intl.Segmenter with grapheme granularity supplies boundaries for a user-facing cursor or length limit. Normalization can make some canonically equivalent sequences comparable, but it is not a universal way to erase all visual differences.

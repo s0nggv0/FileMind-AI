@@ -1,0 +1,3 @@
+A log must reach disk first
+
+The Kestrel database lab changes an account balance by first writing a log record. The log must be durably flushed before a modified data page can reach persistent storage. After a crash, recovery replays committed log records whose data pages were not written. The lab distinguishes acknowledging a transaction from copying a page into a memory buffer. Its FLUSH_PENDING state means a commit cannot yet be acknowledged. The exercise concerns crash ordering rather than lookup speed.

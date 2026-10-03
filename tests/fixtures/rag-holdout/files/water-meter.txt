@@ -1,0 +1,3 @@
+A pulse is a quantity, not a rate
+
+The synthetic water meter emits one pulse for each 0.25 litre passing through it. Counting pulses estimates total volume. Estimating flow rate also requires the elapsed time over which the pulses occurred. A zero pulse count during a short observation can reflect quantization rather than proof of zero flow. The recorder keeps the meter's pulse scale in its metadata and detects a counter rollover instead of treating it as a negative volume.

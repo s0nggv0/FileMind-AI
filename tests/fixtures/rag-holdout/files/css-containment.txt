@@ -1,0 +1,3 @@
+Limit the scope of layout work
+
+The synthetic web note uses contain: layout to isolate layout relationships within a component. Changes can then require less work outside that subtree. Containment can alter containing blocks and sizing behavior, so the lesson tests sticky elements and intrinsic size. The example reserves size with contain-intrinsic-size when skipped content would otherwise collapse. These properties affect rendering work rather than deciding whether component code runs on a server.

@@ -1,0 +1,3 @@
+Separate a schedule from a legal hold
+
+The synthetic archive policy sets a routine retention period for a class of records. A legal hold suspends routine disposal for specified records until it is released. The archive records who applied the hold and what it covers. A routine expiry date alone does not permit deletion of a held record. This fictional policy is a records-management exercise and provides no jurisdiction-specific legal advice.

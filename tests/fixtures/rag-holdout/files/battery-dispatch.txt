@@ -1,0 +1,3 @@
+Reserve energy for a defined outage
+
+The synthetic island microgrid plan reserves battery charge for an explicitly modeled outage window. A controller schedules optional loads after subtracting that reserve from available energy. Energy capacity and power output constrain different aspects of the plan: a battery may contain sufficient energy but lack the power needed for a simultaneous load spike. The reserve is recalculated when the critical load schedule changes, rather than fixed forever as a percentage.
