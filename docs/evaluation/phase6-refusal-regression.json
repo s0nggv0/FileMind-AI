@@ -1,0 +1,61 @@
+{
+  "checkedAt": "2026-10-03T07:06:41.740Z",
+  "dataset": "Unchanged Phase 6 development corpus, 72 sources",
+  "queries": 2,
+  "results": [
+    {
+      "id": "none-20",
+      "query": "这套数据中未给出的统计功效样本量精确值？",
+      "phase6Failure": "False Answer",
+      "contributors": [
+        "Context Conflict",
+        "Threshold Problem"
+      ],
+      "phase7Refused": true,
+      "route": {
+        "strategy": "VECTOR_ONLY",
+        "reason": "Natural language or ambiguous query without exact-term signals; preserve vector ranking."
+      },
+      "assessment": {
+        "sufficient": false,
+        "confidence": "low",
+        "reasons": [
+          "Retrieved evidence has weak semantic similarity and limited exact-term coverage."
+        ],
+        "evidenceCount": 2,
+        "documentDiversity": 2,
+        "topSemanticScore": 0.4519050929876717,
+        "topEvidenceGap": 0.09776612282888297,
+        "topLexicalCoverage": 0
+      },
+      "errorCode": null
+    },
+    {
+      "id": "none-23",
+      "query": "What is the dental diagnosis from these study slides?",
+      "phase6Failure": "False Answer",
+      "contributors": [
+        "Weak Retrieval",
+        "Threshold Problem"
+      ],
+      "phase7Refused": true,
+      "route": {
+        "strategy": "VECTOR_ONLY",
+        "reason": "Natural language or ambiguous query without exact-term signals; preserve vector ranking."
+      },
+      "assessment": {
+        "sufficient": false,
+        "confidence": "low",
+        "reasons": [
+          "Retrieved evidence has weak semantic similarity and limited exact-term coverage."
+        ],
+        "evidenceCount": 2,
+        "documentDiversity": 2,
+        "topSemanticScore": 0.42508469773917557,
+        "topEvidenceGap": 0.047099646118984595,
+        "topLexicalCoverage": 0
+      },
+      "errorCode": null
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+# Independent held-out retrieval evaluation
+
+The Phase 7 holdout was authored independently: 42 text sources and eight images, 50 original files in total. Formats include TXT, Markdown, one actual DOCX and one actual PDF. Topics include fencing leases, write-ahead logging, Bloom filters, parity fragments, monotonic clocks, Unicode segmentation, optical measurement, archive provenance, museum sensors and synthetic greenhouse operations. These are different knowledge contents from Phase 6, not rewritten copies. All materials are synthetic; no private documents or external scraped material are included.
+
+The 100 labelled queries comprise semantic 14, cross-language 14, hard-negative 21, exact 11, mixed 7, code 3, identifier 2, filename 4, multi-document 8, multimodal 8 and no-answer 8. Categories describe the selected test intent; a semantic Chinese question about an English note is also cross-language in practice. Some topics intentionally have near-neighbour documents or text/image counterparts. This corpus has shorter, more focused text sources than the Phase 6 development corpus; its high aggregate scores must be read in that context.
+
+`tests/fixtures/rag-holdout/freeze.json` records source-byte hashes, corpus hash and normalized source hashes for the analyzer, router, engine, evidence evaluator, RAG prompt, ranking and retrieval configuration. Freeze precedes the live evaluation. The script verifies every hash and refuses another run after a completed report. An initial infrastructure attempt completed real OCR/Vision but found the local database stopped before ranking. After starting that database, the same frozen algorithm, queries and files were used, with reuse of real provider caches. This was an infrastructure recovery, not quality-driven retuning. No production routing change followed the results.
+
+The actual DOCX and PDF are parsed before indexing. Eight images use real Kimi Vision and portable Tesseract OCR. The production chunker, SQL lexical repository, portable cosine vector store and real DashScope model create 66 chunks. The four variants share identical sources and query embeddings. Always Hybrid is raw RRF k=60 without the disabled deterministic reranker. No labels enter the router.
+
+Ranking metrics use distinct documents and the 92 answerable queries. Hit@1/5 and MRR use the first relevant document; Recall@10 and nDCG@10 include all labelled relevant documents, including both sides of comparisons. No-answer accuracy uses eight actual grounded-answer attempts per variant with the same explainable evidence gate and structured Kimi decision. Eight image questions per variant also attempt grounded answering and live citation identity/content validation. Returned-citation validity is distinct from answer factual correctness; refusals and unavailable generations remain separately counted.
+
+| Variant | Hit@1 | Hit@5 | MRR | Recall@10 | nDCG@10 | No-answer | Multimodal Hit@5 |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| Vector Only | 0.9674 | 1.0000 | 0.9837 | 1.0000 | 0.9880 | 8/8 | 8/8 |
+| Lexical Only | 0.5000 | 0.5217 | 0.5063 | 0.5217 | 0.5079 | 8/8 | 4/8 |
+| Always Hybrid | 0.9674 | 1.0000 | 0.9819 | 1.0000 | 0.9865 | 8/8 | 8/8 |
+| Adaptive | 0.9674 | 1.0000 | 0.9837 | 1.0000 | 0.9880 | 8/8 | 8/8 |
+
+Route distribution: Vector Only 86%, Vector + Lexical 5%, Lexical First 5%, Filename 4%. These are observed routing frequencies, not route accuracy. There are no gold strategy labels. Adaptive preserves the Vector metrics here while avoiding lexical calls for 86 queries. The MRR difference from Always Hybrid is small and is not a demonstrated statistically significant improvement.
+
+Returned citations all passed source validation: Vector 11/11, Lexical 6/6, Always Hybrid 11/11, Adaptive 11/11. Image grounded-answer success was respectively 8/8, 2/8, 8/8 and 8/8. There were zero unavailable generations in these attempts; lexical refusals on image questions explain why returned-citation validity does not measure attempted-answer success. The eight correct no-answer decisions do not establish a general 100% refusal accuracy, and answerable false refusals were not comprehensively assessed outside the image questions.
+
+`rag-holdout-results.json` preserves aggregate metrics, every query, per-type results, route signals, top ten documents and structured answer verification. The Phase 6 reports remain unchanged. A separate `phase6-refusal-regression.json` records actual rechecks of the prior two failures on the unchanged 72-source development corpus: both now refuse. They were False Answer failures. Suspected contributors are weak retrieval/threshold handling and, for the missing numeric sample size, confusing related background with the requested detail. The new vector-only retrieval has top similarity 0.4519 and 0.4251; the fixed evidence gate rejects both before model generation. These categories are engineering analysis, not retained model reasoning from the Phase 6 run.
+
+Limitations: 50 synthetic documents, only eight no-answer questions, short focused sources, hand-authored relevance labels, no calibrated confidence, no full factual-entailment audit and no measured gold routing accuracy. Future quality changes require a fresh evaluation set; this holdout must not become a repeated tuning loop.
