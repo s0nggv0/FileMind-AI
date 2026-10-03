@@ -24,7 +24,7 @@ export interface IndexDocument extends RetrievalScope {
   workspaceId: string; id: string; text: string; fileType: string; structure?: ParsedStructure;
 }
 export function locationLabel(chunk: ChunkLocation & { fileType?: string; chunkSource?: string }) {
-  if (chunk.fileType === "image" || (chunk.chunkSource && chunk.chunkSource !== "text")) return chunk.chunkSource === "ocr" ? "OCR region" : "Image";
+  if (chunk.fileType === "image" || (chunk.chunkSource && chunk.chunkSource !== "text")) return chunk.chunkSource === "ocr" ? "Image · OCR text" : "Image";
   if (chunk.pageStart !== null) return chunk.pageStart === chunk.pageEnd ? `P${chunk.pageStart}` : `P${chunk.pageStart}–P${chunk.pageEnd}`;
   const heading = chunk.headingPath.join(" / ");
   if (chunk.paragraphStart !== null) return `${heading ? heading + " · " : ""}Paragraph ${chunk.paragraphStart}–${chunk.paragraphEnd}`;

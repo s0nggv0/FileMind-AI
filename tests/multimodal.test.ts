@@ -57,7 +57,7 @@ test("image chunks preserve distinct provenance and citations never invent page 
   assert.deepEqual(chunks.map(c => c.chunkSource), ["ocr", "vision_summary", "concepts"]);
   assert.ok(chunks.every(c => c.pageStart === null && c.lineStart === null));
   const evidence = chunks.map(c => ({ ...c, documentName: "slide.png", fileType: "image", summary: "", tags: [], score: 1 }));
-  const { sources } = buildRAGContext(evidence); assert.equal(sources[0].location, "OCR region"); assert.equal(sources[1].location, "Image");
+  const { sources } = buildRAGContext(evidence); assert.equal(sources[0].location, "Image · OCR text"); assert.equal(sources[1].location, "Image");
   const answer = { answer: "Attention [S1]", citations: [{ sourceId: "S1", chunkId: chunks[0].id, documentId }], confidence: "low" as const, insufficientEvidence: false };
   await validateCitations(answer, sources, { userId }, async () => evidence[0]);
   await assert.rejects(validateCitations(answer, sources, { userId: randomUUID() }, async () => evidence[0]));
