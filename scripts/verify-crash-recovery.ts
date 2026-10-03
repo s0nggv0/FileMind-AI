@@ -18,6 +18,12 @@ import { PrivateFileStorage } from "../src/lib/workspace/private-file-storage";
 import { BackupService } from "../src/lib/backup/service";
 import { compatibility } from "../src/lib/backup/format";
 import { RecoveryService } from "../src/lib/reliability/recovery";
+import { PostgresKnowledgeRepository } from "../src/lib/retrieval/postgres-knowledge";
+import { PortableVectorStore } from "../src/lib/retrieval/portable-vector-store";
+import { IndexingPipeline } from "../src/lib/retrieval/indexing";
+import { MockEmbeddingProvider } from "../src/lib/retrieval/embedding-provider";
+import { DocumentChunker } from "../src/lib/retrieval/chunker";
+import { buildRAGContext,validateCitations,RAGAnswerSchema } from "../src/lib/retrieval/rag";
 
 const project = resolve(fileURLToPath(new URL("..", import.meta.url)));
 function tenantDatabase(connectionString: string) {
@@ -33,11 +39,17 @@ function tenantDatabase(connectionString: string) {
 function contained(base: string, target: string) { const r=relative(resolve(base),resolve(target)); assert.ok(r && !r.startsWith("..") && !isAbsolute(r),"Drill target must stay in its disposable directory"); }
 async function worker() {
   const connection = process.env.FILEMIND_DRILL_CONNECTION!, root=process.env.FILEMIND_DRILL_ROOT!, user=process.env.FILEMIND_DRILL_USER!, mode=process.env.FILEMIND_DRILL_MODE!;
-  assert.ok(connection && root && user && ["published","before_commit","committed"].includes(mode));
+  assert.ok(connection && root && user && ["published","before_commit","committed","index_build","index_before_publish"].includes(mode));
   assert.ok(resolve(root).startsWith(resolve(tmpdir()) + "\\") || resolve(root).startsWith(resolve(tmpdir()) + "/"));
   const {tenant,close}=tenantDatabase(connection);
   const barrier=async () => { process.stdout.write("DRILL_BARRIER\n"); await new Promise<void>(()=>{setInterval(()=>{},10000);}); };
   try {
+    if(mode.startsWith("index_")) {
+      const repository=new PostgresKnowledgeRepository(tenant,new DocumentChunker({chunkTargetTokens:400,chunkMaxTokens:600,overlapTokens:100}));
+      const doc=(await repository.documents({userId:user},process.env.FILEMIND_DRILL_DOCUMENT!))[0];
+      await new IndexingPipeline(repository,new PortableVectorStore(tenant),new MockEmbeddingProvider(),{EMBEDDING_BATCH_SIZE:"1",EMBEDDING_CONCURRENCY:"1"},{storageRoot:join(root,"storage"),forceFreshVectors:true,checkpoint:async(stage,progress)=>{if(mode==="index_build"&&stage==="built"&&progress>=0.3 || mode==="index_before_publish"&&stage==="before_publish")await barrier();}}).indexDocument(doc);
+      throw new Error("Index worker reached end without barrier");
+    }
     await new BackupService(tenant,join(root,"storage"),compatibility(null)).import(user,await readFile(join(root,"fixture.filemind-backup")), {
       beforeCommit: mode==="before_commit" ? barrier : undefined,
       checkpoint: async (stage,progress) => { if (stage===mode && (stage==="committed" || progress>=0.3)) await barrier(); },
@@ -77,7 +89,7 @@ async function main() {
     const repository=new PostgresWorkspaceRepository(env.tenant), user=randomUUID(), original=await repository.create(user,"Drill source");
     const documents=[],texts:Record<string,string>={},storage=new PrivateFileStorage(join(root,"storage"));
     for(let n=0;n<10;n++) {
-      const id=randomUUID(),bytes=Buffer.from(`Synthetic recovery record ${n}: checkpoint ${100+n}.`);
+      const id=randomUUID(),bytes=Buffer.from(n===0?"Journal fence checkpoint 211 accepts the complete old index. ".repeat(400):`Synthetic recovery record ${n}: checkpoint ${100+n}.`);
       documents.push({id,name:`record-${n}.txt`,type:"txt" as const,mimeType:"text/plain",size:bytes.length,parseStatus:"completed" as const,contentHash:createHash("sha256").update(bytes).digest("hex"),storagePath:await storage.putOriginal({userId:user,workspaceId:original.id,documentId:id,extension:"txt",bytes}),metadata:{addedAt:new Date().toISOString()}});
       texts[id]=bytes.toString();
     }
@@ -111,6 +123,35 @@ async function main() {
       assert.equal((await startupRecovery([target],Pool,connection,join(root,"storage"))).recovered,0);
       assert.equal(createHash("sha256").update(JSON.stringify(await repository.get(user,original.id))).digest("hex"),priorHash);
       report.checks.push({window:mode,pass:true,status:rows.status,visibleImportedDocuments:count.n,quarantineCount:rows.payload.quarantineIds!.length,repeatRecovery:0,originalOwnerUnchanged:true});
+      process.stdout.write(`Crash recovery ${mode}: PASS\n`);
+    }
+    const provider=new MockEmbeddingProvider(),vectorStore=new PortableVectorStore(env.tenant);
+    const knowledge=new PostgresKnowledgeRepository(env.tenant),doc=(await knowledge.documents({userId:user},documents[0].id))[0];
+    assert.equal((await new IndexingPipeline(knowledge,vectorStore,provider,{}, {storageRoot:join(root,"storage")}).indexDocument(doc)).status,"ready");
+    const queryVector=await provider.embedQuery("Journal fence checkpoint 211");
+    for(const mode of ["index_build","index_before_publish"]) {
+      const previous=await vectorStore.searchSimilar({userId:user,workspaceId:original.id},queryVector,20);
+      const previousIds=previous.map(c=>c.id); assert.ok(previousIds.length>1);
+      const context=buildRAGContext(previous),source=context.sources[0];
+      const answer=RAGAnswerSchema.parse({answer:"The journal fence checkpoint is 211 [S1].",citations:[{sourceId:"S1",chunkId:source.id,documentId:source.documentId}],confidence:"high",insufficientEvidence:false});
+      child=spawn(process.execPath,["--import","tsx",fileURLToPath(import.meta.url),"--worker"],{cwd:project,env:{...process.env,DATABASE_URL:"",FILEMIND_DRILL_CONNECTION:connection,FILEMIND_DRILL_ROOT:root,FILEMIND_DRILL_USER:user,FILEMIND_DRILL_MODE:mode,FILEMIND_DRILL_DOCUMENT:doc.id},windowsHide:true,stdio:["ignore","pipe","pipe"]});
+      let output="";
+      await new Promise<void>((done,failed)=>{const timer=setTimeout(()=>{child?.kill();failed(new Error("Index barrier timed out"));},45000);child!.stdout!.on("data",part=>{output+=part;if(output.includes("DRILL_BARRIER")){clearTimeout(timer);done();}});child!.on("error",e=>{clearTimeout(timer);failed(e);});child!.on("exit",()=>{clearTimeout(timer);failed(new Error("Index worker exited before barrier"));});});
+      assert.equal((await new RecoveryService(env.tenant,join(root,"storage")).recover(user)).active,1);
+      assert.deepEqual((await vectorStore.searchSimilar({userId:user,workspaceId:original.id},queryVector,20)).map(c=>c.id),previousIds);
+      assert.equal((await validateCitations(answer,context.sources,{userId:user},knowledge.getSource.bind(knowledge))).citations.length,1);
+      const operation=(await env.tenant.query(user,"select id from filemind.operation_journal where user_id=$1 and status='running' and operation_type='reindex'",[user])).rows[0] as {id:string};
+      const killed=child,ended=new Promise<void>(done=>killed.once("exit",()=>done()));assert.equal(killed.kill("SIGKILL"),true);await ended;child=undefined;
+      assert.equal((await startupRecovery([user],Pool,connection,join(root,"storage"))).recovered,1);
+      const state=(await env.tenant.query(user,"select index_status,index_build_status from filemind.documents where id=$1",[doc.id])).rows[0] as {index_status:string;index_build_status:string};
+      assert.equal(state.index_status,"ready");assert.equal(state.index_build_status,"interrupted");
+      assert.deepEqual((await vectorStore.searchSimilar({userId:user,workspaceId:original.id},queryVector,20)).map(c=>c.id),previousIds);
+      assert.equal((await validateCitations(answer,context.sources,{userId:user},knowledge.getSource.bind(knowledge))).citations.length,1);
+      assert.equal((await startupRecovery([user],Pool,connection,join(root,"storage"))).recovered,0);
+      const retryRepo:PostgresKnowledgeRepository=new PostgresKnowledgeRepository(env.tenant,new DocumentChunker({chunkTargetTokens:400,chunkMaxTokens:600,overlapTokens:100}));
+      const retryDocument=(await retryRepo.documents({userId:user},doc.id))[0];
+      const retried:Awaited<ReturnType<IndexingPipeline["indexDocument"]>>=await new IndexingPipeline(retryRepo,vectorStore,provider,{}, {storageRoot:join(root,"storage")}).indexDocument(retryDocument);assert.equal(retried.status,"ready");
+      report.checks.push({window:mode,pass:true,operationId:operation.id,oldVectorSources:previousIds.length,oldSourcesAndCitationsPreserved:true,rebuildStatus:state.index_build_status,retryStatus:retried.status,retryChunks:retried.chunks,repeatRecovery:0});
       process.stdout.write(`Crash recovery ${mode}: PASS\n`);
     }
     report.passed=true;

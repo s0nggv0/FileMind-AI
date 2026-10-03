@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { TenantDatabase } from "../workspace/postgres-repository";
 import { CHUNK_VERSION } from "./config";
 import { EvidenceSchema, evidenceColumns } from "./postgres-knowledge";
-import { validateVector, type EmbeddingModelInfo, type EmbeddingResult } from "./embedding-provider";
+import { embeddingCacheKey, validateVector, type EmbeddingModelInfo, type EmbeddingResult } from "./embedding-provider";
 import type { DocumentChunk, Evidence, RetrievalScope } from "./types";
 import { cosineSimilarity, type VectorStore } from "./vector-store";
 export class PortableVectorStore implements VectorStore {
@@ -25,10 +25,11 @@ export class PortableVectorStore implements VectorStore {
   async searchSimilar(scope: RetrievalScope, embedding: EmbeddingResult, topK: number): Promise<Evidence[]> {
     validateVector(embedding.vector, embedding.dimensions);
     if (!Number.isInteger(topK) || topK < 1 || topK > 100) throw new Error("Invalid top K");
+    const scan = async (db:TenantDatabase) => {
     const best: Evidence[] = []; let cursor: string | null = null;
     // Page through the complete accessible index. Keep only top K in memory.
     while (true) {
-      const result = await this.db.query(scope.userId, `select ${evidenceColumns},0::float as score,e.embedding from filemind.chunk_embeddings e
+      const result = await db.query(scope.userId, `select ${evidenceColumns},0::float as score,e.embedding from filemind.chunk_embeddings e
         join filemind.document_chunks c on c.id=e.chunk_id and c.user_id=e.user_id join filemind.documents d on d.id=c.document_id and d.user_id=c.user_id
         where e.user_id=$1 and ($2::uuid is null or e.workspace_id=$2) and e.provider=$3 and e.model=$4 and e.dimensions=$5 and e.chunk_version=$6 and c.chunk_version=$6
         and d.index_status='ready' and d.embedding_provider=$3 and d.embedding_model=$4 and ($7::uuid is null or c.id > $7) order by c.id limit 200`, [scope.userId, scope.workspaceId ?? null, embedding.provider, embedding.model, embedding.dimensions, CHUNK_VERSION, cursor]);
@@ -43,5 +44,23 @@ export class PortableVectorStore implements VectorStore {
       cursor = rows.at(-1)!.id;
     }
     return best;
+    };
+    // One repeatable-read snapshot spans every page. A replacement committed
+    // mid-scan cannot mix old and new chunks in a single retrieval result.
+    if("transaction" in this.db && typeof this.db.transaction==="function") {
+      const db=this.db as import("../workspace/postgres-repository").TransactionalTenantDatabase;
+      return db.transaction(scope.userId,tx=>scan({query:(_u,s,p)=>tx.query(s,p)}),true);
+    }
+    return scan(this.db);
+  }
+  async getCachedEmbeddings(scope: RetrievalScope, chunks: DocumentChunk[], info: EmbeddingModelInfo) {
+    const result=await this.db.query(scope.userId,"select chunk_id,embedding_hash,embedding from filemind.chunk_embeddings where user_id=$1 and ($2::uuid is null or workspace_id=$2) and chunk_id=any($3::uuid[]) and provider=$4 and model=$5 and dimensions=$6 and chunk_version=$7",[scope.userId,scope.workspaceId??null,chunks.map(c=>c.id),info.provider,info.model,info.dimensions,CHUNK_VERSION]);
+    const cached=new Map<string,EmbeddingResult>();
+    for(const row of z.array(z.object({chunk_id:z.uuid(),embedding_hash:z.string(),embedding:z.array(z.number())})).parse(result.rows)) {
+      const chunk=chunks.find(c=>c.id===row.chunk_id);
+      if(!chunk || row.embedding_hash!==embeddingCacheKey(chunk.contentHash,info.provider,info.model,chunk.chunkVersion)) continue;
+      validateVector(row.embedding,info.dimensions); cached.set(row.chunk_id,{...info,vector:row.embedding});
+    }
+    return cached;
   }
 }

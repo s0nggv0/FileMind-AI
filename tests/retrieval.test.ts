@@ -2,8 +2,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { PGlite } from "@electric-sql/pglite";
 import { applyMigrations } from "../scripts/migrate-database.mjs";
-import { PostgresWorkspaceRepository, type TenantDatabase } from "../src/lib/workspace/postgres-repository";
-import { runTenantQuery } from "../src/lib/workspace/tenant-query";
+import { PostgresWorkspaceRepository, type TransactionalTenantDatabase } from "../src/lib/workspace/postgres-repository";
+import { runTenantQuery, runTenantTransaction } from "../src/lib/workspace/tenant-query";
 import { PostgresKnowledgeRepository } from "../src/lib/retrieval/postgres-knowledge";
 import { PortableVectorStore } from "../src/lib/retrieval/portable-vector-store";
 import { MockEmbeddingProvider } from "../src/lib/retrieval/embedding-provider";
@@ -66,7 +66,8 @@ test("real SQL index, cached embeddings, lexical matching, RLS, stale invalidati
   try {
     await applyMigrations({ query: async (sql: string, params?: unknown[]) => params ? db.query(sql, params) : (await db.exec(sql)).at(-1)! });
     await db.exec("create role retrieval_test; grant usage on schema filemind to retrieval_test; grant select,insert,update,delete on all tables in schema filemind to retrieval_test; grant execute on function filemind.save_workspace(uuid,jsonb,integer) to retrieval_test;");
-    const tenant: TenantDatabase = { query: (user, sql, params) => runTenantQuery({ query: async (s, p) => { const result = await db.query(s, p); if (s === "begin") await db.exec("set local role retrieval_test"); return result; }, release() {} }, user, sql, params) };
+    const client=()=>({ query: async (s:string,p?:unknown[])=>{const result=await db.query(s,p);if(s.startsWith("begin"))await db.exec("set local role retrieval_test");return result;},release(){} });
+    const tenant: TransactionalTenantDatabase = { query:(u,s,p)=>runTenantQuery(client(),u,s,p),transaction:(u,w,r)=>runTenantTransaction(client(),u,w,r) };
     const workspaces = new PostgresWorkspaceRepository(tenant), knowledge = new PostgresKnowledgeRepository(tenant), vectors = new PortableVectorStore(tenant);
     const owner = crypto.randomUUID(), attacker = crypto.randomUUID();
     const workspace = await workspaces.create(owner, "Synthetic RAG");
@@ -79,6 +80,18 @@ test("real SQL index, cached embeddings, lexical matching, RLS, stale invalidati
     assert.equal((await pipeline.indexDocument(doc)).status, "ready");
     assert.equal(embeddingCalls, 1);
     assert.equal((await pipeline.indexDocument(doc)).cached, 1); assert.equal(embeddingCalls, 1);
+    const previous=(await knowledge.lexicalSearch({userId:owner},"数据库索引")).map(c=>c.id);
+    const failedProvider={getModelInfo:()=>provider.getModelInfo(),embedQuery:provider.embedQuery.bind(provider),embedDocuments:async()=>{throw new Error("Simulated embedding outage");}};
+    await assert.rejects(new IndexingPipeline(knowledge,vectors,failedProvider,{}, {forceFreshVectors:true}).indexDocument(doc),/previous index remains available/);
+    assert.deepEqual((await knowledge.lexicalSearch({userId:owner},"数据库索引")).map(c=>c.id),previous);
+    assert.equal((await tenant.query(owner,"select index_status from filemind.documents where id=$1",[id])).rows[0] && (await db.query<{index_status:string}>("select index_status from filemind.documents where id=$1",[id])).rows[0].index_status,"ready");
+    await new IndexingPipeline(knowledge,vectors,provider,{}, {checkpoint:async stage=>{if(stage==="before_publish")assert.deepEqual((await knowledge.lexicalSearch({userId:owner},"数据库索引")).map(c=>c.id),previous);}}).indexDocument(doc);
+    const failingDatabase:TransactionalTenantDatabase={...tenant,transaction:(u,work,read)=>tenant.transaction(u,tx=>work({query:async(s,p)=>{
+      if(s.startsWith("insert into filemind.chunk_embeddings"))throw new Error("Simulated publication database failure");
+      return tx.query(s,p);
+    }}),read)};
+    await assert.rejects(new IndexingPipeline(new PostgresKnowledgeRepository(failingDatabase),vectors,provider).indexDocument(doc),/unavailable/);
+    assert.deepEqual((await vectors.searchSimilar({userId:owner},await provider.embedQuery("covering index"),20)).map(c=>c.id),previous);
     const lexical = await knowledge.lexicalSearch({ userId: owner }, "数据库索引"); assert.equal(lexical.length, 1);
     const semantic = await vectors.searchSimilar({ userId: owner }, await provider.embedQuery("covering index"), 20); assert.equal(semantic.length, 1);
     const source = await knowledge.getSource({ userId: owner }, lexical[0].id); assert.ok(source);
@@ -88,6 +101,11 @@ test("real SQL index, cached embeddings, lexical matching, RLS, stale invalidati
     assert.equal((await db.query<{ n: number }>("select count(*)::integer as n from filemind.chunk_embeddings")).rows[0].n, 1);
     const engine = new RetrievalEngine({ ...provider, getModelInfo: () => provider.getModelInfo(), embedDocuments: original, embedQuery: async () => { throw new Error("fixture outage"); } }, vectors, knowledge, new DeterministicReranker());
     const fallback = await engine.retrieve({ userId: owner }, "数据库索引"); assert.equal(fallback.semanticUnavailable, true); assert.ok(fallback.evidence.length);
+    await assert.rejects(new IndexingPipeline(knowledge,vectors,provider,{}, {checkpoint:async stage=>{
+      if(stage==="before_publish")await tenant.query(owner,"update filemind.documents set text_content=$3 where user_id=$1 and id=$2",[owner,id,"Concurrent changed content about network leases."]);
+    }}).indexDocument(doc),/unavailable/);
+    assert.equal((await knowledge.lexicalSearch({userId:owner},"数据库索引")).length,0);
+    assert.equal((await vectors.searchSimilar({userId:owner},await provider.embedQuery("covering index"),20)).length,0);
     const updated = await workspaces.save(owner, { ...snapshot, texts: { [id]: "Completely changed document about networks." } });
     assert.deepEqual((await tenant.query(owner, "select index_status from filemind.documents where id=$1", [id])).rows[0], { index_status: "stale" });
     assert.equal((await db.query<{ n: number }>("select count(*)::integer as n from filemind.chunk_embeddings")).rows[0].n, 0);

@@ -173,6 +173,7 @@ export async function recoverTenantOperations(query, withLease, userId, options)
         await query(userId, "update filemind.operation_journal set payload=jsonb_set(payload,'{quarantineIds}',$3::jsonb),updated_at=now() where user_id=$1 and id=$2", [userId, row.id, JSON.stringify(ids)]);
       } });
       signal.throwIfAborted();
+      if (row.operation_type === "reindex" && row.status !== "committed") await query(userId, "update filemind.documents set index_build_status='interrupted',index_build_error_code='PROCESS_INTERRUPTED' where user_id=$1 and id=$2 and index_build_id=$3", [userId, row.resource_id, row.id]);
       await query(userId, "update filemind.operation_journal set stage=$3,completed_at=coalesce(completed_at,now()),updated_at=now() where user_id=$1 and id=$2", [userId, row.id, row.status === "committed" ? "settled" : "recovered"]);
       result.quarantineIds.push(...moved); result.recovered++; return true;
     }, true);

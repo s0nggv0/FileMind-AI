@@ -4,14 +4,15 @@ import {createHash,randomUUID} from "node:crypto";
 import {Pool} from "pg";
 import mammoth from "mammoth";
 import {holdoutDocuments,holdoutImages,holdoutQueries} from "../tests/fixtures/rag-holdout/corpus";
-import {runTenantQuery} from "../src/lib/workspace/tenant-query";
-import {PostgresWorkspaceRepository,type TenantDatabase} from "../src/lib/workspace/postgres-repository";
+import {evaluationDatabase} from "./tenant-pool";
+import {PostgresWorkspaceRepository} from "../src/lib/workspace/postgres-repository";
 import {PostgresKnowledgeRepository} from "../src/lib/retrieval/postgres-knowledge";
 import {PortableVectorStore} from "../src/lib/retrieval/portable-vector-store";
 import {DashScopeEmbeddingProvider} from "../src/lib/retrieval/dashscope-provider";
-import {embeddingCacheKey,type EmbeddingProvider,type EmbeddingResult} from "../src/lib/retrieval/embedding-provider";
-import {DocumentChunker,contentHash} from "../src/lib/retrieval/chunker";
-import {CHUNK_VERSION,retrievalConfig} from "../src/lib/retrieval/config";
+import {type EmbeddingProvider,type EmbeddingResult} from "../src/lib/retrieval/embedding-provider";
+import {contentHash} from "../src/lib/retrieval/chunker";
+import {retrievalConfig} from "../src/lib/retrieval/config";
+import {IndexingPipeline} from "../src/lib/retrieval/indexing";
 import {rankFusion} from "../src/lib/retrieval/ranking";
 import {RetrievalEngine} from "../src/lib/retrieval/engine";
 import {KimiVisionProvider} from "../src/lib/multimodal/kimi-vision";
@@ -45,7 +46,7 @@ async function main(){
  for(const [name,hash] of Object.entries(freeze.files))if(sha(await readFile(`tests/fixtures/rag-holdout/files/${name}`))!==hash)throw new Error("Frozen fixture changed.");
  await mkdir(".filemind/evaluation",{recursive:true});
  const pool=new Pool({connectionString:process.env.DATABASE_URL,max:4,connectionTimeoutMillis:5000});
- const db:TenantDatabase={query:async(u,s,v)=>runTenantQuery(await pool.connect(),u,s,v)};
+ const {db,closeLeases}=evaluationDatabase(pool,process.env.DATABASE_URL);
  const owner=randomUUID();const scope={userId:owner};const workspaces:string[]=[];
  const repo=new PostgresWorkspaceRepository(db),knowledge=new PostgresKnowledgeRepository(db),vectors=new PortableVectorStore(db),mm=new MultimodalRepository(db);
  const real=new DashScopeEmbeddingProvider({apiKey:process.env.EMBEDDING_API_KEY||process.env.DASHSCOPE_API_KEY||"",baseURL:process.env.EMBEDDING_BASE_URL||"",model:process.env.EMBEDDING_MODEL||"",dimensions:Number(process.env.EMBEDDING_DIMENSIONS||1024)});
@@ -66,10 +67,8 @@ async function main(){
   }
   const all=[...sources,...images];
   for(let offset=0;offset<all.length;offset+=25){const w=await repo.create(owner,`Phase 7 frozen holdout ${offset/25+1}`);workspaces.push(w.id);const batch=all.slice(offset,offset+25);const documents=batch.map(s=>({id:randomUUID(),name:s.name,type:s.type,mimeType:s.type==="image"?"image/png":s.type==="pdf"?"application/pdf":s.type==="docx"?"application/vnd.openxmlformats-officedocument.wordprocessingml.document":"text/plain",size:s.bytes.length,contentHash:sha(s.bytes),parseStatus:"completed" as const,metadata:{addedAt:new Date().toISOString(),structure:s.structure}}));await repo.save(owner,{...w,documents,texts:Object.fromEntries(documents.map((d,i)=>[d.id,batch[i].text]))});for(let i=0;i<batch.length;i++){const s=batch[i];if("analysis" in s)await mm.save({userId:owner,workspaceId:w.id},{...s.analysis,documentId:documents[i].id});}}
-  const chunker=new DocumentChunker();void chunker;
-  const pending=[];for(const d of await knowledge.documents(scope)){const generation=randomUUID();pending.push({d,generation,chunks:await knowledge.prepareChunks(d,generation)});}
-  const chunks=pending.flatMap(p=>p.chunks);const embedded=await provider.embedDocuments(chunks.map(c=>c.content));for(let i=0;i<chunks.length;i++)await vectors.upsertEmbedding(scope,chunks[i],embedded[i],embeddingCacheKey(chunks[i].contentHash,embedded[i].provider,embedded[i].model,CHUNK_VERSION));for(const p of pending)await knowledge.setStatus(p.d,p.generation,"ready",provider.getModelInfo());
-  report.chunks=chunks.length;console.log(`Indexed ${all.length} original files, ${chunks.length} chunks with real embeddings.`);
+  const indexed=await new IndexingPipeline(knowledge,vectors,provider).indexLibrary(scope);if(indexed.some(r=>r.status!=="ready"))throw new Error("Atomic benchmark index failed");
+  const chunkCount=indexed.reduce((n,r)=>n+("chunks" in r?r.chunks:0),0);report.chunks=chunkCount;console.log(`Indexed ${all.length} original files, ${chunkCount} chunks with real embeddings.`);
   const engine=new RetrievalEngine(provider,vectors,knowledge,null);const kimi=createKimiProvider({apiKey:process.env.KIMI_API_KEY,baseURL:process.env.KIMI_BASE_URL,models:readModelConfig(process.env)});
   const rows:(typeof holdoutQueries[number]&{scores:Record<string,Metric>|null;route:unknown;profile:unknown;top10:Record<string,string[]>})[]=[];const answers:Record<string,{correctNoAnswer:number;noAnswerAttempts:number;validCitations:number;returnedCitations:number;answerAttempts:number;unavailable:number;imageAnswers:number;imageAttempts:number;results:unknown[]}>=Object.fromEntries(modes.map(m=>[m,{correctNoAnswer:0,noAnswerAttempts:0,validCitations:0,returnedCitations:0,answerAttempts:0,unavailable:0,imageAnswers:0,imageAttempts:0,results:[]} ]));const routes:Record<string,number>={};
   for(let i=0;i<holdoutQueries.length;i++){const q=holdoutQueries[i];const vector=(await vectors.searchSimilar(scope,await provider.embedQuery(q.query),20)).map(e=>({...e,semanticScore:e.score,retrievalSource:"semantic" as const}));const lexical=(await knowledge.lexicalSearch(scope,q.query)).map(e=>({...e,retrievalSource:"lexical" as const}));const adaptive=await engine.retrieve(scope,q.query);routes[adaptive.route.strategy]=(routes[adaptive.route.strategy]??0)+1;const lists={vector,lexical,alwaysHybrid:rankFusion(vector,lexical),adaptive:adaptive.fused};
@@ -80,6 +79,6 @@ async function main(){
   const answerable=rows.filter(r=>r.scores);report.metrics=Object.fromEntries(modes.map(m=>[m,{...average(answerable.map(r=>r.scores![m])),noAnswerAccuracy:answers[m].correctNoAnswer/answers[m].noAnswerAttempts,multimodalHitAt5:average(answerable.filter(r=>r.imageOnly).map(r=>r.scores![m])).hitAt5,citationValidity:answers[m].returnedCitations?answers[m].validCitations/answers[m].returnedCitations:null}]));
   report.byType=Object.fromEntries([...new Set(rows.map(r=>r.kind))].map(k=>{const group=rows.filter(r=>r.kind===k);return[k,{count:group.length,metrics:Object.fromEntries(modes.map(m=>[m,average(group.filter(r=>r.scores).map(r=>r.scores![m]))]))}];}));report.routeDistribution=Object.fromEntries(Object.entries(routes).map(([route,count])=>[route,{count,share:count/rows.length}]));report.answerVerification=answers;report.queries=rows;report.completed=true;
  }catch(error){report.error=error instanceof Error?error.message.replace(/https?:\/\/\S+/g,"[endpoint]"):"Evaluation failed";process.exitCode=1;}
- finally{for(const id of workspaces)await db.query(owner,"delete from filemind.workspaces where user_id=$1 and id=$2",[owner,id]);await db.query(owner,"delete from filemind.profiles where id=$1",[owner]);await pool.end();await writeFile(reportPath,JSON.stringify(report,null,2)+"\n");console.log(JSON.stringify({completed:report.completed,metrics:report.metrics,routeDistribution:report.routeDistribution,error:report.error},null,2));}
+ finally{for(const id of workspaces)await db.query(owner,"delete from filemind.workspaces where user_id=$1 and id=$2",[owner,id]);await db.query(owner,"delete from filemind.profiles where id=$1",[owner]);await closeLeases();await pool.end();await writeFile(reportPath,JSON.stringify(report,null,2)+"\n");console.log(JSON.stringify({completed:report.completed,metrics:report.metrics,routeDistribution:report.routeDistribution,error:report.error},null,2));}
 }
 void main().catch(()=>{console.error("Holdout prerequisites or infrastructure failed; raw connection details suppressed.");process.exitCode=1;});

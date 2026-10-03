@@ -21,19 +21,9 @@ export async function refreshIndexVersions(scope: RetrievalScope) {
 export async function indexKnowledge(scope: RetrievalScope, documentId?: string) {
   await prepareImageIndexes(scope, documentId);
   const provider = configuredEmbedding();
-  if (provider) return new IndexingPipeline(knowledgeRepository, vectorStore, provider, process.env).indexLibrary(scope, documentId);
-  // Even without credentials, keep genuine lexical chunks available. Never save
-  // mock vectors implicitly or mark the semantic index as ready.
-  const documents = await knowledgeRepository.documents(scope, documentId); const results = [];
-  for (const document of documents) {
-    const generation = crypto.randomUUID();
-    try {
-      const chunks = await knowledgeRepository.prepareChunks(document, generation);
-      await knowledgeRepository.setStatus(document, generation, "failed", undefined, "CONFIGURATION");
-      results.push({ documentId: document.id, chunks: chunks.length, status: "failed", errorCode: "CONFIGURATION" });
-    } catch { results.push({ documentId: document.id, status: "failed", errorCode: "INDEX_UNAVAILABLE" }); }
-  }
-  return results;
+  // Publish complete lexical chunks without credentials, preserving an existing
+  // ready index if its replacement fails. Mock vectors are never stored here.
+  return new IndexingPipeline(knowledgeRepository, vectorStore, provider, process.env).indexLibrary(scope, documentId);
 }
 export function scheduleKnowledgeIndex(scope: RetrievalScope) {
   after(async () => { await indexKnowledge(scope).catch(() => {}); });

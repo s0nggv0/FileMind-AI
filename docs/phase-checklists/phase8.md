@@ -13,9 +13,9 @@ Baseline before implementation: 69/69 unit/integration tests, zero TypeScript er
 | Requirement | Current status |
 | --- | --- |
 | Atomic writes, operation journal and tenant isolation | Implemented; 72/72 offline tests pass, TypeScript and ESLint clean. |
-| Upload/Apply/Backup Import/Reindex/Internal Delete recovery | Upload, Apply and Import integrated; launcher and authenticated-tenant startup recovery implemented. Reindex/Delete remain pending. |
+| Upload/Apply/Backup Import/Reindex/Internal Delete recovery | Upload, Apply, Import and Reindex integrated; launcher and authenticated-tenant startup recovery implemented. Internal Delete remains pending. |
 | Storage reconciliation, quarantine and missing-file states | Reconciliation and durable quarantine implemented and tested; Maintenance and Library/Preview UI remain pending. |
-| Real import and reindex process-kill drills | Import: 3/3 real termination windows pass on isolated PostgreSQL; reindex pending. |
+| Real import and reindex process-kill drills | 5/5 real termination windows pass on isolated PostgreSQL: three Import and two Reindex. |
 | Fact verification, bounded repair and conflict detection | Implementation pending |
 | Provider failure matrix and Planner diagnostics | Implementation pending |
 | Demo data, reset, preflight and outage plan | Implementation pending |
@@ -43,3 +43,11 @@ Upload and Import persist destination intents before creating or publishing byte
 Portable startup enumerates unfinished owners through its private local admin connection, then repairs through application-role tenant transactions and FORCE RLS. The Web role receives no administrator credentials. Ordinary servers recover only the authenticated tenant. A live PostgreSQL lease prevents takeover; a killed process releases its session lock. Quarantine manifests are durable before moving files and can themselves be repaired. Junction ancestors are rejected before creating child directories.
 
 `npm run test:crash-recovery` tested a fresh ASCII-path PostgreSQL cluster, ten synthetic documents per import, and three actual process-termination windows. At 30% publication and before COMMIT, zero imported documents became visible and unreferenced bytes were quarantined. After COMMIT, all ten documents survived and only staging was quarantined. Existing source/target workspaces remained unchanged, active leases were preserved and repeat recovery did no further work. See `docs/evaluation/phase8-crash-results.json`. These are process crashes, not hard power-loss tests.
+
+## Atomic index replacement
+
+Chunks and each complete embedding batch are durably staged under `.indexes/<owner>/<build>/` and remain outside all online retrieval queries. Existing vectors can be copied into the private build only with matching model, dimension and hash. All staged data is checked before publication. The final transaction locks the document, rechecks source text/structure and build identity, replaces all online chunks/vectors, changes active index health and commits the journal. A database failure after the old chunks are deleted rolls the transaction back.
+
+Active `index_status` and `index_build_status` are separate. A failed rebuild of unchanged source preserves the old ready index. An actual source change retains the previous stale invalidation safety rule. Without embeddings, a first build can publish a complete lexical index with explicit failed semantic health; no partial vector set is published. Historical evaluation harnesses now call the atomic pipeline and keep their existing freeze/no-overwrite gates and prior results unchanged.
+
+The two real reindex termination windows covered 30% of a replacement build and the barrier before publication. PostgreSQL queries returned the same old vector source IDs and citations before and after recovery, and the build became interrupted. Retrying built a complete replacement with 22 chunks. Repeat recovery was idle. Browser acceptance of the separate build/active status remains pending.
