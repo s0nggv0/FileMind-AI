@@ -1,0 +1,12 @@
+{
+  "passed": true,
+  "width": 390,
+  "fixtureMode": "isolated PostgreSQL and synthetic bytes; interrupted UI state injected",
+  "missingOriginal404": true,
+  "orphanQuarantined": true,
+  "missingTextSearchable": true,
+  "citationTextAvailable": true,
+  "foreignOwnerDenied": true,
+  "noPageErrors": true,
+  "checkedAt": "2026-10-03T13:29:48.589Z"
+}

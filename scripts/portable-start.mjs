@@ -183,7 +183,7 @@ async function prepareDatabase() {
     await recoveryAdministrator.connect();
     // Only this local launcher holds administrator credentials. Repair itself
     // always runs through application-role tenant transactions and FORCE RLS.
-    const owners = (await recoveryAdministrator.query("select distinct user_id from filemind.operation_journal where status in ('pending','running','interrupted') or (status='committed' and stage<>'settled' and (payload ? 'stagingId' or payload ? 'buildId'))")).rows.map(row => row.user_id);
+    const owners = (await recoveryAdministrator.query("select distinct user_id from filemind.operation_journal where status in ('pending','running','interrupted') or (status='committed' and stage<>'settled' and (payload ? 'stagingId' or payload ? 'buildId' or payload ? 'removedFiles'))")).rows.map(row => row.user_id);
     const repaired = await startupRecovery(owners, Pool, config.DATABASE_URL, storage);
     console.log(`FileMind startup recovery: ${repaired.recovered} repaired, ${repaired.active} active operations preserved.`);
   } catch { throw new Error("FileMind recovery needs attention. Existing data was preserved; retry startup or use Maintenance."); }

@@ -11,7 +11,7 @@ export interface TransactionalTenantDatabase extends TenantDatabase {
 }
 export const PostgresDateSchema = z.preprocess(value => value instanceof Date ? value.toISOString() : value, DatabaseTimestampSchema);
 const WorkspaceRow = z.object({ snapshot: z.record(z.string(), z.unknown()), revision: z.number().int(), updated_at: PostgresDateSchema });
-const DocumentRow = z.object({ id: z.uuid(), text_content: z.string(), storage_path: z.string().nullable() });
+const DocumentRow = z.object({ id: z.uuid(), text_content: z.string(), storage_path: z.string().nullable(),storage_status:z.enum(["available","missing","not_stored"]) });
 export function storageFailure(error: unknown): WorkspaceError {
   if (error instanceof WorkspaceError) return error;
   const message = error instanceof Error ? error.message : "";
@@ -31,13 +31,13 @@ export class PostgresWorkspaceRepository implements WorkspaceRepository {
   async get(userId: string, id: string) {
     z.uuid().parse(userId); z.uuid().parse(id);
     const result = await this.db.query(userId, `select w.snapshot,w.revision,w.updated_at,
-      coalesce((select jsonb_agg(jsonb_build_object('id',d.id,'text_content',d.text_content,'storage_path',d.storage_path))
+      coalesce((select jsonb_agg(jsonb_build_object('id',d.id,'text_content',d.text_content,'storage_path',d.storage_path,'storage_status',case when d.storage_path is null then 'not_stored' else d.storage_status end))
       from filemind.documents d where d.user_id=$1 and d.workspace_id=w.id),'[]'::jsonb) as document_rows
       from filemind.workspaces w where w.user_id=$1 and w.id=$2`, [userId, id]);
     if (!result.rows.length) throw new WorkspaceError("NOT_FOUND", "Workspace not found.", 404);
     const row = WorkspaceRow.extend({ document_rows: z.array(DocumentRow) }).parse(result.rows[0]);
     const snapshot = WorkspaceSnapshotSchema.parse({ ...row.snapshot, revision: row.revision, updatedAt: row.updated_at, texts: Object.fromEntries(row.document_rows.map(d => [d.id, d.text_content])) });
-    snapshot.documents = snapshot.documents.map(d => ({ ...d, storagePath: row.document_rows.find(item => item.id === d.id)?.storage_path ?? d.storagePath }));
+    snapshot.documents = snapshot.documents.map(d => {const current=row.document_rows.find(item=>item.id===d.id);return {...d,storagePath:current?.storage_path??undefined,storageStatus:current?.storage_status};});
     return snapshot;
   }
   async list(userId: string) {

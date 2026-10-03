@@ -133,6 +133,13 @@ export async function repairQuarantineIntents(query, userId, options) {
 export async function repairOperationFiles(query, row, options) {
   if (!uuid.test(row.user_id)) throw new Error("INVALID_OWNER");
   const ids = [];
+  // Original removal publishes metadata first. Only COMMITTED removals may
+  // quarantine bytes; aborted removals retain their original and parsed content.
+  if (row.status === "committed") for (const file of row.payload.removedFiles ?? []) {
+    const key = originalKey(row.user_id, file.workspaceId, file.documentId, file.extension);
+    const id = await quarantineStorage(query, row.user_id, key, "committed_removal", options);
+    if (id) ids.push(id);
+  }
   for (const file of row.payload.files ?? []) {
     if (!file.newlyPublished) continue;
     const key = originalKey(row.user_id, file.workspaceId, file.documentId, file.extension);
@@ -154,7 +161,7 @@ export async function repairOperationFiles(query, row, options) {
 // physical PostgreSQL session leases; PID/age are never used to steal a lock.
 export async function recoverTenantOperations(query, withLease, userId, options) {
   if (!uuid.test(userId)) throw new Error("INVALID_OWNER");
-  const rows = (await query(userId, "select * from filemind.operation_journal where user_id=$1 and ((status in ('pending','running','interrupted') and stage<>'recovered') or (status='committed' and stage<>'settled' and (payload ? 'stagingId' or payload ? 'buildId'))) order by started_at", [userId])).rows;
+  const rows = (await query(userId, "select * from filemind.operation_journal where user_id=$1 and ((status in ('pending','running','interrupted') and stage<>'recovered') or (status='committed' and stage<>'settled' and (payload ? 'stagingId' or payload ? 'buildId' or payload ? 'removedFiles'))) order by started_at", [userId])).rows;
   const result = { recovered: 0, active: 0, quarantineIds: [] };
   for (const snapshot of rows) {
     if (!uuid.test(snapshot.id) || snapshot.user_id !== userId || !(snapshot.lock_key === "storage" || snapshot.lock_key === `index:${snapshot.resource_id}` && uuid.test(snapshot.resource_id))) throw new Error("INVALID_JOURNAL_LOCK");
@@ -163,7 +170,7 @@ export async function recoverTenantOperations(query, withLease, userId, options)
       const row = (await query(userId, "select * from filemind.operation_journal where user_id=$1 and id=$2", [userId, snapshot.id])).rows[0];
       if (!row || ["settled", "recovered", "rolled_back"].includes(row.stage)) return true;
       const payload = row.payload;
-      if (!payload || typeof payload !== "object" || Array.isArray(payload) || payload.files && (!Array.isArray(payload.files) || payload.files.length > 2000)) throw new Error("INVALID_JOURNAL_PAYLOAD");
+      if (!payload || typeof payload !== "object" || Array.isArray(payload) || [payload.files,payload.removedFiles].some(files=>files && (!Array.isArray(files) || files.length > 2000))) throw new Error("INVALID_JOURNAL_PAYLOAD");
       // Record takeover before moving anything. COMMITTED operations retain
       // their status; reference checks preserve all committed originals.
       if (row.status !== "committed") await query(userId, "update filemind.operation_journal set status='interrupted',stage='recovering',updated_at=now(),error_code='PROCESS_INTERRUPTED' where user_id=$1 and id=$2 and status<>'committed'", [userId, row.id]);

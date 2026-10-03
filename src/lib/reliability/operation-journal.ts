@@ -4,12 +4,14 @@ import type { TransactionalTenantDatabase, TransactionQuery } from "../workspace
 import { WorkspaceError } from "../workspace/authorization";
 import { PostgresDateSchema } from "../workspace/postgres-repository";
 import { withPathMutex } from "./atomic-file";
+import { applicationLog } from "./application-log";
 
 export const OperationTypeSchema = z.enum(["document_upload", "workspace_apply", "backup_import", "reindex", "file_delete", "storage_repair", "demo_reset"]);
 export type OperationType = z.infer<typeof OperationTypeSchema>;
 const OriginalIntentSchema = z.object({ documentId: z.uuid(), workspaceId: z.uuid(), extension: z.enum(["pdf", "docx", "txt", "md", "png", "jpg", "jpeg"]), hash: z.string().regex(/^[a-f0-9]{64}$/), newlyPublished: z.boolean() }).strict();
 export const OperationPayloadSchema = z.object({
   workspaceId: z.uuid().optional(), files: z.array(OriginalIntentSchema).max(2000).optional(),
+  removedFiles: z.array(OriginalIntentSchema.omit({ newlyPublished: true })).max(2000).optional(),
   stagingId: z.uuid().optional(), expectedRevision: z.number().int().nonnegative().optional(),
   fingerprint: z.string().regex(/^[a-f0-9]{64}$/).optional(),
   quarantineIds: z.array(z.uuid()).max(4000).optional(),
@@ -60,6 +62,8 @@ export class OperationJournal {
         await tx.query("insert into filemind.profiles(id) values($1) on conflict do nothing", [userId]);
         await tx.query("insert into filemind.operation_journal(id,user_id,operation_type,resource_id,lock_key,status,stage,payload,owner_instance) values($1,$2,$3,$4,$5,'running','started',$6,$7)", [id, userId, type, resourceId, key, checked, instance]);
       });
+      const started=performance.now();
+      await applicationLog({level:"info",event:"operation_started",request_id:id,workspace_id:checked.workspaceId??null,operation_id:id,provider:null,error_code:null,duration:0});
       const context: OperationContext = { id, userId, signal: leaseSignal, assertActive: () => leaseSignal.throwIfAborted(),
         stage: async (stage, next) => withPathMutex(`${userId}:${id}:stage`, async () => {
           leaseSignal.throwIfAborted();
@@ -77,8 +81,10 @@ export class OperationJournal {
       try {
         const result = await work(context);
         if ((await this.get(userId, id))?.status !== "committed") throw new Error("OPERATION_NOT_COMMITTED");
+        await applicationLog({level:"info",event:"operation_committed",request_id:id,workspace_id:checked.workspaceId??null,operation_id:id,provider:null,error_code:null,duration:performance.now()-started});
         return result;
       } catch (error) {
+        await applicationLog({level:"error",event:"operation_failed",request_id:id,workspace_id:checked.workspaceId??null,operation_id:id,provider:null,error_code:"OPERATION_FAILED",duration:performance.now()-started});
         const row = await this.get(userId, id).catch(() => null);
         if (row?.status === "running" && leaseSignal.aborted) {
           await this.db.query(userId, "update filemind.operation_journal set status='interrupted',stage='repair_required',updated_at=now(),error_code='LEASE_INTERRUPTED' where user_id=$1 and id=$2 and status='running'", [userId, id]).catch(() => {});

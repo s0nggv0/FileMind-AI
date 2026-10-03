@@ -17,6 +17,8 @@ import { documentAnalysisPrompt, DOCUMENT_PROMPT_VERSION } from "./prompts/docum
 import { ORGANIZATION_PROMPT_VERSION, organizationPlanPrompt } from "./prompts/organization-plan";
 import { DocumentAnalysisSchema, OrganizationOutputSchema, type DocumentAnalysis } from "./schemas";
 import { ToolRegistry } from "./tool-registry";
+import {applicationLog,loggedProvider} from "../reliability/application-log";
+import {PlannerMetricsSchema,type PlannerMetrics} from "./planner-metrics";
 
 export interface AnalysisCache { get(key: string): Promise<unknown>; set(documentId: string, key: string, value: DocumentAnalysis): Promise<void> }
 export type ImageAnalyzer = (snapshot: WorkspaceSnapshot, documentId: string, signal: AbortSignal, event: (message: string) => Promise<void>) => Promise<MultimodalAnalysis>;
@@ -29,6 +31,10 @@ export class LLMAgentRunner {
     const categories = [...new Set([...defaultCategories, ...snapshot.proposal?.documents.map(d => d.category) ?? []])];
     const base = buildOrganizationPlan(documents, d => snapshot.texts[d.id] ?? "");
     const run: AgentRun = { id: runId, status: "planning", simulation: false, engine: "llm", model: provider.models.main, promptVersion: `${PLANNER_PROMPT_VERSION}/${DOCUMENT_PROMPT_VERSION}/${ORGANIZATION_PROMPT_VERSION}`, startedAt: Date.now(), documents: snapshot.documents, steps: [], progress: 0, activity: [], usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 } };
+    const metrics:PlannerMetrics={planner_runs:1,llm_success:0,fallback_count:0,fallback_reason:[],tool_validation_failure:0,timeout:0};
+    run.plannerMetrics=metrics;
+    let fallbackReason:PlannerMetrics["fallback_reason"][number]="provider_failure",lastError:ReturnType<typeof normalizeAIError>["code"]|null=null;
+    const fallback=(reason:PlannerMetrics["fallback_reason"][number])=>{metrics.fallback_count=1;if(!metrics.fallback_reason.includes(reason))metrics.fallback_reason.push(reason);};
     const analyses = new Map<string, DocumentAnalysis>(); const read = new Set<string>();
     let duplicateDone = false; let relationshipsDone = false; let plan: OrganizationPlan | undefined; let calls = 0;
     const toolFailures = new Map<string, number>();
@@ -109,18 +115,18 @@ export class LLMAgentRunner {
       generate_organization_plan: async input => {
         z.object({}).parse(input); if (analyses.size !== documents.length || !duplicateDone || !relationshipsDone) throw new AIError("STRUCTURED_OUTPUT", "Complete analysis, duplicate and relationship checks first.", true, provider.name);
         return step("generate_organization_plan", undefined, async () => {
-          applyAnalyses(); let output: z.infer<typeof OrganizationOutputSchema> | undefined;
+          applyAnalyses(); let output: z.infer<typeof OrganizationOutputSchema> | undefined,planReason:PlannerMetrics["fallback_reason"][number]="plan_validation";
           for (let attempt = 0; attempt <= aiLimits.maxToolRetries; attempt++) {
             try {
               const result = await provider.generateObject({ role: "main", system: organizationPlanPrompt, prompt: untrustedData({ documents: base.documents.map(d => ({ id: d.id, name: d.originalName, summary: d.summary, category: d.category, tags: d.tags })), duplicates: base.duplicates, existingCategories: categories }), schema: OrganizationOutputSchema, signal }); usage(result.usage);
               output = OrganizationOutputSchema.parse(result.object); const ids = new Set(output.documents.map(d => d.id));
               const allowedCategories = new Set([...categories, ...base.documents.map(d => d.category)]);
-              if (ids.size !== documents.length || output.documents.length !== documents.length || output.documents.some(d => !documents.some(own => own.id === d.id) || !allowedCategories.has(d.category))) throw new Error("Invalid proposal references");
+              if (ids.size !== documents.length || output.documents.length !== documents.length || output.documents.some(d => !documents.some(own => own.id === d.id) || !allowedCategories.has(d.category))) throw new AIError("STRUCTURED_OUTPUT","Invalid proposal references",true,provider.name);
               break;
-            } catch { output = undefined; signal.throwIfAborted(); }
+            } catch(error) { output = undefined;const ai=normalizeAIError(error,provider.name);lastError=ai.code;planReason=ai.code==="STRUCTURED_OUTPUT"?"plan_validation":ai.code==="TIMEOUT"?"timeout":"plan_provider_failure";if(ai.code==="TIMEOUT")metrics.timeout++;signal.throwIfAborted(); }
           }
           if (output) { base.documents = base.documents.map(d => ({ ...d, category: output!.documents.find(item => item.id === d.id)!.category })); base.summary = output.workspaceSummary; base.relationships = buildRelationships(base.documents); }
-          else { log("AI plan validation failed twice · using a deterministic proposal from document analyses"); run.fallback = "AI plan unavailable — using a deterministic proposal from document analyses."; }
+          else { fallback(planReason);log("AI plan unavailable · using a deterministic proposal from document analyses"); run.fallback = "AI plan unavailable — using a deterministic proposal from document analyses."; }
           base.simulation = false; plan = OrganizationProposalSchema.parse(base); return { documents: plan.documents.length, summary: plan.summary ?? "Review your organization proposal." };
         }, () => "Organization proposal ready · changes require your review");
       },
@@ -140,29 +146,33 @@ export class LLMAgentRunner {
     try {
       run.status = "running";
       for (let turn = 0; turn < aiLimits.maxAgentSteps && !plan; turn++) {
-        signal.throwIfAborted(); const response = await provider.callTools({ system: multimodalPlannerPrompt, messages, tools: toolRegistry.forModel(), signal }); usage(response.usage); messages.push(...response.messages);
+        fallbackReason="provider_failure";signal.throwIfAborted(); const response = await provider.callTools({ system: multimodalPlannerPrompt, messages, tools: toolRegistry.forModel(), signal }); usage(response.usage); messages.push(...response.messages);
+        if(!response.calls.length)fallbackReason="planner_no_tool";
         if (!response.calls.length) throw new AIError("STRUCTURED_OUTPUT", "Planner did not choose a tool.", true, provider.name);
         for (const call of response.calls) {
-          if (++calls > aiLimits.maxAgentSteps) throw new AIError("STEP_LIMIT", "Agent reached its step limit.", false, provider.name);
-          if (!toolRegistry.has(call.name)) throw new AIError("STRUCTURED_OUTPUT", "Planner requested an unavailable tool.", false, provider.name);
+          if (++calls > aiLimits.maxAgentSteps) {fallbackReason="step_limit";throw new AIError("STEP_LIMIT", "Agent reached its step limit.", false, provider.name);}
+          if (!toolRegistry.has(call.name)) {fallbackReason="unknown_tool";metrics.tool_validation_failure++;throw new AIError("STRUCTURED_OUTPUT", "Planner requested an unavailable tool.", false, provider.name);}
           let result: unknown;
           try { result = await toolRegistry.execute(call.name, call.input); }
-          catch (error) { signal.throwIfAborted(); if (error instanceof WorkspaceError) throw error; const ai = normalizeAIError(error, provider.name); const failed = (toolFailures.get(call.name) ?? 0) + 1; toolFailures.set(call.name, failed); if (!ai.retryable || ai.code !== "STRUCTURED_OUTPUT" || failed > aiLimits.maxToolRetries) throw ai; result = { error: ai.message, retryable: true }; }
+          catch (error) { signal.throwIfAborted(); if (error instanceof WorkspaceError) throw error; const ai = normalizeAIError(error, provider.name);if(ai.code==="STRUCTURED_OUTPUT"){metrics.tool_validation_failure++;fallbackReason="tool_validation";} const failed = (toolFailures.get(call.name) ?? 0) + 1; toolFailures.set(call.name, failed); if (!ai.retryable || ai.code !== "STRUCTURED_OUTPUT" || failed > aiLimits.maxToolRetries) throw ai; result = { error: ai.message, retryable: true }; }
           messages.push({ role: "tool", content: [{ type: "tool-result", toolCallId: call.id, toolName: call.name, output: { type: "json", value: JSON.parse(JSON.stringify(result)) } }] });
           if (plan) break;
         }
       }
-      if (!plan) throw new AIError("STEP_LIMIT", "Agent reached its step limit.", false, provider.name);
+      if (!plan) {fallbackReason="step_limit";throw new AIError("STEP_LIMIT", "Agent reached its step limit.", false, provider.name);}
+      if(!metrics.fallback_count)metrics.llm_success=1;
       run.result = plan; run.status = "waiting_for_review"; run.progress = 100; log("Proposal ready · AI proposes, you decide");
     } catch (error) {
       if (error instanceof WorkspaceError) throw error;
       if (requestSignal.aborted) { run.status = "cancelled"; log("Run interrupted or cancelled · no background execution"); }
       else {
-        const ai = normalizeAIError(error, provider.name); run.fallback = "AI analysis unavailable — using basic local organization."; run.error = undefined;
+        const ai = normalizeAIError(error, provider.name);lastError=ai.code;if(ai.code==="TIMEOUT"){metrics.timeout++;fallbackReason="timeout";}fallback(fallbackReason); run.fallback = "AI analysis unavailable — using basic local organization."; run.error = undefined;
         run.result = OrganizationProposalSchema.parse(buildOrganizationPlan(documents, d => snapshot.texts[d.id] ?? "")); run.status = "waiting_for_review"; run.progress = 100;
         log(ai.message); log(run.fallback);
       }
     }
+    run.plannerMetrics=PlannerMetricsSchema.parse(metrics);
+    await applicationLog({level:metrics.fallback_count?"warn":"info",event:"planner_completed",request_id:runId,workspace_id:snapshot.id,operation_id:null,provider:loggedProvider(provider.name),error_code:lastError,duration:Date.now()-run.startedAt});
     await publish(); return run;
   }
 }

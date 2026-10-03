@@ -10,7 +10,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
   try {
     const userId = await getUserId(); if (!userId) throw new WorkspaceError("NOT_FOUND", "Original file not found.", 404);
     const id = z.uuid().parse((await context.params).id);
-    const result = await database.query(userId, "select workspace_id,original_name,file_type,content_hash from filemind.documents where user_id=$1 and id=$2 and storage_path is not null", [userId, id]);
+    const result = await database.query(userId, "select workspace_id,original_name,file_type,content_hash from filemind.documents where user_id=$1 and id=$2 and storage_path is not null and storage_status='available'", [userId, id]);
     const doc = result.rows[0] as { workspace_id: string; original_name: string; file_type: string; content_hash: string } | undefined;
     if (!doc) throw new WorkspaceError("NOT_FOUND", "Original file not found.", 404);
     const extension = doc.original_name.split(".").at(-1)!.toLowerCase();

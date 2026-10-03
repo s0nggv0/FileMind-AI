@@ -21,9 +21,9 @@ async function visionProvider() {
   try { return new KimiVisionProvider({ apiKey: process.env.KIMI_API_KEY, baseURL: process.env.KIMI_BASE_URL }); } catch { return null; }
 }
 export async function imageSource(scope: RetrievalScope, documentId: string) {
-  const result = await database.query(scope.userId, "select id,workspace_id,original_name,display_name,mime_type,content_hash,image_width,image_height from filemind.documents where user_id=$1 and id=$2 and file_type='image' and ($3::uuid is null or workspace_id=$3)", [scope.userId, documentId, scope.workspaceId ?? null]);
+  const result = await database.query(scope.userId, "select id,workspace_id,original_name,display_name,mime_type,content_hash,image_width,image_height,case when storage_path is null then 'not_stored' else storage_status end as storage_status from filemind.documents where user_id=$1 and id=$2 and file_type='image' and ($3::uuid is null or workspace_id=$3)", [scope.userId, documentId, scope.workspaceId ?? null]);
   if (!result.rows.length) throw new WorkspaceError("NOT_FOUND", "Image not found.", 404);
-  return z.object({ id: z.uuid(), workspace_id: z.uuid(), original_name: z.string(), display_name: z.string(), mime_type: z.enum(["image/png", "image/jpeg"]), content_hash: z.string(), image_width: z.number().nullable(), image_height: z.number().nullable() }).parse(result.rows[0]);
+  return z.object({ id: z.uuid(), workspace_id: z.uuid(), original_name: z.string(), display_name: z.string(), mime_type: z.enum(["image/png", "image/jpeg"]), content_hash: z.string(), image_width: z.number().nullable(), image_height: z.number().nullable(),storage_status:z.enum(["available","missing","not_stored"]) }).parse(result.rows[0]);
 }
 export async function analyzeWorkspaceImage(userId: string, snapshot: WorkspaceSnapshot, documentId: string, signal: AbortSignal, event?: (message: string) => Promise<void>) {
   const doc = snapshot.documents.find(d => d.id === documentId && d.type === "image");
@@ -53,7 +53,7 @@ export async function refreshMultimodalVersions(scope: RetrievalScope) {
   }
 }
 export async function prepareImageIndexes(scope: RetrievalScope, documentId?: string) {
-  const rows = await database.query(scope.userId, "select id,workspace_id from filemind.documents where user_id=$1 and file_type='image' and parse_status='completed' and ($2::uuid is null or workspace_id=$2) and ($3::uuid is null or id=$3)", [scope.userId, scope.workspaceId ?? null, documentId ?? null]);
+  const rows = await database.query(scope.userId, "select id,workspace_id from filemind.documents where user_id=$1 and file_type='image' and parse_status='completed' and storage_path is not null and storage_status='available' and ($2::uuid is null or workspace_id=$2) and ($3::uuid is null or id=$3)", [scope.userId, scope.workspaceId ?? null, documentId ?? null]);
   const { workspaceRepository } = await import("./workspace-repository");
   for (const row of rows.rows as { id: string; workspace_id: string }[]) {
     const snapshot = await workspaceRepository.get(scope.userId, row.workspace_id);
