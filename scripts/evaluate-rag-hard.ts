@@ -4,12 +4,13 @@ import { Pool } from "pg";
 import { randomUUID } from "node:crypto";
 import { hardTextDocuments, hardQueries, type HardQuery } from "../tests/fixtures/rag-hard/corpus";
 import { imageFixtures } from "./generate-image-fixtures";
-import { runTenantQuery } from "../src/lib/workspace/tenant-query";
-import { PostgresWorkspaceRepository, type TenantDatabase } from "../src/lib/workspace/postgres-repository";
+import { evaluationDatabase } from "./tenant-pool";
+import { PostgresWorkspaceRepository } from "../src/lib/workspace/postgres-repository";
 import { PostgresKnowledgeRepository } from "../src/lib/retrieval/postgres-knowledge";
 import { PortableVectorStore } from "../src/lib/retrieval/portable-vector-store";
 import { DashScopeEmbeddingProvider } from "../src/lib/retrieval/dashscope-provider";
-import { embeddingCacheKey, type EmbeddingProvider, type EmbeddingResult } from "../src/lib/retrieval/embedding-provider";
+import { type EmbeddingProvider, type EmbeddingResult } from "../src/lib/retrieval/embedding-provider";
+import { IndexingPipeline } from "../src/lib/retrieval/indexing";
 import { DocumentChunker, contentHash } from "../src/lib/retrieval/chunker";
 import { CHUNK_VERSION, retrievalConfig } from "../src/lib/retrieval/config";
 import { rankFusion, DeterministicReranker } from "../src/lib/retrieval/ranking";
@@ -45,7 +46,7 @@ async function main() {
   if (!(await readFile("docs/phase-checklists/vision-live-verification.md", "utf8")).includes("VISION_VERIFIED=true")) throw new Error("Vision Gate required");
   await mkdir(".filemind/evaluation", { recursive: true }); await mkdir("docs/evaluation", { recursive: true });
   const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 4, connectionTimeoutMillis: 5000 });
-  const db: TenantDatabase = { query: async (user, sql, values) => runTenantQuery(await pool.connect(), user, sql, values) };
+  const {db,closeLeases}=evaluationDatabase(pool,process.env.DATABASE_URL);
   const userId = randomUUID(); const workspaces: string[] = []; const scope = { userId };
   const workspaceRepo = new PostgresWorkspaceRepository(db); const vectors = new PortableVectorStore(db); const mm = new MultimodalRepository(db);
   const real = new DashScopeEmbeddingProvider({ apiKey: process.env.EMBEDDING_API_KEY || process.env.DASHSCOPE_API_KEY || "", baseURL: process.env.EMBEDDING_BASE_URL || "", model: process.env.EMBEDDING_MODEL || "", dimensions: Number(process.env.EMBEDDING_DIMENSIONS || 1024) });
@@ -86,13 +87,9 @@ async function main() {
     }
     async function build(target = 800) {
       const repository = new PostgresKnowledgeRepository(db, new DocumentChunker({ chunkTargetTokens: target, chunkMaxTokens: target === 800 ? 1000 : target + 200, overlapTokens: 100 }));
-      const documents = await repository.documents(scope); let count = 0;
-      // A single request queue batches all sources; cached unchanged text avoids repeat API use.
-      const pending = [];
-      for (const d of documents) { const generation = randomUUID(); const chunks = await repository.prepareChunks(d, generation); count += chunks.length; pending.push({ d, generation, chunks }); }
-      const all = pending.flatMap(p => p.chunks); const embeddings = await provider.embedDocuments(all.map(c => c.content));
-      for (let i = 0; i < all.length; i++) await vectors.upsertEmbedding(scope, all[i], embeddings[i], embeddingCacheKey(all[i].contentHash, embeddings[i].provider, embeddings[i].model, CHUNK_VERSION));
-      for (const item of pending) await repository.setStatus(item.d, item.generation, "ready", provider.getModelInfo());
+      const results=await new IndexingPipeline(repository,vectors,provider).indexLibrary(scope);
+      if(results.some(r=>r.status!=="ready"))throw new Error("Atomic benchmark index failed");
+      const count=results.reduce((total,r)=>total+("chunks" in r?r.chunks:0),0);
       return { repository, chunks: count };
     }
     let built = await build(); report.chunkCount = built.chunks; console.log(`Indexed ${sources.length} sources, ${built.chunks} chunks with real DashScope.`);
@@ -139,7 +136,7 @@ async function main() {
   } catch (e) { report.errorCode = normalizeAIError(e).code; process.exitCode = 1; }
   finally {
     for (const id of workspaces) await db.query(userId, "delete from filemind.workspaces where user_id=$1 and id=$2", [userId, id]);
-    await db.query(userId, "delete from filemind.profiles where id=$1", [userId]); await pool.end();
+    await db.query(userId, "delete from filemind.profiles where id=$1", [userId]); await closeLeases(); await pool.end();
     await writeFile("docs/evaluation/rag-hard-results.json", JSON.stringify(report, null, 2) + "\n");
     console.log(JSON.stringify({ completed: report.completed, sample: report.sample, metrics: report.metrics, noAnswerAccuracy: report.noAnswerAccuracy, multimodalHitAt5: report.multimodalHitAt5, errorCode: report.errorCode }, null, 2));
   }

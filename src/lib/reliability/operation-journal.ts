@@ -61,13 +61,13 @@ export class OperationJournal {
         await tx.query("insert into filemind.operation_journal(id,user_id,operation_type,resource_id,lock_key,status,stage,payload,owner_instance) values($1,$2,$3,$4,$5,'running','started',$6,$7)", [id, userId, type, resourceId, key, checked, instance]);
       });
       const context: OperationContext = { id, userId, signal: leaseSignal, assertActive: () => leaseSignal.throwIfAborted(),
-        stage: async (stage, next) => {
+        stage: async (stage, next) => withPathMutex(`${userId}:${id}:stage`, async () => {
           leaseSignal.throwIfAborted();
           if (!/^[a-z][a-z0-9_]{0,59}$/.test(stage)) throw new Error("Invalid operation stage.");
           const result = await this.db.query(userId, "update filemind.operation_journal set stage=$3,payload=payload||$4::jsonb,updated_at=now() where user_id=$1 and id=$2 and status='running' returning id", [userId, id, stage, OperationPayloadSchema.parse(next ?? {})]);
           if (!result.rows.length) throw new WorkspaceError("CONFLICT", "Operation was interrupted. Retry safely.", 409);
           leaseSignal.throwIfAborted();
-        },
+        }),
         commit: async tx => {
           leaseSignal.throwIfAborted();
           const result = await tx.query("update filemind.operation_journal set status='committed',stage='committed',updated_at=now(),completed_at=now(),error_code=null where user_id=$1 and id=$2 and status='running' returning id", [userId, id]);

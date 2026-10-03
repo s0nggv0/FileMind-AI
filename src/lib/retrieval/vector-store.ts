@@ -5,6 +5,7 @@ export interface VectorStore {
   deleteDocumentEmbeddings(scope: RetrievalScope, documentId: string): Promise<void>;
   searchSimilar(scope: RetrievalScope, embedding: EmbeddingResult, topK: number): Promise<Evidence[]>;
   getEmbeddingStatus(scope: RetrievalScope, chunkIds: string[], info: EmbeddingModelInfo): Promise<Map<string, string>>;
+  getCachedEmbeddings?(scope: RetrievalScope, chunks: DocumentChunk[], info: EmbeddingModelInfo): Promise<Map<string, EmbeddingResult>>;
 }
 export function cosineSimilarity(a: number[], b: number[]) {
   if (!a.length || a.length !== b.length || [...a, ...b].some(n => !Number.isFinite(n))) throw new Error("Incompatible vectors");

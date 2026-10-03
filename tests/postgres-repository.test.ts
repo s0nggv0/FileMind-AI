@@ -19,7 +19,8 @@ test("ordinary PostgreSQL migration and real repository preserve transactions, R
     } };
     const applied = await applyMigrations(migrationClient);
     assert.ok(applied.includes("202610030004_operation_journal.sql"));
-    assert.equal(applied.length, 6);
+    assert.ok(applied.includes("202610030005_private_index_builds.sql"));
+    assert.equal(applied.length, 7);
     assert.deepEqual(await applyMigrations(migrationClient), []);
     assert.equal((await db.query("select schema_name from information_schema.schemata where schema_name in ('auth','storage')")).rows.length, 0);
     await db.exec(`create role filemind_test_user;
