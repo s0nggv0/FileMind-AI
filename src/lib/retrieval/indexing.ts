@@ -13,6 +13,10 @@ export class IndexingPipeline {
     const generation = randomUUID();
     const chunks = await this.repository.prepareChunks(document, generation);
     const info = this.provider.getModelInfo();
+    if (!chunks.length) {
+      await this.repository.setStatus(document, generation, "failed", info, "NO_CONTENT");
+      return { documentId: document.id, chunks: 0, embedded: 0, cached: 0, status: "failed", errorCode: "NO_CONTENT" };
+    }
     await this.repository.setStatus(document, generation, "embedding", info);
     const cached = await this.vectors.getEmbeddingStatus(document, chunks.map(c => c.id), info);
     const pending = chunks.filter(c => cached.get(c.id) !== embeddingCacheKey(c.contentHash, info.provider, info.model, c.chunkVersion));

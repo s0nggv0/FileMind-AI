@@ -6,6 +6,7 @@ import { getAnalysisCache } from "@/lib/server/analysis-cache";
 import { apiError, readJSON, sameOrigin } from "@/lib/server/http";
 import { workspaceRepository } from "@/lib/server/workspace-repository";
 import { WorkspaceError } from "@/lib/workspace/authorization";
+import { analyzeWorkspaceImage } from "@/lib/server/multimodal";
 export const maxDuration = 300;
 export async function POST(request: Request) {
   try {
@@ -22,7 +23,7 @@ export async function POST(request: Request) {
       async start(output) {
         const encoder = new TextEncoder();
         try {
-          await new LLMAgentRunner(provider, getAnalysisCache(userId, snapshot.id)).execute(snapshot, input.runId, async run => {
+          await new LLMAgentRunner(provider, getAnalysisCache(userId, snapshot.id), (workspace, documentId, signal, event) => analyzeWorkspaceImage(userId, workspace, documentId, signal, event)).execute(snapshot, input.runId, async run => {
             snapshot = await workspaceRepository.save(userId, { ...snapshot, run, documents: run.documents, proposal: run.result ?? null });
             if (!controller.signal.aborted) output.enqueue(encoder.encode(`${JSON.stringify({ run, revision: snapshot.revision })}\n`));
           }, controller.signal);

@@ -82,6 +82,8 @@ export async function parseDocument(document: ParsedDocument, signal: AbortSigna
         if (text.length >= uploadConfig.maxContentCharacters) { truncated = page < pdf.numPages; break; }
       }
       truncated ||= pdf.numPages > uploadConfig.maxPdfPages;
+      const lowTextPages = structure.pages.filter(p => text.slice(p.charStart, p.charEnd).trim().length < 80).length;
+      if (lowTextPages) warnings.push(`Low extracted text on ${lowTextPages} page(s). Possible scanned document; OCR / Vision PDF fallback is not available yet.`);
     } finally { signal.removeEventListener("abort", abort); await task.destroy(); }
   } else {
     const bitmap = await createImageBitmap(file);

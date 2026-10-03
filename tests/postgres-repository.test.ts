@@ -17,7 +17,7 @@ test("ordinary PostgreSQL migration and real repository preserve transactions, R
       if (values) return db.query(sql, values);
       return (await db.exec(sql)).at(-1)!;
     } };
-    assert.equal((await applyMigrations(migrationClient)).length, 2);
+    assert.equal((await applyMigrations(migrationClient)).length, 3);
     assert.deepEqual(await applyMigrations(migrationClient), []);
     assert.equal((await db.query("select schema_name from information_schema.schemata where schema_name in ('auth','storage')")).rows.length, 0);
     await db.exec(`create role filemind_test_user;

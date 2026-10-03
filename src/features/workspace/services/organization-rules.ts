@@ -24,7 +24,7 @@ function proposeDocument(document: ParsedDocument, content: (document: ParsedDoc
   if (/^(img|dsc|screenshot)[-_\d\s]+\./i.test(document.name)) suggestedName = `image-${document.metadata.addedAt.slice(0, 10)}-${document.id.slice(0, 6)}.${extension}`;
   else if (/^final\d*\./i.test(document.name)) suggestedName = `project-report-final.${extension}`;
   else if (/^(untitled|未命名)/i.test(document.name)) suggestedName = `document-${document.id.slice(0, 6)}.${extension}`;
-  const summary = document.type === "image" ? "Image metadata captured locally. Image content has not been analyzed." : text ? `Extracted excerpt: ${text.slice(0, 360)}${text.length > 360 ? "…" : ""}` : `Document named “${document.name}”. No readable text was extracted; topic suggestions use its filename.`;
+  const summary = document.type === "image" ? text ? `Image knowledge: ${text.slice(0, 360)}${text.length > 360 ? "…" : ""}` : "Image metadata captured locally. Image content has not been analyzed." : text ? `Extracted excerpt: ${text.slice(0, 360)}${text.length > 360 ? "…" : ""}` : `Document named “${document.name}”. No readable text was extracted; topic suggestions use its filename.`;
   return { id: document.id, originalName: document.name, name: document.name, category, tags, summary, suggestedName, renameDecision: "pending", document };
 }
 export function buildOrganizationPlan(input: ParsedDocument[], content = getDocumentContent): OrganizationPlan {
@@ -37,7 +37,7 @@ export function buildRelationships(documents: ProposalDocument[]) {
   for (let i = 0; i < documents.length; i++) {
     for (let j = i + 1; j < documents.length; j++) {
       const a = documents[i]; const b = documents[j];
-      const shared = a.tags.find((tag) => !["Document", "Image"].includes(tag) && b.tags.includes(tag));
+      const shared = a.tags.find((tag) => !["document", "image"].includes(tag.toLowerCase()) && b.tags.some(other => other.toLowerCase() === tag.toLowerCase()));
       const sameCategory = a.category === b.category && a.category !== "Uncategorized" && a.category !== "Images";
       if (shared || sameCategory) relationships.push({ id: `${a.id}-${b.id}`, source: a.id, target: b.id, reason: shared ? `Shared tag: ${shared}` : `Shared category: ${a.category}`, decision: "pending", kind: "rule-based" });
     }

@@ -6,6 +6,7 @@ import { getFileStorage } from "@/lib/server/file-storage";
 import { workspaceRepository } from "@/lib/server/workspace-repository";
 import { sameOrigin, apiError } from "@/lib/server/http";
 import { WorkspaceError } from "@/lib/workspace/authorization";
+import { validateImage } from "@/lib/multimodal/image-validation";
 export const runtime = "nodejs";
 
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
@@ -26,6 +27,11 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     const extension = document.name.split(".").pop()?.toLowerCase() ?? "";
     if (!uploadConfig.extensions.includes(extension) || !uploadConfig.mimeTypes[extension]?.includes(document.mimeType) || file.size !== document.size || file.size > uploadConfig.maxFileBytes) throw new WorkspaceError("INVALID_STATE", "Invalid upload metadata.");
     const bytes = Buffer.from(await file.arrayBuffer()); const hash = createHash("sha256").update(bytes).digest("hex");
+    if (document.type === "image") {
+      if (file.type !== document.mimeType) throw new WorkspaceError("INVALID_STATE", "Image MIME does not match metadata.");
+      try { const metadata = await validateImage(bytes, document.name, file.type); Object.assign(document.metadata, { width: metadata.width, height: metadata.height }); }
+      catch { throw new WorkspaceError("INVALID_STATE", "Invalid image MIME, extension, signature or pixel data."); }
+    }
     if (document.contentHash && hash !== document.contentHash) throw new WorkspaceError("INVALID_STATE", "File checksum mismatch.");
     const path = await getFileStorage().putOriginal({ userId: user, workspaceId: id, documentId, extension, bytes });
     document.storagePath = path; document.contentHash = hash;
