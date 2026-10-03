@@ -15,6 +15,7 @@ import { buildRAGContext, validateCitations, generateGroundedAnswer, RAGAnswerSc
 import { DashScopeEmbeddingProvider } from "../src/lib/retrieval/dashscope-provider";
 import type { Evidence } from "../src/lib/retrieval/types";
 import type { AIProvider } from "../src/lib/ai/provider";
+import {verifierFixtureResponse} from "./helpers/verifier-fixture";
 const userId = crypto.randomUUID(), workspaceId = crypto.randomUUID();
 const sample = (id = crypto.randomUUID()): Evidence => ({ id, userId, workspaceId, documentId: crypto.randomUUID(), chunkIndex: 0, content: "Transformer uses query key value self attention.", contentHash: "hash", tokenEstimate: 10, chunkVersion: "chunk-v1", pageStart: 12, pageEnd: 12, lineStart: null, lineEnd: null, paragraphStart: null, paragraphEnd: null, charStart: 0, charEnd: 45, headingPath: [], documentName: "Transformer.pdf", fileType: "pdf", summary: "Attention.", tags: ["AI"], score: 0.9 });
 test("RRF uses ranks, deduplicates lists and records origins", () => {
@@ -131,7 +132,7 @@ test("duplicate live batch indices never silently associate a vector with the wr
 test("citation formatting gets one bounded regeneration and repeats strict source validation", async () => {
   const source = sample(); let calls = 0;
   const answer = { answer: "Attention uses QKV.", citations: [{ sourceId: "S1", chunkId: source.id, documentId: source.documentId }], confidence: "high" as const, insufficientEvidence: false };
-  const provider = { name: "fixture", models: { main: "fixture", small: "fixture" }, generateObject: async () => { calls++; return { object: { ...answer, answer: calls === 1 ? answer.answer : `${answer.answer} [S1]` }, usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 } }; } } as unknown as AIProvider;
+  const provider = { name: "fixture", models: { main: "fixture", small: "fixture" }, generateObject: async (input:{prompt:string}) => { const verification=verifierFixtureResponse(input.prompt);if(verification)return {object:verification,usage:{promptTokens:0,completionTokens:0,totalTokens:0}};calls++; return { object: { ...answer, answer: calls === 1 ? answer.answer : `${answer.answer} [S1]` }, usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 } }; } } as unknown as AIProvider;
   const result = await generateGroundedAnswer("QKV?", [source], { userId }, provider, async () => source, new AbortController().signal);
   assert.equal(calls, 2); assert.equal(result.repaired, true); assert.equal(result.unavailable, false);
   calls = 0;

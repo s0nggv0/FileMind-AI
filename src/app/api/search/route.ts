@@ -11,6 +11,7 @@ import { buildRAGContext, generateGroundedAnswer } from "@/lib/retrieval/rag";
 import { indexingConfig, retrievalConfig } from "@/lib/retrieval/config";
 import { getAIProvider } from "@/lib/ai/get-provider";
 import type { AIProvider } from "@/lib/ai/provider";
+import { VERIFIER_VERSION } from "@/lib/retrieval/answer-verifier";
 export async function GET(request: Request) {
   try {
     const userId = await getUserId();
@@ -50,7 +51,7 @@ export async function POST(request: Request) {
     const stream = new ReadableStream({
       async start(controller) {
         const encoder = new TextEncoder(); let closed = false;
-        const send = (type: string, data: unknown) => { if (!closed) { try { controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type, data })}\n\n`)); } catch { closed = true; } } };
+        const send = (type: string, data: unknown) => { if (!closed && !request.signal.aborted) { try { controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type, data })}\n\n`)); } catch { closed = true; } } };
         try {
           const started = performance.now(); const embedding = configuredEmbedding();
           const engine = new RetrievalEngine(embedding, vectorStore, knowledgeRepository, indexingConfig(process.env).rerankEnabled ? new DeterministicReranker() : null);
@@ -60,12 +61,15 @@ export async function POST(request: Request) {
           else { try { provider = getAIProvider(); } catch {} }
           const llmStarted = performance.now();
           if (input.mode === "ask" && retrieved.evidence.length) send("stage", "Generating answer");
-          const grounded = input.mode === "ask" ? await generateGroundedAnswer(rewrittenQuery, retrieved.evidence, scope, provider, knowledgeRepository.getSource.bind(knowledgeRepository), request.signal, text => send("draft", text.replace(/\[S\d+\]?/g, ""))) : { answer: null, sources: buildRAGContext(retrieved.evidence).sources, unavailable: false };
+          const grounded = input.mode === "ask" ? await generateGroundedAnswer(rewrittenQuery, retrieved.evidence, scope, provider, knowledgeRepository.getSource.bind(knowledgeRepository), request.signal, stage => send("stage", stage)) : { answer: null, sources: buildRAGContext(retrieved.evidence).sources, unavailable: false };
+          request.signal.throwIfAborted();
           const latency = { ...retrieved.latency, llm: input.mode === "ask" ? performance.now() - llmStarted : 0, total: performance.now() - started };
           const result: SearchResult = { id: crypto.randomUUID(), query: input.query, rewrittenQuery, mode: input.mode, answer: grounded.answer, sources: grounded.sources, nearest: buildRAGContext(retrieved.nearest).sources, semanticUnavailable: retrieved.semanticUnavailable, answerUnavailable: grounded.unavailable, mock: retrieved.mock || process.env.AI_ENGINE === "mock", evidenceCount: grounded.sources.length, candidateCount: retrieved.fused.length };
-          if (process.env.NODE_ENV !== "production") result.debug = { queryProfile: retrieved.profile, selectedStrategy: retrieved.route.strategy, reason: retrieved.route.reason, evidenceAssessment: "assessment" in grounded ? grounded.assessment : undefined, semantic: retrieved.semantic.map(s => ({ id: s.id, score: s.score })), lexical: retrieved.lexical.map(s => ({ id: s.id, score: s.score })), fused: retrieved.fused.map(s => ({ id: s.id, score: s.score, fusedRank: s.fusedRank })), reranker: retrieved.reranker, latency };
+          if(input.mode==="ask")result.verification={version:VERIFIER_VERSION,status:grounded.unavailable?"unavailable":"verification" in grounded && grounded.verification?.accepted?(grounded.verification.conflicts.length?"conflict":"verified"):"rejected"};
+          const verified="verification" in grounded?grounded.verification:undefined;
+          if (process.env.NODE_ENV !== "production" && process.env.DEMO_MODE!=="true") result.debug = { queryProfile: retrieved.profile, selectedStrategy: retrieved.route.strategy, reason: retrieved.route.reason, evidenceAssessment: "assessment" in grounded ? grounded.assessment : undefined, verification:verified?{version:verified.version,accepted:verified.accepted,reason:verified.reason,completeness:verified.completeness,faithfulness:verified.faithfulness}:undefined, semantic: retrieved.semantic.map(s => ({ id: s.id, score: s.score })), lexical: retrieved.lexical.map(s => ({ id: s.id, score: s.score })), fused: retrieved.fused.map(s => ({ id: s.id, score: s.score, fusedRank: s.fusedRank })), reranker: retrieved.reranker, latency };
           await database.query(userId, `insert into filemind.retrieval_runs(id,user_id,workspace_id,query,rewritten_query,mode,vector_model,vector_provider,top_k,retrieved_chunk_ids,evidence_ids,reranker_status,latency,result) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::uuid[],$11::uuid[],$12,$13,$14)`, [result.id, userId, input.workspaceId ?? null, input.query, rewrittenQuery, input.mode, embedding?.getModelInfo().model ?? null, embedding?.getModelInfo().provider ?? null, retrievalConfig.vectorTopK, retrieved.fused.map(s => s.id), grounded.sources.map(s => s.id), retrieved.reranker, latency, result]);
-          send("result", result);
+          request.signal.throwIfAborted(); send("result", result);
         } catch { send("error", "Search is temporarily unavailable. Your documents are preserved."); }
         finally { if (!closed) { closed = true; controller.close(); } }
       },

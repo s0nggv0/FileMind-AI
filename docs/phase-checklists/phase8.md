@@ -16,7 +16,7 @@ Baseline before implementation: 69/69 unit/integration tests, zero TypeScript er
 | Upload/Apply/Backup Import/Reindex/Internal Delete recovery | Upload, Apply, Import and Reindex integrated; launcher and authenticated-tenant startup recovery implemented. Internal Delete remains pending. |
 | Storage reconciliation, quarantine and missing-file states | Reconciliation and durable quarantine implemented and tested; Maintenance and Library/Preview UI remain pending. |
 | Real import and reindex process-kill drills | 5/5 real termination windows pass on isolated PostgreSQL: three Import and two Reindex. |
-| Fact verification, bounded repair and conflict detection | Implementation pending |
+| Fact verification, bounded repair and conflict detection | Implemented; 76/76 unit tests, 17/17 offline browser tests and isolated real Kimi/DashScope browser acceptance pass. Full blind conflict metrics remain pending. |
 | Provider failure matrix and Planner diagnostics | Implementation pending |
 | Demo data, reset, preflight and outage plan | Implementation pending |
 | Frozen independent Blind Set and immutable Run #1 | Deferred until production and harness freeze |
@@ -51,3 +51,7 @@ Chunks and each complete embedding batch are durably staged under `.indexes/<own
 Active `index_status` and `index_build_status` are separate. A failed rebuild of unchanged source preserves the old ready index. An actual source change retains the previous stale invalidation safety rule. Without embeddings, a first build can publish a complete lexical index with explicit failed semantic health; no partial vector set is published. Historical evaluation harnesses now call the atomic pipeline and keep their existing freeze/no-overwrite gates and prior results unchanged.
 
 The two real reindex termination windows covered 30% of a replacement build and the barrier before publication. PostgreSQL queries returned the same old vector source IDs and citations before and after recovery, and the build became interrupted. Retrying built a complete replacement with 22 chunks. Repeat recovery was idle. Browser acceptance of the separate build/active status remains pending.
+
+## Answer release gate
+
+See `docs/architecture/answer-verification.md`. Claims, qualifiers, common numerical equivalences, citations and conflicts are checked before release. Citation and factual repairs share one regeneration; a judge outage is unavailable, not a refusal. The browser has no unverified draft state. Four bounded desktop/mobile screenshots were inspected without overflow. The real-provider harness creates a new empty PostgreSQL instance with new credentials, sends only its synthetic fixture to Kimi/DashScope, and stops and cleans only that instance. The five original user document edits remain untouched.
