@@ -14,7 +14,7 @@ test.afterEach(async ({ page }) => { expect((page as Page & { qaErrors: string[]
 async function review(page: Page) { await page.getByRole("button", { name: "Organize with FileMind" }).click(); await expect(page.getByRole("heading", { name: "Organization Proposal" })).toBeVisible({ timeout: 25_000 }); }
 async function capture(page: Page, name: string) {
   mkdirSync("artifacts/phase3-qa", { recursive: true });
-  await page.evaluate(async () => { window.scrollTo({ top: 0, left: 0, behavior: "instant" }); await document.fonts.ready; await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))); });
+  await page.evaluate(async () => { await document.fonts.ready; if (document.activeElement instanceof HTMLElement) document.activeElement.blur(); await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))); window.scrollTo({ top: 0, left: 0, behavior: "instant" }); });
   expect(await page.evaluate(() => window.scrollY)).toBe(0);
   await page.screenshot({ path: `artifacts/phase3-qa/${name}.png`, fullPage: true });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
