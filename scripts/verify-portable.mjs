@@ -119,7 +119,7 @@ try {
     const role = (await client.query("select rolsuper,rolcreatedb,rolcreaterole,rolbypassrls from pg_roles where rolname='filemind_user'")).rows[0];
     assert.deepEqual(role, { rolsuper: false, rolcreatedb: false, rolcreaterole: false, rolbypassrls: false });
     assert.equal((await client.query("select count(*)::int as n from pg_database where datname='yunxiu'")).rows[0].n, 0);
-    assert.equal((await client.query("select count(*)::int as n from information_schema.tables where table_schema='filemind'")).rows[0].n, 13);
+    assert.equal((await client.query("select count(*)::int as n from information_schema.tables where table_schema='filemind'")).rows[0].n, 15);
   });
   await db(source, async client => {
     assert.equal((await client.query("select count(*)::int as n from filemind.workspaces")).rows[0].n, 0);
