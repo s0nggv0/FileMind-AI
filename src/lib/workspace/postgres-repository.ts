@@ -7,6 +7,7 @@ export interface TenantDatabase { query(userId: string, sql: string, values?: un
 export interface TransactionQuery { query(sql: string, values?: unknown[]): Promise<{ rows: unknown[] }> }
 export interface TransactionalTenantDatabase extends TenantDatabase {
   transaction<T>(userId: string, work: (client: TransactionQuery) => Promise<T>, consistentRead?: boolean): Promise<T>;
+  withOperationLock?<T>(key: string, work: (leaseSignal: AbortSignal) => Promise<T>, tryOnly?: boolean): Promise<T | null>;
 }
 export const PostgresDateSchema = z.preprocess(value => value instanceof Date ? value.toISOString() : value, DatabaseTimestampSchema);
 const WorkspaceRow = z.object({ snapshot: z.record(z.string(), z.unknown()), revision: z.number().int(), updated_at: PostgresDateSchema });

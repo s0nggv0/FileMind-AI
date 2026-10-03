@@ -70,7 +70,9 @@ export class BackupService {
                     created_at: string;
                 }).created_at).toISOString() };
             for (const t of tables) {
-                const result = await tx.query(`select to_jsonb(t)-'user_id' as row from filemind.${t.table} t where t.user_id=$1`, [userId]);
+                // Export the format's explicit allowlist. Local operational fields
+                // (storage health, journals, builds) are not archive authority.
+                const result = await tx.query(`select to_jsonb(t) as row from (select ${t.columns.split(" ").join(",")} from filemind.${t.table} where user_id=$1) t`, [userId]);
                 data[t.table] = result.rows.map(r => neutral((r as {
                     row: BackupRow;
                 }).row) as BackupRow);
