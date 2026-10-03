@@ -29,7 +29,8 @@ async function limited<T>(limit: number, signal: AbortSignal, action: () => Prom
 export class MultimodalPipeline {
   constructor(private vision: VisionProvider | null, private ocr: OCRProvider | null, private env: Record<string, string | undefined> = {}) {}
   async analyze(documentId: string, image: ImageInput, contentHash: string, signal: AbortSignal, cached?: MultimodalAnalysis | null, event: (message: string) => Promise<void> = async () => {}) {
-    const info = this.vision?.getModelInfo() ?? { provider: "unavailable", model: "none", promptVersion: "none" };
+    const preserveVision = !this.vision && cached?.imageHash === contentHash && cached.vision && cached.visionPromptVersion;
+    const info = this.vision?.getModelInfo() ?? (preserveVision ? { provider: cached.provider, model: cached.model, promptVersion: cached.visionPromptVersion! } : { provider: "unavailable", model: "none", promptVersion: "none" });
     const engine = this.ocr?.getEngineInfo() ?? { engine: "disabled", version: "none" };
     const visionCacheKey = imageCacheKey(contentHash, info.provider, info.model, info.promptVersion);
     const ocrCacheKey = imageCacheKey(contentHash, engine.engine, engine.version, "ocr-v1");
@@ -59,6 +60,7 @@ export class MultimodalPipeline {
         visionStatus: vision ? "ready" : this.vision ? "failed" : "disabled", ocrStatus: ocr ? "ready" : this.ocr ? "failed" : "disabled",
         provider: info.provider, model: info.model, ocrEngine: engine.engine, analysisVersion: MULTIMODAL_INDEX_VERSION,
         visionCacheKey, ocrCacheKey, createdAt: new Date().toISOString(), usage: { requests, latencyMs: Math.round(performance.now() - start), ...usage },
+        imageHash: contentHash, visionPromptVersion: info.promptVersion, ocrVersion: engine.version,
       };
       return { analysis, ...mergeKnowledge(analysis) };
     });

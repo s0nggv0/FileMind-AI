@@ -47,7 +47,8 @@ export async function refreshMultimodalVersions(scope: RetrievalScope) {
     const record = await multimodalRepository.get(scope, row.document_id); if (!record) continue;
     const { imageCacheKey } = await import("../multimodal/pipeline");
     const source = await imageSource(scope, row.document_id);
-    const changed = record.analysisVersion !== MULTIMODAL_INDEX_VERSION || (info && record.visionCacheKey !== imageCacheKey(source.content_hash, info.provider, info.model, VISION_PROMPT_VERSION)) || record.ocrEngine !== (process.env.OCR_ENGINE === "disabled" ? "disabled" : "tesseract.js");
+    const ocrInfo = process.env.OCR_ENGINE === "disabled" ? { engine: "disabled", version: "none" } : new PortableOCRProvider().getEngineInfo();
+    const changed = record.analysisVersion !== MULTIMODAL_INDEX_VERSION || (info && record.visionCacheKey !== imageCacheKey(source.content_hash, info.provider, info.model, VISION_PROMPT_VERSION)) || record.ocrCacheKey !== imageCacheKey(source.content_hash, ocrInfo.engine, ocrInfo.version, "ocr-v1");
     if (changed) await database.query(scope.userId, "update filemind.documents set index_status='stale',vision_status='stale' where user_id=$1 and id=$2 and index_status='ready'", [scope.userId, row.document_id]);
   }
 }

@@ -35,6 +35,9 @@ test("cache includes content/provider/model/prompt and independently reuses OCR"
   const pipeline = new MultimodalPipeline(counted, ocr); const id = randomUUID();
   const a = await pipeline.analyze(id, image, "hash", signal()); const b = await pipeline.analyze(id, image, "hash", signal(), a.analysis);
   assert.equal(calls, 1); assert.equal(b.analysis.usage.requests, 0); assert.equal(b.text, a.text);
+  const offline = await new MultimodalPipeline(null, ocr).analyze(id, image, "hash", signal(), a.analysis);
+  assert.deepEqual(offline.analysis.vision, a.analysis.vision);
+  assert.equal((await new MultimodalPipeline(null, ocr).analyze(id, image, "different", signal(), a.analysis)).analysis.vision, null);
   await pipeline.analyze(id, image, "changed", signal(), a.analysis); assert.equal(calls, 2);
   await new MultimodalPipeline({ ...counted, getModelInfo: () => ({ provider: "test", model: "test", promptVersion: "v2" }) }, ocr).analyze(id, image, "hash", signal(), a.analysis); assert.equal(calls, 3);
 });

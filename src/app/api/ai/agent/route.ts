@@ -18,13 +18,14 @@ export async function POST(request: Request) {
     if (snapshot.run && !["failed", "cancelled"].includes(snapshot.run.status)) throw new WorkspaceError("INVALID_STATE", "This workspace already has an active or completed run.", 409);
     // Configuration failure is surfaced, so browser can explicitly continue locally.
     const provider = getAIProvider();
+    const analysisSnapshot = snapshot;
     const controller = new AbortController(); const abort = () => controller.abort(); request.signal.addEventListener("abort", abort, { once: true });
     const stream = new ReadableStream<Uint8Array>({
       async start(output) {
         const encoder = new TextEncoder();
         try {
-          await new LLMAgentRunner(provider, getAnalysisCache(userId, snapshot.id), (workspace, documentId, signal, event) => analyzeWorkspaceImage(userId, workspace, documentId, signal, event)).execute(snapshot, input.runId, async run => {
-            snapshot = await workspaceRepository.save(userId, { ...snapshot, run, documents: run.documents, proposal: run.result ?? null });
+          await new LLMAgentRunner(provider, getAnalysisCache(userId, snapshot.id), (workspace, documentId, signal, event) => analyzeWorkspaceImage(userId, workspace, documentId, signal, event)).execute(analysisSnapshot, input.runId, async run => {
+            snapshot = await workspaceRepository.save(userId, { ...snapshot, texts: analysisSnapshot.texts, run, documents: run.documents, proposal: run.result ?? null });
             if (!controller.signal.aborted) output.enqueue(encoder.encode(`${JSON.stringify({ run, revision: snapshot.revision })}\n`));
           }, controller.signal);
         } catch { if (!controller.signal.aborted) output.enqueue(encoder.encode(`${JSON.stringify({ error: "Workspace could not be saved. Retry or reload to recover." })}\n`)); }
