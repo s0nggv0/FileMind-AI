@@ -20,11 +20,12 @@ function prepareLanguages() {
   return languagePathPromise;
 }
 export class PortableOCRProvider implements OCRProvider {
+  constructor(private workerFactory:typeof createWorker=createWorker) {}
   getEngineInfo() { return { engine: "tesseract.js", version: "7-eng-chi_sim-4.0.0_best_int" }; }
   async extractText(image: ImageInput, signal: AbortSignal) {
     signal.throwIfAborted();
     // Bundled compressed language bytes eliminate runtime network downloads.
-    const worker = await createWorker("eng+chi_sim", OEM.LSTM_ONLY, {
+    const worker = await this.workerFactory("eng+chi_sim", OEM.LSTM_ONLY, {
       langPath: await prepareLanguages(),
       workerPath: resolvePackage("tesseract.js/src/worker-script/node/index.js"),
       corePath: dirname(resolvePackage("tesseract.js-core/package.json")), cacheMethod: "none", logger: () => {},
