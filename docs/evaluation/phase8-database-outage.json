@@ -1,0 +1,14 @@
+{
+  "passed": true,
+  "mode": "real production HTTP/UI with refused loopback database connection",
+  "existingDatabaseTouched": false,
+  "externalCalls": 0,
+  "checks": {
+    "noFalseSave": true,
+    "searchExplicit503": true,
+    "routeRetryWithoutStack": true,
+    "settingsRouteUnavailableWithRetry": true,
+    "mobileNoBlankOrOverflow": true
+  },
+  "checkedAt": "2026-10-03T13:39:06.154Z"
+}

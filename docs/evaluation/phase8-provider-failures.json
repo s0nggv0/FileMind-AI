@@ -1,0 +1,96 @@
+{
+  "checkedAt": "2026-10-03T13:32:11.239Z",
+  "passed": true,
+  "externalCalls": 0,
+  "faults": [
+    {
+      "fault": "Kimi unavailable",
+      "mode": "Injected transport through production Kimi SDK adapter",
+      "passed": true,
+      "durationMs": 37.2525,
+      "outcome": "Answer unavailable (UNAVAILABLE); sources retained"
+    },
+    {
+      "fault": "Kimi timeout",
+      "mode": "Injected transport through production Kimi SDK adapter",
+      "passed": true,
+      "durationMs": 1.5269999999999868,
+      "outcome": "Answer unavailable (TIMEOUT); sources retained"
+    },
+    {
+      "fault": "Kimi invalid response",
+      "mode": "Injected transport through production Kimi SDK adapter",
+      "passed": true,
+      "durationMs": 3.7426999999999566,
+      "outcome": "Answer unavailable (STRUCTURED_OUTPUT); sources retained"
+    },
+    {
+      "fault": "DashScope unavailable",
+      "mode": "Injected transport through production DashScope adapter",
+      "passed": true,
+      "durationMs": 1.778599999999983,
+      "outcome": "Lexical fallback returned stored evidence"
+    },
+    {
+      "fault": "DashScope timeout",
+      "mode": "Injected transport through production DashScope adapter",
+      "passed": true,
+      "durationMs": 0.20940000000001646,
+      "outcome": "Lexical fallback returned stored evidence"
+    },
+    {
+      "fault": "Vision unavailable",
+      "mode": "Injected Kimi Vision transport + actual bundled Tesseract worker",
+      "passed": true,
+      "durationMs": 917.7062999999998,
+      "outcome": "OCR-only searchable text retained"
+    },
+    {
+      "fault": "OCR worker failure",
+      "mode": "Injected worker initialization failure + labelled Vision fixture",
+      "passed": true,
+      "durationMs": 3.179500000000189,
+      "outcome": "Vision-only content retained with AI interpretation label"
+    },
+    {
+      "fault": "Vision and OCR unavailable",
+      "mode": "Both production providers have injected failures",
+      "passed": true,
+      "durationMs": 7.203500000000531,
+      "outcome": "Image retained with no content-search claim"
+    },
+    {
+      "fault": "Storage read-only",
+      "mode": "Simulated EACCES at atomic publication barrier",
+      "passed": true,
+      "durationMs": 22.956899999999223,
+      "outcome": "Failure surfaced; complete previous bytes preserved"
+    },
+    {
+      "fault": "Disk full",
+      "mode": "Simulated ENOSPC at atomic publication barrier",
+      "passed": true,
+      "durationMs": 17.710799999999836,
+      "outcome": "Failure surfaced; complete previous bytes preserved"
+    },
+    {
+      "fault": "Corrupt document",
+      "mode": "Actual Mammoth parser with invalid synthetic DOCX bytes",
+      "passed": true,
+      "durationMs": 72.53410000000076,
+      "outcome": "Corrupt document rejected before extracted content publication"
+    },
+    {
+      "fault": "PostgreSQL unavailable",
+      "mode": "Actual refused loopback connection, no existing database touched",
+      "passed": true,
+      "durationMs": 15.95929999999953,
+      "outcome": "Database connection failed explicitly"
+    }
+  ],
+  "notes": [
+    "Fault injection is labelled; these are not live remote outages, hard power loss or an actual full disk.",
+    "UI failure acceptance is recorded separately in browser results.",
+    "Successful real Kimi/DashScope calls are recorded separately in phase8-rag-live-browser.json."
+  ]
+}

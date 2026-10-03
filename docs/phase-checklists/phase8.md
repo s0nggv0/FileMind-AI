@@ -17,7 +17,7 @@ Baseline before implementation: 69/69 unit/integration tests, zero TypeScript er
 | Storage reconciliation, quarantine and missing-file states | Maintenance, Library and source preview implemented; isolated PostgreSQL browser acceptance passes at 1440/390 px. |
 | Real import and reindex process-kill drills | 5/5 real termination windows pass on isolated PostgreSQL: three Import and two Reindex. |
 | Fact verification, bounded repair and conflict detection | Implemented; 76/76 unit tests, 17/17 offline browser tests and isolated real Kimi/DashScope browser acceptance pass. Full blind conflict metrics remain pending. |
-| Provider failure matrix and Planner diagnostics | Metadata-only logs and reasoned Planner metrics implemented. Local fault matrix passes 12 cases; a separate evidence commit and database outage UI acceptance remain pending. |
+| Provider failure matrix and Planner diagnostics | 12/12 labelled local fault cases pass; actual refused PostgreSQL HTTP/UI returns 503 with visible retry. Strict metadata logs and Planner reason metrics implemented; historical Phase 7 root cause is unavailable. |
 | Demo data, reset, preflight and outage plan | Implementation pending |
 | Frozen independent Blind Set and immutable Run #1 | Deferred until production and harness freeze |
 | Performance, memory and security regression | Verification pending |
