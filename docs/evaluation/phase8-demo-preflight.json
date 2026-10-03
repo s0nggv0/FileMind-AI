@@ -1,0 +1,100 @@
+{
+  "version": "demo-preflight-v1",
+  "checkedAt": "2026-10-03T14:02:58.171Z",
+  "ready": true,
+  "syntheticSmoke": true,
+  "checks": [
+    {
+      "name": "Database",
+      "ok": true,
+      "durationMs": 29.78200000000004,
+      "detail": {
+        "reachable": true
+      }
+    },
+    {
+      "name": "Storage",
+      "ok": true,
+      "durationMs": 17.182399999999973
+    },
+    {
+      "name": "Kimi Key",
+      "ok": true,
+      "durationMs": 0.032300000000020646
+    },
+    {
+      "name": "DashScope Key",
+      "ok": true,
+      "durationMs": 0.01310000000000855
+    },
+    {
+      "name": "Kimi Smoke",
+      "ok": true,
+      "durationMs": 965.9601000000001,
+      "detail": {
+        "model": "kimi-k2.6"
+      }
+    },
+    {
+      "name": "Embedding Smoke",
+      "ok": true,
+      "durationMs": 268.9752000000001,
+      "detail": {
+        "provider": "dashscope",
+        "model": "qwen3.7-text-embedding-flash",
+        "dimensions": 1024
+      }
+    },
+    {
+      "name": "Demo Data",
+      "ok": true,
+      "durationMs": 35.94640000000004,
+      "detail": {
+        "documents": 10,
+        "recommended": 8
+      }
+    },
+    {
+      "name": "Vision Smoke",
+      "ok": true,
+      "durationMs": 6753.6687999999995,
+      "detail": {
+        "model": "kimi-k2.6"
+      }
+    },
+    {
+      "name": "OCR Worker",
+      "ok": true,
+      "durationMs": 1147.3279999999995,
+      "detail": {
+        "engine": "tesseract.js",
+        "confidence": 0.95
+      }
+    },
+    {
+      "name": "Disk Space",
+      "ok": true,
+      "durationMs": 0.2960000000002765,
+      "detail": {
+        "availableBytes": 308924190720
+      }
+    },
+    {
+      "name": "Port",
+      "ok": true,
+      "durationMs": 1.9083000000009633,
+      "detail": {
+        "port": 61940,
+        "available": true
+      }
+    },
+    {
+      "name": "Build Version",
+      "ok": true,
+      "durationMs": 0.4464000000007218,
+      "detail": {
+        "buildId": "CkeA3NJ9q56WXb_73H77G"
+      }
+    }
+  ]
+}

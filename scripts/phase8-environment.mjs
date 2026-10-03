@@ -27,7 +27,7 @@ export async function freePort() {
 export async function prepareEnvironment({ live = false } = {}) {
   const root = assertTestRoot(join(projectRoot, "artifacts", `phase8-fresh-${randomUUID()}`));
   await mkdir(root, { recursive: true });
-  const assets = ["scripts", "database", ".env.example", ".next/standalone", ".filemind/runtime", ".filemind/postgresql/runtime"];
+  const assets = ["scripts", "database", ".env.example", ".next/standalone", ".filemind/runtime", ".filemind/postgresql/runtime", "tests/fixtures/demo"];
   for (const name of assets) await cp(join(projectRoot, name), join(root, name), { recursive: true });
   // Defensive removal for older traced builds. Never copy the source dotenv.
   const traced = join(root, ".next/standalone/.env.local");

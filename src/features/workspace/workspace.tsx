@@ -10,7 +10,7 @@ import { AgentExecution } from "./components/agent-execution";
 import { OrganizationReview } from "./components/organization-review";
 import { CompletionState } from "./components/completion-state";
 
-export function Workspace({ workspaceId }: { workspaceId?: string }) {
+export function Workspace({ workspaceId,demoMode=false }: { workspaceId?: string;demoMode?:boolean }) {
   const run = useWorkspaceStore((state) => state.run); const proposal = useWorkspaceStore((state) => state.proposal);
   const focus = useRef<HTMLDivElement>(null);
   const { initialize, initialized, persistent, engineLabel, saveStatus, errors } = useWorkspaceStore();
@@ -22,7 +22,7 @@ export function Workspace({ workspaceId }: { workspaceId?: string }) {
     {run && errors.length > 0 && <p role="alert" className="text-sm text-destructive">{errors.join(" ")}</p>}
     <nav aria-label="Workspace stages" className="flex flex-wrap gap-5 border-b pb-4">{["Upload", "Agent Execution", "Review & Apply"].map((label, index) => <span key={label} aria-current={stage === index ? "step" : undefined} className={cn("flex items-center gap-2 text-xs", stage === index ? "font-medium text-primary" : "text-muted-foreground")}><span className={cn("flex size-6 items-center justify-center rounded-full tabular-nums", stage === index ? "bg-accent" : "bg-muted")}>{index + 1}</span>{label}</span>)}</nav>
     <div ref={focus} tabIndex={-1} className="outline-none">
-      {initialized && !run && <div className="space-y-6"><UploadDropzone /><FileQueue /></div>}
+      {initialized && !run && <div className="space-y-6"><UploadDropzone /><FileQueue demoMode={demoMode} /></div>}
       {run && stage === 1 && <AgentExecution run={run} />}
       {run?.status === "waiting_for_review" && proposal && <OrganizationReview plan={proposal} />}
       {run?.status === "applying" && <section className="surface-secondary p-8" role="status"><h2 className="text-2xl font-medium">Applying your plan…</h2><p className="mt-3 text-sm text-muted-foreground">Updating categories, accepted names and connections inside FileMind.</p></section>}

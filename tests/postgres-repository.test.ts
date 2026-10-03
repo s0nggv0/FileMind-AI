@@ -21,7 +21,8 @@ test("ordinary PostgreSQL migration and real repository preserve transactions, R
     assert.ok(applied.includes("202610030004_operation_journal.sql"));
     assert.ok(applied.includes("202610030005_private_index_builds.sql"));
     assert.ok(applied.includes("202610030006_storage_health.sql"));
-    assert.equal(applied.length, 8);
+    assert.ok(applied.includes("202610030007_demo_workspace.sql"));
+    assert.equal(applied.length, 9);
     assert.deepEqual(await applyMigrations(migrationClient), []);
     assert.equal((await db.query("select schema_name from information_schema.schemata where schema_name in ('auth','storage')")).rows.length, 0);
     await db.exec(`create role filemind_test_user;

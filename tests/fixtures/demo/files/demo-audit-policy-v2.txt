@@ -1,0 +1,1 @@
+Synthetic Aurora Demo Audit Policy v2, issued 2027-02-09. This document explicitly supersedes Aurora Demo Audit Policy v1 for temporary audit records. The updated retention is 12 hours. The prior 6-hour statement remains visible in v1; cite both documents when explaining the change.
