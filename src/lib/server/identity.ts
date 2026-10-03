@@ -21,7 +21,13 @@ export async function getUserId(create = false) {
     }
   }
   if (!create) return null;
-  const id = crypto.randomUUID(); const signature = createHmac("sha256", secret()).update(id).digest("hex");
-  jar.set("filemind-session", `${id}.${signature}`, { httpOnly: true, sameSite: "strict", secure: process.env.NODE_ENV === "production" && process.env.WORKSPACE_COOKIE_SECURE !== "false", path: "/", maxAge: 60 * 60 * 24 * 365 });
+  const id = crypto.randomUUID();
+  await issueIdentityCookie(id);
   return id;
+}
+export async function issueIdentityCookie(id: string) {
+  z.uuid().parse(id);
+  const jar = await cookies();
+  const signature = createHmac("sha256", secret()).update(id).digest("hex");
+  jar.set("filemind-session", `${id}.${signature}`, { httpOnly: true, sameSite: "strict", secure: process.env.NODE_ENV === "production" && process.env.WORKSPACE_COOKIE_SECURE !== "false", path: "/", maxAge: 60 * 60 * 24 * 365 });
 }
