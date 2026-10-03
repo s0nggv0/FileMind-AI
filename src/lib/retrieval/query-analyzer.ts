@@ -21,7 +21,7 @@ export class QueryAnalyzer {
     const han = (text.match(/\p{Script=Han}/gu) ?? []).length;
     const latin = /[a-z]/i.test(text);
     const filenames = text.match(/(?:[\w\u4e00-\u9fff-]+\.)+(?:pdf|docx|txt|md|png|jpe?g|csv|tsx?|jsx?|json|ya?ml)\b/gi) ?? [];
-    const code = text.match(/\b(?:[a-z]+[A-Z][\w]*|[A-Za-z]+_[A-Za-z_\d]+|[A-Za-z_$][\w$]*\(\))/g) ?? [];
+    const code = text.match(/\b(?:[a-z]+[A-Z][\w]*|[A-Z][a-z]+[A-Z][\w]*|[A-Za-z]+_[A-Za-z_\d]+|(?:[A-Za-z_$][\w$]*\.)+[A-Za-z_$][\w$]*|[A-Za-z_$][\w$]*\(\))/g) ?? [];
     const versions = text.match(/\b(?:[\w-]*v?\d+\.\d+(?:\.\d+)?(?:-[\w.]+)?)\b/gi) ?? [];
     const errors = text.match(/\b(?:HTTP\s*[1-5]\d{2}|RFC\s*\d{3,5}|[A-Z][A-Z_]*\d{3,}|[A-Z][A-Z_]+_[A-Z_]+)\b/g) ?? [];
     const quotes = [...text.matchAll(/["“`「]([^"”`」]{1,160})["”`」]/g)].map(m => m[1]);

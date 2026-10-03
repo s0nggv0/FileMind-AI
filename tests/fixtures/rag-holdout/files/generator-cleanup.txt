@@ -1,0 +1,3 @@
+Closing a paused generator
+
+The synthetic Python lesson puts resource cleanup in a generator's finally block. A generator paused at yield may still hold its resource. A caller that stops consuming early should close it or use an appropriate context manager. Reaching the end normally also runs cleanup. Lazy iteration saves work but does not automatically guarantee prompt release of every file handle. The demonstration uses stream_rows() and observes cleanup after explicitly closing the iterator.

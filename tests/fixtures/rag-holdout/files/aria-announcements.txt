@@ -1,0 +1,3 @@
+Let the current sentence finish
+
+The synthetic accessibility note uses an aria-live polite region for a saved-status message. A screen reader can finish its current announcement before reading the update. An assertive region is reserved for an interruption that needs immediate attention. Replacing the entire region repeatedly can cause noisy or missed announcements. The example announces completion once and keeps a visible text status. Moving keyboard focus is a separate action and is not caused automatically by a live region.

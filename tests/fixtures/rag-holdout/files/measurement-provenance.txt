@@ -1,0 +1,3 @@
+Trace a plotted point back to a reading
+
+The synthetic Meadow experiment keeps raw sensor readings, a cleaning script version and a transformation record. Each plotted value links to the input readings and transformation that produced it. Correcting a sensor offset generates a new derived dataset while retaining the raw data. Provenance shows how a value was produced; it does not guarantee the sensor measured the intended phenomenon. The experiment records measurement assumptions separately from computation history.

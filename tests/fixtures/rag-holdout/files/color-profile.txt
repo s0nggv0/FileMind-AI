@@ -1,0 +1,3 @@
+The same numbers need a color context
+
+The synthetic print studio note attaches a color profile to an image so a receiving device can interpret its color values. The same RGB triplet can represent different intended colors in different spaces. Conversion between spaces may clip colors outside the target gamut. Assigning a different profile changes interpretation without the same transformation as converting the pixel values. The studio therefore records both source and destination profiles during export.

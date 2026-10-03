@@ -1,0 +1,3 @@
+Finding a differing subtree
+
+The synthetic Wren replicas build a Merkle tree whose leaves hash catalogue records. Parent hashes summarize child hashes. Equal roots provide a compact comparison of the represented state; differing roots lead the repair process to compare child subtrees until it finds differing leaves. The protocol transfers affected records rather than the entire catalogue. A hash match depends on the collision resistance and identical serialization rules. The tree does not itself decide which conflicting edit wins.

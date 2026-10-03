@@ -1,0 +1,3 @@
+Elapsed time survives wall-clock correction
+
+The synthetic Lark recorder measures operation duration with a monotonic clock. Wall time can jump when an administrator corrects it or synchronization adjusts the clock. Subtracting two wall timestamps can therefore produce a negative duration. A monotonic reading is meaningful as a difference within one clock domain; it is not a calendar date and should not be compared across unrelated machines. The recorder stores a separate wall timestamp for a human event log.

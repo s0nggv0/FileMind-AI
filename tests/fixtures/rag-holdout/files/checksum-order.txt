@@ -1,0 +1,3 @@
+Canonicalize a structured record
+
+The synthetic Sedge catalogue serializes records using a defined field order and number representation before hashing them. Two JSON strings can represent equivalent objects yet differ in whitespace or key order, producing different byte hashes. Canonical serialization makes an integrity comparison about the agreed representation. It does not prove authorship; a malicious party able to replace both a record and its checksum can construct a matching pair.

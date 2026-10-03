@@ -1,0 +1,3 @@
+Subtract the camera's own signal
+
+The synthetic observatory manual records a dark frame with the shutter closed at the same exposure duration and sensor temperature as a light frame. The dark frame estimates thermal signal and related camera contributions. A flat frame instead measures uneven sensitivity and optical illumination. The manual avoids confusing these calibrations. Averaging several dark frames reduces random variation in the estimate, while a temperature mismatch can leave systematic residuals.

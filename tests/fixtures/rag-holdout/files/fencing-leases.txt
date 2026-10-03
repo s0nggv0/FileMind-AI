@@ -1,0 +1,3 @@
+Fencing a stale writer
+
+The synthetic Finch object store grants a writer a lease and a strictly increasing fencing token. A paused writer may resume after its lease expires, so expiry alone is insufficient. The storage service records the largest token accepted and rejects every write with an older token. Token comparison happens at the write boundary. Finch's example accepts token 84 and rejects a delayed request carrying 83. This is an ordering guarantee, not proof that the writer's local clock is synchronized.

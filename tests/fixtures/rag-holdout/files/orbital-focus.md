@@ -1,0 +1,3 @@
+One focus contains the central body
+
+The synthetic astronomy note draws an elliptical orbit around a dominant central mass. The central mass sits at one focus of the ellipse, not necessarily at its geometric centre. The orbiting body's distance therefore changes along the path. Equal swept areas in equal times describe changing speed along the ellipse. The note treats this as an ideal two-body model and leaves perturbations from other bodies outside its classroom diagram.

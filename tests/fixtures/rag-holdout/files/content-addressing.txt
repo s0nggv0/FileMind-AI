@@ -1,0 +1,3 @@
+A name derived from the bytes
+
+The synthetic Dove store names immutable blobs by a SHA-256 digest of their bytes. Equal content produces the same address under the specified algorithm. Changing one byte creates a different address, so mutation publishes a new object instead of replacing the bytes behind the old name. Human-readable labels are kept in a separate catalogue. Content addressing aids deduplication and integrity checking, but knowledge of a digest must not bypass access checks.

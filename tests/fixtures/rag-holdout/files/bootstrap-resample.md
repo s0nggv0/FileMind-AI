@@ -1,0 +1,3 @@
+Resample the observations you actually have
+
+The synthetic data lesson constructs bootstrap samples by drawing observations with replacement from the measured sample. It recomputes the statistic in each sample to inspect its variability. Resampling does not create observations from a population that was absent in the original sample. Clustered measurements need a resampling unit that respects their dependence. The example estimates a median's uncertainty; it does not treat the bootstrap distribution as proof that the measurement process is unbiased.

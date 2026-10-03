@@ -1,0 +1,3 @@
+Balance a prediction and a noisy reading
+
+The synthetic tracking note combines a state prediction with a new sensor measurement. The Kalman gain determines how much the innovation adjusts the predicted state. Greater measurement uncertainty usually reduces the measurement's influence under the model. A poor motion model can still make the filter confidently wrong. The class records process and measurement assumptions separately and does not claim the filter discovers a motion law without those assumptions.

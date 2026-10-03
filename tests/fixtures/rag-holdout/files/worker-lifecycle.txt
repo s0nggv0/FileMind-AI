@@ -1,0 +1,3 @@
+Waiting for the old worker to release clients
+
+The synthetic offline note describes a service worker that installs a new cache but waits before activating while old clients remain controlled. skipWaiting() requests early activation, which can mix a new worker with a page loaded using old assets. The example sends a version notice and lets the user reload at a convenient point. Cache migration must handle both versions during the transition. Service workers do not turn every failed request into a successful offline response.

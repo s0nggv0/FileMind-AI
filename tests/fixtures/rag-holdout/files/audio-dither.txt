@@ -1,0 +1,3 @@
+Noise can break a quantization pattern
+
+The synthetic audio class adds low-level dither before reducing sample bit depth. The added noise decorrelates quantization error from the signal, making some low-level behavior less pattern-like. Dither does not reconstruct information already removed by an earlier lossy process. Noise shaping redistributes noise across frequencies under a chosen design. The exercise compares silence and a quiet tone rather than judging quality solely by file size.

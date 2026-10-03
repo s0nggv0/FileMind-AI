@@ -1,0 +1,3 @@
+A membership filter's one-sided error
+
+A Bloom filter in the Cedar archive sets several bits for each inserted key. When any required bit is zero, the key is definitely absent. When all bits are one, the key may be present, because other keys can set those bits. The archive therefore verifies positive results in the underlying catalogue. Increasing the filter size can reduce false positives. Standard bit arrays do not support simple deletion without disturbing other keys; the archive uses a counting variant for deletion.

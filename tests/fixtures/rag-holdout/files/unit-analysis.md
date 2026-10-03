@@ -1,0 +1,3 @@
+Units must agree before numbers matter
+
+The synthetic laboratory note checks dimensions on both sides of a proposed formula. Adding a length directly to a duration is not physically meaningful. A numerical fit does not rescue a dimensionally inconsistent equation. Conversion factors keep units explicit when centimetres and metres meet. Dimensional analysis can reject an impossible form but cannot determine every dimensionless constant or prove that a valid-looking equation describes the experiment.

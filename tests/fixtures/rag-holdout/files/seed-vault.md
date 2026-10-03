@@ -1,0 +1,3 @@
+Track a lot independently of its shelf
+
+The synthetic greenhouse catalogue assigns each seed lot a stable identifier LOT-CEDAR-27. A shelf location can change without changing the lot's identity. Germination tests record their date, method and counted seeds, rather than replacing the acquisition record. Moving a lot between cold rooms updates a location history. The catalogue separates a physical container from the biological lot so dividing one lot into two containers does not invent two acquisitions.

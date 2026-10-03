@@ -1,0 +1,3 @@
+Two motions can share the same samples
+
+The synthetic signal lesson shows that sampling below the required rate can make a fast oscillation appear to be a slower one. An anti-alias low-pass filter removes frequencies above the allowed band before sampling. Increasing display resolution after acquisition cannot recover distinctions already lost in the measurements. The class names this ambiguity aliasing and separates it from noise added by a sensor. Its sampling clock and input bandwidth are recorded together.

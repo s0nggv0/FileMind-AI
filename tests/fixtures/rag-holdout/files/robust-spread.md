@@ -1,0 +1,3 @@
+Spread around the median
+
+The synthetic sensor note computes each reading's absolute deviation from the median and takes the median of those deviations. This median absolute deviation is less sensitive to a few extreme observations than a standard deviation based on squared differences. A scale conversion depends on the assumed reference distribution. The note keeps extreme readings in the archive and investigates their source instead of deleting them merely because they are inconvenient.

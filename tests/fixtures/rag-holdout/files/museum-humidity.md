@@ -1,0 +1,3 @@
+Slow the change, not just the average
+
+The synthetic museum note monitors the rate of relative humidity change as well as its daily average. Rapid changes can strain objects even when a daily average lies within the chosen band. The exhibit protocol logs sensor placement because a wall reading may differ from conditions inside a display case. Its numeric limits belong to the exhibit's separate chart. A stable room average does not demonstrate that every object's local environment stayed stable.

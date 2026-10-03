@@ -1,0 +1,3 @@
+Backpressure rather than endless buffering
+
+The synthetic Pipit telemetry collector uses a queue limited to 320 messages. At capacity it asks upstream producers to slow down instead of extending the queue. During a disconnect, a separate durable spool retains accepted messages. Backpressure controls admission; it does not promise that a downstream worker will recover. The collector records dropped and delayed messages separately so a low memory reading cannot hide data loss. An unbounded queue turns a temporary slowdown into exhaustion.
