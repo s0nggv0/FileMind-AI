@@ -7,5 +7,5 @@ import { getUserId } from "@/lib/server/identity";
 
 export default async function SettingsPage() {
   await getUserId();
-  return <Reveal className="space-y-7"><PageHeader title="让工作空间，适合你的习惯。" description="调整外观、恢复身份，管理你的资料备份。" />{!persistenceConfigured() && <DemoNote />}<Preferences /></Reveal>;
+  return <Reveal className="space-y-7"><PageHeader title="让工作空间，适合你的习惯。" description="调整外观、恢复身份，管理你的资料备份。" />{!persistenceConfigured() && <DemoNote />}<Preferences demoMode={process.env.DEMO_MODE==="true"} /></Reveal>;
 }

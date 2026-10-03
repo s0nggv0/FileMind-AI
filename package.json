@@ -24,7 +24,9 @@
     "evaluate:hard": "tsx scripts/evaluate-rag-hard.ts --live",
     "evaluate:holdout": "tsx scripts/evaluate-rag-holdout.ts --live",
     "test:backup-portable": "node scripts/verify-backup-portable.mjs",
-    "test:crash-recovery": "tsx scripts/verify-crash-recovery.ts"
+    "test:crash-recovery": "tsx scripts/verify-crash-recovery.ts",
+    "demo:check": "tsx scripts/demo-check.ts",
+    "test:demo-preflight": "node scripts/verify-demo-preflight.mjs"
   },
   "dependencies": {
     "@ai-sdk/openai-compatible": "3.0.62",

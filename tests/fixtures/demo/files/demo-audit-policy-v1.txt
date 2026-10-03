@@ -1,0 +1,1 @@
+Synthetic Aurora Demo Audit Policy v1. Temporary audit records are retained for 6 hours. This version was issued on 2027-01-04. The file remains in the demo workspace for comparison.
