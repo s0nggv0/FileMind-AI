@@ -7,6 +7,9 @@ test("personal search: real stored chunks, ask/find, source drawer, follow-up, f
   const errors: string[] = []; page.on("pageerror", e => errors.push(e.message));
   page.on("console", e => { if (e.type() === "error") errors.push(e.text()); });
   let workspace: string | null = null; let user: string | undefined;
+  // Token-hash mock vectors have no semantic ability. Exercise exact-term
+  // evidence here; real semantic answering is verified by the frozen holdout.
+  const exactQuery = '"Query Key Value"';
   try {
     await page.goto("/search"); await expect(page.getByRole("heading", { name: "Ask your knowledge" })).toBeVisible();
     await expect(page.getByText("Recent searches", { exact: true })).toHaveCount(0);
@@ -26,7 +29,7 @@ test("personal search: real stored chunks, ask/find, source drawer, follow-up, f
     await page.getByRole("button", { name: "Apply organization plan" }).click();
     await expect(page.getByRole("heading", { name: "Workspace organized" })).toBeVisible();
     await expect.poll(async () => (await (await context.request.get("/api/index")).json()).documents.filter((d: { status: string }) => d.status === "ready").length).toBe(4);
-    await page.goto("/search"); await page.getByLabel("Ask your knowledge", { exact: true }).fill("Query Key Value");
+    await page.goto("/search"); await page.getByLabel("Ask your knowledge", { exact: true }).fill(exactQuery);
     await page.getByRole("button", { name: "搜索", exact: true }).click();
     await expect(page.getByRole("button", { name: "Citation 1", exact: true })).toBeVisible();
     await expect(page.getByText("Demo / Mock", { exact: true })).toBeVisible();
@@ -37,7 +40,11 @@ test("personal search: real stored chunks, ask/find, source drawer, follow-up, f
     await page.getByRole("button", { name: "关闭", exact: true }).click();
     await page.reload(); await expect(page.getByRole("button", { name: "Citation 1", exact: true })).toBeVisible();
     await mkdir("artifacts", { recursive: true }); await page.screenshot({ path: "artifacts/rag-desktop.png", fullPage: true });
-    await page.getByLabel("Ask your knowledge", { exact: true }).fill("它和 BERT 有什么关系？"); await page.getByRole("button", { name: "搜索", exact: true }).click();
+    await page.getByLabel("Ask your knowledge", { exact: true }).fill("it / BERT?"); await page.getByRole("button", { name: "搜索", exact: true }).click();
+    await expect.poll(async () => (await (await context.request.get("/api/search")).json()).recent[0]?.query).toBe("it / BERT?");
+    const followupId = (await (await context.request.get("/api/search")).json()).recent[0].id;
+    const followup = await (await context.request.get(`/api/search?runId=${followupId}`)).json();
+    expect(followup.rewrittenQuery).toContain(`${exactQuery}\nFollow-up: it / BERT?`);
     await expect(page.getByRole("button", { name: "Citation 1", exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Find", exact: true }).click(); await page.getByLabel("Ask your knowledge", { exact: true }).fill("数据库索引优化"); await page.getByRole("button", { name: "搜索", exact: true }).click();
     await expect(page.getByRole("heading", { name: "AI Answer" })).toHaveCount(0); await expect(page.getByRole("button", { name: /database-indexes.txt/ }).first()).toBeVisible();
@@ -45,14 +52,14 @@ test("personal search: real stored chunks, ask/find, source drawer, follow-up, f
     await expect(page.getByText("我没有在你的资料中找到足够依据回答这个问题。", { exact: true })).toBeVisible();
     await page.setViewportSize({ width: 390, height: 844 }); await page.screenshot({ path: "artifacts/rag-mobile.png", fullPage: true });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-    const response = await context.request.post("/api/search", { headers: { origin: "http://127.0.0.1:3081" }, data: { query: "Query Key Value", mode: "ask" } });
+    const response = await context.request.post("/api/search", { headers: { origin: "http://127.0.0.1:3081" }, data: { query: exactQuery, mode: "ask" } });
     const events = (await response.text()).split("\n\n").filter(e => e.startsWith("data: ")).map(e => JSON.parse(e.slice(6)));
     const successful = events.find(e => e.type === "result").data;
     await page.route("**/api/search", async route => {
       if (route.request().method() !== "POST") return route.continue();
       await route.fulfill({ status: 200, contentType: "text/event-stream", body: `data: ${JSON.stringify({ type: "result", data: { ...successful, semanticUnavailable: true, answerUnavailable: true, answer: null } })}\n\n` });
     });
-    await page.getByLabel("Ask your knowledge", { exact: true }).fill("Query Key Value"); await page.getByRole("button", { name: "搜索", exact: true }).click();
+    await page.getByLabel("Ask your knowledge", { exact: true }).fill(exactQuery); await page.getByRole("button", { name: "搜索", exact: true }).click();
     await expect(page.getByText(/Semantic search temporarily unavailable/)).toBeVisible(); await expect(page.getByText(/AI answer generation is currently unavailable/)).toBeVisible();
     const outsider = await context.browser()!.newContext();
     try { expect((await outsider.request.get(`http://127.0.0.1:3081/api/search?chunkId=${successful.sources[0].id}`)).status()).toBe(404); }

@@ -21,7 +21,9 @@
     "test:live": "playwright test --config playwright.live.config.ts",
     "test:vision": "tsx scripts/verify-vision-live.ts",
     "test:multimodal-live": "playwright test --config playwright.multimodal-live.config.ts",
-    "evaluate:hard": "tsx scripts/evaluate-rag-hard.ts --live"
+    "evaluate:hard": "tsx scripts/evaluate-rag-hard.ts --live",
+    "evaluate:holdout": "tsx scripts/evaluate-rag-holdout.ts --live",
+    "test:backup-portable": "node scripts/verify-backup-portable.mjs"
   },
   "dependencies": {
     "@ai-sdk/openai-compatible": "3.0.62",
