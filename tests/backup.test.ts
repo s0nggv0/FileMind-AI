@@ -176,7 +176,7 @@ test('corrupt archives, future formats, unsafe paths, symlinks and dangling refe
         await rm(root, { recursive: true, force: true });
     }
 });
-test('interrupted import and file-copy failure roll back metadata and remove published/staged bytes', async t => {
+test('interrupted import and file-copy failure roll back metadata and quarantine published/staged bytes', async t => {
     const root = await mkdtemp(join(tmpdir(), 'filemind-backup-rollback-'));
     const env = await environment();
     try {
@@ -186,10 +186,12 @@ test('interrupted import and file-copy failure roll back metadata and remove pub
         const user = crypto.randomUUID();
         const destination = new BackupService(env.tenant, join(root, 'target'), compatibility(fixture.provider.getModelInfo()));
         const controller = new AbortController();
-        await assert.rejects(destination.import(user, bytes, { signal: controller.signal, beforeCommit: async () => { controller.abort(); } }), /No data was restored/);
+        await assert.rejects(destination.import(user, bytes, { signal: controller.signal, beforeCommit: async () => { controller.abort(); } }), /Check recovery status/);
         assert.equal((await env.db.query('select id from filemind.workspaces where user_id=$1', [user])).rows.length, 0);
-        assert.equal((await env.db.query('select id from filemind.profiles where id=$1', [user])).rows.length, 0);
-        assert.deepEqual(await readdir(join(root, 'target', '.imports')), []);
+        assert.equal((await env.db.query('select id from filemind.profiles where id=$1', [user])).rows.length, 1);
+        const journal = (await env.db.query<{ status: string; payload: { quarantineIds: string[] } }>('select status,payload from filemind.operation_journal where user_id=$1', [user])).rows[0];
+        assert.equal(journal.status, 'rolled_back'); assert.equal(journal.payload.quarantineIds.length, 3);
+        assert.equal((await readdir(join(root, 'quarantine', user))).length, 3);
         const walk = async (path: string): Promise<string[]> => { const fs = await import('node:fs/promises'); const out: string[] = []; for (const e of await fs.readdir(path, { withFileTypes: true })) {
             if (e.isDirectory())
                 out.push(...await walk(join(path, e.name)));
@@ -202,9 +204,20 @@ test('interrupted import and file-copy failure roll back metadata and remove pub
             if (++copies === 2) throw new Error('Simulated file copy failure');
             return originalPut.call(this, input);
         });
-        const failedUser = crypto.randomUUID(); await assert.rejects(destination.import(failedUser, bytes), /No data was restored/);
+        const failedUser = crypto.randomUUID(); await assert.rejects(destination.import(failedUser, bytes), /Check recovery status/);
         assert.equal((await env.db.query('select id from filemind.workspaces where user_id=$1', [failedUser])).rows.length, 0);
         assert.deepEqual(await walk(join(root, 'target')), []);
+        const failedJournal = (await env.db.query<{ status: string; payload: { quarantineIds: string[] } }>('select status,payload from filemind.operation_journal where user_id=$1', [failedUser])).rows[0];
+        assert.equal(failedJournal.status, 'rolled_back'); assert.equal(failedJournal.payload.quarantineIds.length, 2);
+        t.mock.restoreAll();
+        const committedUser = crypto.randomUUID();
+        await assert.rejects(destination.import(committedUser, bytes, { checkpoint: async stage => { if (stage === 'committed') throw new Error('Lost response after commit'); } }), /Check recovery status/);
+        assert.equal((await env.db.query('select id from filemind.documents where user_id=$1', [committedUser])).rows.length, 2);
+        const { RecoveryService } = await import('../src/lib/reliability/recovery');
+        const recovery = new RecoveryService(env.tenant, join(root, 'target'));
+        assert.equal((await recovery.recover(committedUser)).recovered, 1);
+        assert.equal((await recovery.reconcile(committedUser)).referenced, 2);
+        assert.equal((await recovery.recover(committedUser)).recovered, 0);
     }
     finally {
         await env.db.close();

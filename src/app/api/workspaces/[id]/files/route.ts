@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { z } from "zod";
 import { uploadConfig } from "@/config/upload";
 import { getUserId } from "@/lib/server/identity";
-import { getFileStorage } from "@/lib/server/file-storage";
+import { workspaceOperations } from "@/lib/server/reliability";
 import { workspaceRepository } from "@/lib/server/workspace-repository";
 import { sameOrigin, apiError } from "@/lib/server/http";
 import { WorkspaceError } from "@/lib/workspace/authorization";
@@ -33,8 +33,6 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       catch { throw new WorkspaceError("INVALID_STATE", "Invalid image MIME, extension, signature or pixel data."); }
     }
     if (document.contentHash && hash !== document.contentHash) throw new WorkspaceError("INVALID_STATE", "File checksum mismatch.");
-    const path = await getFileStorage().putOriginal({ userId: user, workspaceId: id, documentId, extension, bytes });
-    document.storagePath = path; document.contentHash = hash;
-    return Response.json(await workspaceRepository.save(user, snapshot));
+    return Response.json(await workspaceOperations().upload(user, snapshot, documentId, extension, bytes));
   } catch (error) { return apiError(error); }
 }

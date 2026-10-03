@@ -1,5 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { spawn } from "node:child_process";
+import { startupRecovery } from "./startup-recovery.mjs";
 import { createRequire } from "node:module";
 import { createServer } from "node:net";
 import { access, mkdir, readFile, writeFile, unlink, realpath } from "node:fs/promises";
@@ -112,7 +113,7 @@ async function prepareDatabase() {
   }
   if (!config.WORKSPACE_SESSION_SECRET || Buffer.byteLength(config.WORKSPACE_SESSION_SECRET) < 32) throw new Error("Workspace identity credential is missing or invalid.");
   const pgRequire = createRequire(serverPath);
-  const { Client } = pgRequire("pg");
+  const { Client, Pool } = pgRequire("pg");
   const admin = database => new Client({ host: "127.0.0.1", port: metadata.port, user: "filemind_admin", password: adminPassword, database, connectionTimeoutMillis: 5000 });
   if (!initialized) {
     console.log("Initializing this folder's private PostgreSQL database...");
@@ -177,6 +178,16 @@ async function prepareDatabase() {
   const storage = resolve(root, config.FILE_STORAGE_ROOT || ".filemind/storage");
   if (!samePath(storage, join(privateRoot, "storage"))) throw new Error("Portable storage must remain inside .filemind/storage.");
   await mkdir(storage, { recursive: true, mode: 0o700 });
+  const recoveryAdministrator = admin("filemind_ai");
+  try {
+    await recoveryAdministrator.connect();
+    // Only this local launcher holds administrator credentials. Repair itself
+    // always runs through application-role tenant transactions and FORCE RLS.
+    const owners = (await recoveryAdministrator.query("select distinct user_id from filemind.operation_journal where status in ('pending','running','interrupted') or (status='committed' and stage<>'settled' and (payload ? 'stagingId' or payload ? 'buildId'))")).rows.map(row => row.user_id);
+    const repaired = await startupRecovery(owners, Pool, config.DATABASE_URL, storage);
+    console.log(`FileMind startup recovery: ${repaired.recovered} repaired, ${repaired.active} active operations preserved.`);
+  } catch { throw new Error("FileMind recovery needs attention. Existing data was preserved; retry startup or use Maintenance."); }
+  finally { await recoveryAdministrator.end(); }
   Object.assign(process.env, config, {
     NODE_ENV: "production", FILE_STORAGE_ROOT: storage, WORKSPACE_COOKIE_SECURE: "false",
     AI_ENGINE: !args.includes("--mock") && config.KIMI_API_KEY?.trim() ? "llm" : "mock",

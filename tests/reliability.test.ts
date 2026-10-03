@@ -68,7 +68,7 @@ test("operation journal and business commit share a transaction; rollback surviv
       lostId = op.id; lostLease.abort(new Error("Simulated lease connection loss"));
       await tenant.transaction(user, tx => op.commit(tx));
     }));
-    assert.equal((await journal.get(user, lostId))?.status, "rolled_back");
+    assert.equal((await journal.get(user, lostId))?.status, "interrupted");
     const raw = (await db.query<{ payload: unknown }>("select payload from filemind.operation_journal where id=$1", [rollbackId])).rows[0];
     assert.equal(JSON.stringify(raw.payload).includes("Injected"), false);
     assert.equal(OperationPayloadSchema.safeParse({ apiKey: "secret" }).success, false);

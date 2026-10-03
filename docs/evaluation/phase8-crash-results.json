@@ -1,0 +1,36 @@
+{
+  "checkedAt": "2026-10-03T12:18:57.045Z",
+  "faultType": "real Windows process termination",
+  "isolatedDatabase": true,
+  "installationPath": "ASCII temporary directory",
+  "passed": true,
+  "checks": [
+    {
+      "window": "published",
+      "pass": true,
+      "status": "interrupted",
+      "visibleImportedDocuments": 0,
+      "quarantineCount": 4,
+      "repeatRecovery": 0,
+      "originalOwnerUnchanged": true
+    },
+    {
+      "window": "before_commit",
+      "pass": true,
+      "status": "interrupted",
+      "visibleImportedDocuments": 0,
+      "quarantineCount": 11,
+      "repeatRecovery": 0,
+      "originalOwnerUnchanged": true
+    },
+    {
+      "window": "committed",
+      "pass": true,
+      "status": "committed",
+      "visibleImportedDocuments": 10,
+      "quarantineCount": 1,
+      "repeatRecovery": 0,
+      "originalOwnerUnchanged": true
+    }
+  ]
+}

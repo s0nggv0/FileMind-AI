@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, writeFile, readFile, rm, realpath, lstat } from "node:fs/promises";
+import { readFile, rm } from "node:fs/promises";
 import { resolve, relative, isAbsolute, join } from "node:path";
 import { z } from "zod";
 import type { TransactionalTenantDatabase } from "../workspace/postgres-repository";
@@ -8,11 +8,16 @@ import { tables, BACKUP_FORMAT_VERSION, BACKUP_SCHEMA_VERSION, BACKUP_LIMITS, Ba
 import { packArchive, sha256 } from "./archive";
 import { validateBackup, validateReferences, type ValidatedBackup } from "./validation";
 import { WorkspaceSnapshotSchema, recoverSnapshot } from "../workspace/schemas";
+import { RecoveryService } from "../reliability/recovery";
+import { atomicWriteFile } from "../reliability/atomic-file";
+import { OperationPayloadSchema } from "../reliability/operation-journal";
+import { ensureStorageDirectory } from "../../../scripts/storage-recovery.mjs";
 export type BackupStage = "Preparing metadata" | "Collecting files" | "Generating manifest" | "Calculating checksums" | "Packaging" | "Completed";
 export interface ImportOptions {
     skipDuplicates?: boolean;
     signal?: AbortSignal;
     beforeCommit?: () => Promise<void>;
+    checkpoint?: (stage: "staged" | "published" | "committed", progress: number) => Promise<void>;
 }
 const json = (v: unknown) => Buffer.from(JSON.stringify(v));
 function neutral(value: unknown): unknown {
@@ -129,26 +134,16 @@ export class BackupService {
         options.signal?.throwIfAborted();
         const backup = this.validate(bytes);
         const root = resolve(this.storageRoot);
-        await mkdir(root, { recursive: true, mode: 0o700 });
-        const realRoot = await realpath(root);
-        const stagingRoot = join(realRoot, ".imports");
-        await mkdir(stagingRoot, { recursive: true, mode: 0o700 });
-        if ((await lstat(stagingRoot)).isSymbolicLink() || await realpath(stagingRoot) !== stagingRoot)
-            throw new BackupError("Unsafe import staging directory.");
-        const staging = join(stagingRoot, randomUUID());
-        await mkdir(staging, { mode: 0o700 });
-        const published: string[] = [];
+        const recovery = new RecoveryService(this.db, root);
+        await recovery.recover(userId);
+        const stagingId = randomUUID();
         try {
-            for (const row of backup.data.documents) {
-                if (row.storage_path === null)
-                    continue;
-                options.signal?.throwIfAborted();
-                await writeFile(join(staging, `${row.id}.${extension(row)}`), backup.files[String(row.storage_path)], { flag: "wx", mode: 0o600 });
-            }
-            const result = await this.db.transaction(userId, async (tx) => {
-                // Serialize duplicate decisions for this tenant across simultaneous imports.
-                await tx.query("select pg_advisory_xact_lock(hashtextextended($1,7107))", [userId]);
-                const existing = await tx.query("select content_hash from filemind.documents where user_id=$1 and content_hash is not null", [userId]);
+            return await recovery.journal.run(userId, "backup_import", null, { stagingId }, async op => {
+                const active = () => { options.signal?.throwIfAborted(); op.assertActive(); };
+                active();
+                // Duplicate decisions and publications share the physical tenant
+                // storage lease with uploads, Apply and maintenance.
+                const existing = await this.db.query(userId, "select content_hash from filemind.documents where user_id=$1 and content_hash is not null", [userId]);
                 const hashes = new Set(existing.rows.map(r => String((r as {
                     content_hash: string;
                 }).content_hash)));
@@ -161,52 +156,66 @@ export class BackupService {
                             hashes.add(String(d.content_hash));
                     }
                 const data = this.prepareImport(backup, userId, skipped);
-                const storage = new PrivateFileStorage(realRoot);
+                const files = data.data.documents.filter(row => row.storage_path !== null).map(row => {
+                    const old = backup.data.documents.find(d => data.ids.get(String(d.id)) === row.id)!;
+                    return { documentId: String(row.id), workspaceId: String(row.workspace_id), extension: extension(old), hash: String(old.content_hash), newlyPublished: true };
+                });
+                await op.stage("staging_files", OperationPayloadSchema.parse({ files }));
+                const stagingRoot = await ensureStorageDirectory(join(root, ".imports", userId));
+                const staging = await ensureStorageDirectory(join(stagingRoot, stagingId));
+                const storage = new PrivateFileStorage(root);
+                let published = 0;
                 for (const row of data.data.documents) {
-                    options.signal?.throwIfAborted();
+                    active();
                     const old = backup.data.documents.find(d => data.ids.get(String(d.id)) === row.id)!;
                     if (old.storage_path === null)
                         continue;
                     const ext = extension(old);
-                    const payload = await readFile(join(staging, `${old.id}.${ext}`));
+                    await atomicWriteFile(join(/* turbopackIgnore: true */ staging, `${old.id}.${ext}`), backup.files[String(old.storage_path)]);
+                    await options.checkpoint?.("staged", published / Math.max(files.length, 1));
+                    const payload = await readFile(/* turbopackIgnore: true */ join(/* turbopackIgnore: true */ staging, `${old.id}.${ext}`));
                     if (sha256(payload) !== old.content_hash)
                         throw new BackupError();
-                    published.push(join(realRoot, userId, String(row.workspace_id), String(row.id)));
+                    active();
                     const path = await storage.putOriginal({ userId, workspaceId: String(row.workspace_id), documentId: String(row.id), extension: ext, bytes: payload });
+                    published++;
                     row.storage_path = path;
                     data.paths.set(String(row.id), path);
+                    await op.stage("publishing_files");
+                    await options.checkpoint?.("published", published / Math.max(files.length, 1));
                 }
+                await op.stage("saving_metadata");
+                const result = await this.db.transaction(userId, async tx => {
+                active();
                 await tx.query("insert into filemind.profiles(id) values($1) on conflict do nothing", [userId]);
                 // All generated IDs are new. No ON CONFLICT update and no existing row is overwritten.
                 for (const t of tables)
                     for (const original of data.data[t.table]) {
-                        options.signal?.throwIfAborted();
+                        active();
                         const row = transform(original, new Map(), data.paths, userId) as BackupRow;
                         const cols = ["user_id", ...t.columns.split(" ")];
                         await tx.query(`insert into filemind.${t.table}(${cols.join(",")}) select ${cols.map(c => `r.${c}`).join(",")} from jsonb_populate_record(null::filemind.${t.table},$1::jsonb) r`, [JSON.stringify({ ...row, user_id: userId })]);
                     }
                 await options.beforeCommit?.();
-                options.signal?.throwIfAborted();
-                return { workspaces: data.data.workspaces.length, documents: data.data.documents.length, files: published.length, skippedDocuments: skipped.size, embeddingCompatible: backup.embeddingCompatible, visionCompatible: backup.visionCompatible, reindexRequired: !backup.embeddingCompatible || !backup.visionCompatible, workspaceIds: data.data.workspaces.map(w => String(w.id)) };
-            });
-            return result;
+                active();
+                await op.commit(tx);
+                return { workspaces: data.data.workspaces.length, documents: data.data.documents.length, files: published, skippedDocuments: skipped.size, embeddingCompatible: backup.embeddingCompatible, visionCompatible: backup.visionCompatible, reindexRequired: !backup.embeddingCompatible || !backup.visionCompatible, workspaceIds: data.data.workspaces.map(w => String(w.id)) };
+                });
+                await options.checkpoint?.("committed", 1);
+                // Success cleanup is bounded to this owner/operation directory.
+                // A kill before cleanup leaves a committed journal for recovery.
+                const within = relative(stagingRoot, staging);
+                if (!within || within.startsWith("..") || isAbsolute(within)) throw new BackupError("Unsafe staging cleanup path.");
+                active();
+                await rm(staging, { recursive: true, force: true });
+                await this.db.query(userId, "update filemind.operation_journal set stage='settled',updated_at=now() where user_id=$1 and id=$2 and status='committed'", [userId, op.id]);
+                return result;
+            }, row => recovery.rollback(row).then(() => {}));
         }
         catch (error) {
-            for (const directory of published) {
-                const within = relative(realRoot, directory);
-                if (!within || within.startsWith("..") || isAbsolute(within))
-                    throw new BackupError("Unsafe import cleanup path.");
-                await rm(directory, { recursive: true, force: true });
-            }
             if (error instanceof BackupError)
                 throw error;
-            throw new BackupError("Import failed. No data was restored. Please retry.", 503);
-        }
-        finally {
-            const within = relative(stagingRoot, staging);
-            if (!within || within.startsWith("..") || isAbsolute(within))
-                throw new BackupError("Unsafe staging cleanup path.");
-            await rm(staging, { recursive: true, force: true });
+            throw new BackupError("Import interrupted. Check recovery status before retrying.", 503);
         }
     }
     private prepareImport(backup: ValidatedBackup, userId: string, skipped: Set<string>) {

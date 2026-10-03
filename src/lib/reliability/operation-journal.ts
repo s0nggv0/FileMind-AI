@@ -26,6 +26,7 @@ export type JournalRow = z.infer<typeof JournalRowSchema>;
 const instance = randomUUID();
 export interface OperationContext {
   id: string; userId: string;
+  signal: AbortSignal;
   assertActive(): void;
   stage(stage: string, payload?: OperationPayload): Promise<void>;
   commit(tx: TransactionQuery): Promise<void>;
@@ -59,7 +60,7 @@ export class OperationJournal {
         await tx.query("insert into filemind.profiles(id) values($1) on conflict do nothing", [userId]);
         await tx.query("insert into filemind.operation_journal(id,user_id,operation_type,resource_id,lock_key,status,stage,payload,owner_instance) values($1,$2,$3,$4,$5,'running','started',$6,$7)", [id, userId, type, resourceId, key, checked, instance]);
       });
-      const context: OperationContext = { id, userId, assertActive: () => leaseSignal.throwIfAborted(),
+      const context: OperationContext = { id, userId, signal: leaseSignal, assertActive: () => leaseSignal.throwIfAborted(),
         stage: async (stage, next) => {
           leaseSignal.throwIfAborted();
           if (!/^[a-z][a-z0-9_]{0,59}$/.test(stage)) throw new Error("Invalid operation stage.");
@@ -79,9 +80,12 @@ export class OperationJournal {
         return result;
       } catch (error) {
         const row = await this.get(userId, id).catch(() => null);
+        if (row?.status === "running" && leaseSignal.aborted) {
+          await this.db.query(userId, "update filemind.operation_journal set status='interrupted',stage='repair_required',updated_at=now(),error_code='LEASE_INTERRUPTED' where user_id=$1 and id=$2 and status='running'", [userId, id]).catch(() => {});
+        }
         // An ambiguous COMMIT acknowledgement must never trigger file rollback
         // when the persisted journal proves the business transaction committed.
-        if (row && row.status !== "committed") {
+        if (row && row.status !== "committed" && !leaseSignal.aborted) {
           try {
             await rollback?.(row);
             await this.db.query(userId, "update filemind.operation_journal set status='rolled_back',stage='rolled_back',updated_at=now(),completed_at=now(),error_code='OPERATION_FAILED' where user_id=$1 and id=$2 and status<>'committed'", [userId, id]);
