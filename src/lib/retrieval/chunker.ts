@@ -35,11 +35,11 @@ function units(document: IndexDocument): Unit[] {
   if (position > start) result.push({ start, end: position, headingPath: currentHeading, page: null, paragraph: null });
   return result;
 }
-function splitUnit(text: string, unit: Unit): Unit[] {
+function splitUnit(text: string, unit: Unit, config: Pick<typeof retrievalConfig, "chunkTargetTokens" | "chunkMaxTokens" | "overlapTokens">): Unit[] {
   const pieces: Unit[] = []; let start = unit.start;
   while (start < unit.end) {
     let end = start;
-    while (end < unit.end && estimateTokens(text.slice(start, end + 100)) < retrievalConfig.chunkTargetTokens) end = Math.min(end + 100, unit.end);
+    while (end < unit.end && estimateTokens(text.slice(start, end + 100)) < config.chunkTargetTokens) end = Math.min(end + 100, unit.end);
     end = Math.min(Math.max(start + 1, end), unit.end);
     if (end < unit.end) {
       const candidate = text.slice(start, end);
@@ -48,27 +48,28 @@ function splitUnit(text: string, unit: Unit): Unit[] {
       if (boundary && boundary.index > candidate.length / 2) end = start + boundary.index + boundary[0].length;
     }
     // A CJK-heavy slice may exceed the target. Bound even without sentence breaks.
-    while (estimateTokens(text.slice(start, end)) > retrievalConfig.chunkMaxTokens && end > start + 1) end--;
+    while (estimateTokens(text.slice(start, end)) > config.chunkMaxTokens && end > start + 1) end--;
     pieces.push({ ...unit, start, end });
     if (end === unit.end) break;
     let next = end;
-    while (next > start && estimateTokens(text.slice(next - 1, end)) <= retrievalConfig.overlapTokens) next--;
+    while (next > start && estimateTokens(text.slice(next - 1, end)) <= config.overlapTokens) next--;
     start = Math.max(start + 1, next);
   }
   return pieces;
 }
 export class DocumentChunker {
+  constructor(private config: Pick<typeof retrievalConfig, "chunkTargetTokens" | "chunkMaxTokens" | "overlapTokens"> = retrievalConfig) {}
   chunk(document: IndexDocument): DocumentChunk[] {
     if (!document.text.trim()) return [];
     const lines = (offset: number) => document.text.slice(0, offset).split("\n").length;
-    let spans = units(document).flatMap(unit => splitUnit(document.text, unit));
+    let spans = units(document).flatMap(unit => splitUnit(document.text, unit, this.config));
     // DOCX paragraphs merge within a section; PDF pages and Markdown sections
     // stay separate. Offsets always point into the persisted extracted text.
     if (document.fileType === "docx") {
       const merged: Unit[] = [];
       for (const span of spans) {
         const previous = merged.at(-1);
-        if (previous && JSON.stringify(previous.headingPath) === JSON.stringify(span.headingPath) && estimateTokens(document.text.slice(previous.start, span.end)) <= retrievalConfig.chunkTargetTokens) previous.end = span.end;
+        if (previous && JSON.stringify(previous.headingPath) === JSON.stringify(span.headingPath) && estimateTokens(document.text.slice(previous.start, span.end)) <= this.config.chunkTargetTokens) previous.end = span.end;
         else merged.push({ ...span });
       }
       spans = merged;

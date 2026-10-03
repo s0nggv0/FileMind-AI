@@ -21,23 +21,25 @@ export const evidenceColumns = `c.chunk_source as "chunkSource",c.id,c.user_id a
   d.display_name as "documentName",d.file_type as "fileType",coalesce(d.summary,'') as summary,
   coalesce((select array_agg(t.tag) from filemind.document_tags t where t.document_id=d.id and t.user_id=d.user_id),'{}') as tags`;
 export class PostgresKnowledgeRepository {
-  constructor(public readonly db: TenantDatabase) {}
+  constructor(public readonly db: TenantDatabase, private chunker = new DocumentChunker()) {}
   async documents(scope: RetrievalScope, documentId?: string): Promise<IndexDocument[]> {
     const result = await this.db.query(scope.userId, `select id,workspace_id,text_content,file_type,metadata from filemind.documents where user_id=$1 and ($2::uuid is null or workspace_id=$2) and ($3::uuid is null or id=$3) and parse_status='completed' order by id`, [scope.userId, scope.workspaceId ?? null, documentId ?? null]);
     const rows = z.array(z.object({ id: z.uuid(), workspace_id: z.uuid(), text_content: z.string(), file_type: z.string(), metadata: z.object({ structure: ParsedStructureSchema.optional() }) })).parse(result.rows);
     return rows.map(d => ({ id: d.id, userId: scope.userId, workspaceId: d.workspace_id, text: d.text_content, fileType: d.file_type, structure: d.metadata.structure }));
   }
   async prepareChunks(document: IndexDocument, generation: string) {
-    const chunks = new DocumentChunker().chunk(document);
+    const chunks = this.chunker.chunk(document);
     const updated = await this.db.query(document.userId, `update filemind.documents set index_status='chunking', index_generation=$4, index_error_code=null where id=$2 and user_id=$1 and workspace_id=$3 and (index_status not in ('chunking','embedding') or updated_at < now()-interval '3 minutes') returning id`, [document.userId, document.id, document.workspaceId, generation]);
     if (!updated.rows.length) throw new Error("Index already active or document inaccessible");
     // Preserve unchanged chunks and their cached embeddings; delete removed IDs.
-    const result = await this.db.query(document.userId, `with owned as (select id from filemind.documents where user_id=$1 and id=$2 and workspace_id=$3 and index_generation=$4), removed as (
-      delete from filemind.document_chunks where user_id=$1 and document_id=$2 and exists(select 1 from owned) and not(id=any($5::uuid[])) returning id)
+    // A data-modifying CTE does not order DELETE before INSERT. Changed chunk IDs
+    // can otherwise collide with the unique(document_id,chunk_index) constraint.
+    await this.db.query(document.userId, `delete from filemind.document_chunks where user_id=$1 and document_id=$2 and not(id=any($5::uuid[])) and exists(select 1 from filemind.documents where user_id=$1 and id=$2 and workspace_id=$3 and index_generation=$4)`, [document.userId, document.id, document.workspaceId, generation, chunks.map(c => c.id)]);
+    const result = await this.db.query(document.userId, `with owned as (select id from filemind.documents where user_id=$1 and id=$2 and workspace_id=$3 and index_generation=$4)
       insert into filemind.document_chunks(id,user_id,workspace_id,document_id,chunk_index,content,content_hash,page_start,page_end,line_start,line_end,paragraph_start,paragraph_end,heading_path,char_start,char_end,token_estimate,chunk_version,lexical_tokens,chunk_source)
       select (v->>'id')::uuid,$1,$3,$2,(v->>'chunkIndex')::integer,v->>'content',v->>'contentHash',(v->>'pageStart')::integer,(v->>'pageEnd')::integer,(v->>'lineStart')::integer,(v->>'lineEnd')::integer,(v->>'paragraphStart')::integer,(v->>'paragraphEnd')::integer,array(select jsonb_array_elements_text(v->'headingPath')),(v->>'charStart')::integer,(v->>'charEnd')::integer,(v->>'tokenEstimate')::integer,v->>'chunkVersion',array(select jsonb_array_elements_text(v->'tokens')),coalesce(v->>'chunkSource','text')
-      from jsonb_array_elements($6::jsonb) v where exists(select 1 from owned)
-      on conflict(id) do update set updated_at=now() returning id`, [document.userId, document.id, document.workspaceId, generation, chunks.map(c => c.id), JSON.stringify(chunks.map(c => ({ ...c, tokens: lexicalTokens(c.content) })))]);
+      from jsonb_array_elements($5::jsonb) v where exists(select 1 from owned)
+      on conflict(id) do update set updated_at=now() returning id`, [document.userId, document.id, document.workspaceId, generation, JSON.stringify(chunks.map(c => ({ ...c, tokens: lexicalTokens(c.content) })))]);
     if (result.rows.length !== chunks.length) throw new Error("Document changed during chunking");
     return chunks;
   }

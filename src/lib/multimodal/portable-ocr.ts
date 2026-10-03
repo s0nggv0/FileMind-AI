@@ -15,7 +15,7 @@ function prepareLanguages() {
   return languagePathPromise;
 }
 export class PortableOCRProvider implements OCRProvider {
-  getEngineInfo() { return { engine: "tesseract.js", version: "7-eng-chi_sim-4.0.0" }; }
+  getEngineInfo() { return { engine: "tesseract.js", version: "7-eng-chi_sim-4.0.0_best_int" }; }
   async extractText(image: ImageInput, signal: AbortSignal) {
     signal.throwIfAborted();
     // Bundled compressed language bytes eliminate runtime network downloads.

@@ -25,5 +25,6 @@ export interface MultimodalAnalysis {
   visionStatus: AnalysisStatus; ocrStatus: AnalysisStatus;
   provider: string; model: string; ocrEngine: string; analysisVersion: string;
   visionCacheKey: string; ocrCacheKey: string; createdAt: string;
+  imageHash?: string; visionPromptVersion?: string; ocrVersion?: string;
   usage: { requests: number; latencyMs: number; inputTokens?: number; outputTokens?: number; totalTokens?: number };
 }

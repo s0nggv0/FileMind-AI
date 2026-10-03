@@ -3,6 +3,7 @@ import type { TenantDatabase } from "../workspace/postgres-repository";
 import type { RetrievalScope } from "../retrieval/types";
 import { ImageAnalysisSchema, OCRResultSchema, type MultimodalAnalysis } from "./schemas";
 export const MultimodalRecordSchema = z.object({ documentId: z.uuid(), imageType: ImageAnalysisSchema.shape.imageType.nullable(), vision: ImageAnalysisSchema.nullable(), ocr: OCRResultSchema.nullable(),
+  imageHash: z.string().optional(), visionPromptVersion: z.string().optional(), ocrVersion: z.string().optional(),
   visionStatus: z.enum(["pending", "ready", "failed", "disabled", "stale"]), ocrStatus: z.enum(["pending", "ready", "failed", "disabled", "stale"]),
   provider: z.string(), model: z.string(), ocrEngine: z.string(), analysisVersion: z.string(), visionCacheKey: z.string(), ocrCacheKey: z.string(), createdAt: z.iso.datetime(),
   usage: z.object({ requests: z.number(), latencyMs: z.number(), inputTokens: z.number().optional(), outputTokens: z.number().optional(), totalTokens: z.number().optional() }),
