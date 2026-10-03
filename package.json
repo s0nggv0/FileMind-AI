@@ -18,7 +18,10 @@
     "test:portable:copy": "node scripts/verify-portable.mjs",
     "test": "tsx --test tests/*.test.ts",
     "test:e2e": "playwright test",
-    "test:live": "playwright test --config playwright.live.config.ts"
+    "test:live": "playwright test --config playwright.live.config.ts",
+    "test:vision": "tsx scripts/verify-vision-live.ts",
+    "test:multimodal-live": "playwright test --config playwright.multimodal-live.config.ts",
+    "evaluate:hard": "tsx scripts/evaluate-rag-hard.ts --live"
   },
   "dependencies": {
     "@ai-sdk/openai-compatible": "3.0.62",

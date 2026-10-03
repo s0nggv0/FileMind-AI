@@ -20,7 +20,7 @@ Turn scattered documents into searchable, connected personal knowledge. Import â
 
 ## Capabilities and Constraints
 
-Phase 5 supports local PDF/DOCX/Markdown/TXT parsing, private original-file storage, reviewed organization, versioned knowledge indexing, personal hybrid retrieval, grounded answers and verified source previews. Ask generates answers; Find returns passages. Search uses only the signed browser identity's saved library. Explicit Mock is labeled; missing services show recoverable errors or genuine lexical results. No OCR, internet RAG, full account login or cross-device identity recovery is included. Existing demo fixtures remain separate from personal knowledge.
+Phase 6 supports local PDF/DOCX/Markdown/TXT parsing, validated PNG/JPG/JPEG images, separate portable OCR and verified Kimi Vision, private original-file storage, reviewed organization, versioned knowledge indexing, personal hybrid retrieval, grounded answers and verified source previews. Ask generates answers; Find returns passages. Image sources open the original first and distinguish extracted text from AI interpretation. Search uses only the signed browser identity's saved library. Explicit Mock is labeled; missing services show recoverable errors or genuine lexical/OCR results. Automatic scanned-PDF page rendering, internet RAG, full account login and cross-device identity recovery are not included. Existing demo fixtures remain separate from personal knowledge.
 
 ## Brand Commitments
 

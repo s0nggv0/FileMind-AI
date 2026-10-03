@@ -107,3 +107,25 @@ npm run test:live
 - [Phase 5 验收](docs/phase-checklists/phase5.md)：真实模型、25 个检索问题、无答案、浏览器与便携复制结果。
 
 真实 Gate 0、Embedding、RAG 与引用点击已通过。专用 PostgreSQL 无 pgvector，使用持久化 real[] 的 PortableVectorStore。便携复制包含 Chunk、向量与检索历史；Key 和私人数据不进入 Git。Phase 5 完成后停止，不自动进入 Phase 6。
+
+## Phase 6：多模态资料与困难检索评测
+
+PNG/JPG/JPEG、学习截图、板书和扫描图片现可通过真实 Kimi Vision 与独立中英文离线 OCR 进入整理、人工审核、知识索引、跨模态检索和 Citation RAG。原图、OCR 提取文字、AI 解释与引用证据分别展示。图片引用打开私有原图，不编造页码或行号；故障可重试。扫描 PDF 当前只检测低文本并提示，尚未自动渲染页面做 OCR。
+
+- [多模态架构](docs/architecture/multimodal.md)：验证、队列、独立缓存、来源与故障行为。
+- [困难评测](docs/evaluation/rag-hard-evaluation.md)：72 份合成资料（含 12 张图）、144 个查询，真实 Kimi / DashScope 的结果与失败案例。
+- [Phase 6 验收](docs/phase-checklists/phase6.md)：浏览器、原图、隔离、缓存、移动端和整文件夹复制。
+- [备份与身份恢复设计](docs/architecture/backup-recovery.md)：仅设计，未实现完整导出/导入与账号恢复。
+
+最终 Vector / Lexical / Hybrid + Rerank 的 Hit@5 为 0.992 / 0.700 / 0.975；本样本 Vector 更强。图片 Hit@5 为 1.00，12/12 图片回答返回有效来源，无答案准确率为 22/24。引用身份有效不等于每条模型陈述都正确。保留 800 estimated tokens / 100 overlap 与 RRF 60。
+
+```powershell
+npm run test:vision
+# 先启动 FileMind 专用服务到 3082，再执行真实浏览器验收：
+npm run test:multimodal-live
+npm run evaluate:hard
+# 停止当前 FileMind 后，执行真实整文件夹迁移验收：
+npm run test:portable:copy
+```
+
+上述命令会调用收费模型，使用自建合成资料；原文件、Key、数据库、离线语言缓存和便携运行时不进入 Git。OCR Worker、WASM、语言数据与 Sharp Windows DLL 随 standalone 打包，无需全局 OCR。已验证中文/空格目录中的原图、分析、向量、检索及引用恢复。当前浏览器 Cookie 身份仍不支持跨设备找回。Phase 6 完成后停止，不自动进入 Phase 7。
