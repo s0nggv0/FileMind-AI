@@ -4,6 +4,7 @@ import { z } from "zod";
 import { WorkspaceError } from "@/lib/workspace/authorization";
 import { storageFailure, type TransactionalTenantDatabase } from "@/lib/workspace/postgres-repository";
 import { runTenantQuery, runTenantTransaction } from "@/lib/workspace/tenant-query";
+import { createOperationLease } from "../../../scripts/operation-lease.mjs";
 
 const shared = globalThis as typeof globalThis & { filemindPool?: Pool; filemindLockPool?: Pool };
 export function persistenceConfigured() { return Boolean(process.env.DATABASE_URL?.trim()); }
@@ -29,24 +30,7 @@ export const database: TransactionalTenantDatabase = {
       shared.filemindLockPool = new Pool({ connectionString: process.env.DATABASE_URL, max: 5, connectionTimeoutMillis: 10_000, idleTimeoutMillis: 30_000, statement_timeout: 60_000, application_name: "filemind-operation-lock" });
       shared.filemindLockPool.on("error", () => console.warn("FileMind operation lease interrupted; recovery will verify its state."));
     }
-    const client = await shared.filemindLockPool.connect(); let locked = false;
-    const lease = new AbortController();
-    const interrupted = () => lease.abort(new Error("Operation lease interrupted."));
-    client.on("error", interrupted);
-    try {
-      const sql = tryOnly ? "select pg_try_advisory_lock(hashtextextended($1,8808)) as locked" : "select pg_advisory_lock(hashtextextended($1,8808))";
-      const result = await client.query(sql, [key]);
-      locked = !tryOnly || result.rows[0].locked;
-      if (!locked) return null;
-      lease.signal.throwIfAborted();
-      return await work(lease.signal);
-    } finally {
-      // Destroy the lease connection even on unlock failure. Reusing a session
-      // with a surviving advisory lock would falsely look like a live operation.
-      if (locked) await client.query("select pg_advisory_unlock(hashtextextended($1,8808))", [key]).catch(() => {});
-      client.removeListener("error", interrupted);
-      client.release(true);
-    }
+    return createOperationLease(shared.filemindLockPool)(key, work, tryOnly);
   },
   async query(userId, sql, values) {
     z.uuid().parse(userId);

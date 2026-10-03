@@ -2,6 +2,8 @@ import "server-only";
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import { z } from "zod";
+import { persistenceConfigured } from "./database";
+import { recoveryService } from "./reliability";
 
 const developmentSecret = randomBytes(32).toString("hex");
 function secret() {
@@ -17,7 +19,10 @@ export async function getUserId(create = false) {
     if (z.uuid().safeParse(id).success && signature) {
       const expected = createHmac("sha256", secret()).update(id).digest("hex");
       const a = Buffer.from(signature); const b = Buffer.from(expected);
-      if (a.length === b.length && timingSafeEqual(a, b)) return id;
+      if (a.length === b.length && timingSafeEqual(a, b)) {
+        if (persistenceConfigured()) await recoveryService().recover(id);
+        return id;
+      }
     }
   }
   if (!create) return null;

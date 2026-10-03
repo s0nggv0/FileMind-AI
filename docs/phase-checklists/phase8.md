@@ -12,10 +12,10 @@ Baseline before implementation: 69/69 unit/integration tests, zero TypeScript er
 
 | Requirement | Current status |
 | --- | --- |
-| Atomic writes, operation journal and tenant isolation | Foundation implemented; 71/71 offline tests pass. Operation integrations and physical process-kill verification remain pending. |
-| Upload/Apply/Backup Import/Reindex/Internal Delete recovery | Implementation pending |
-| Storage reconciliation, quarantine and missing-file states | Implementation pending |
-| Real import and reindex process-kill drills | Verification pending |
+| Atomic writes, operation journal and tenant isolation | Implemented; 72/72 offline tests pass, TypeScript and ESLint clean. |
+| Upload/Apply/Backup Import/Reindex/Internal Delete recovery | Upload, Apply and Import integrated; launcher and authenticated-tenant startup recovery implemented. Reindex/Delete remain pending. |
+| Storage reconciliation, quarantine and missing-file states | Reconciliation and durable quarantine implemented and tested; Maintenance and Library/Preview UI remain pending. |
+| Real import and reindex process-kill drills | Import: 3/3 real termination windows pass on isolated PostgreSQL; reindex pending. |
 | Fact verification, bounded repair and conflict detection | Implementation pending |
 | Provider failure matrix and Planner diagnostics | Implementation pending |
 | Demo data, reset, preflight and outage plan | Implementation pending |
@@ -35,3 +35,11 @@ The owner-scoped journal stores bounded UUID/hash/path-intent metadata, stage, s
 Writes use temporary files, file fsync, close and rename. Immutable originals then publish the durable staging file with an atomic no-replace hard link, retaining cross-process no-overwrite protection; staging is removed after publication. Windows testing verifies the old complete file survives a simulated ENOSPC before publication. This is fault injection, not an actual full disk or power-loss test.
 
 Archive export now selects the existing format's explicit columns, excluding new installation-local storage health and operational fields. Existing Phase 7 backup compatibility is retained. Journal, upload/import integration, startup reconciliation and hard-kill acceptance are separate delivery units.
+
+## Upload, Apply and Import recovery
+
+Upload and Import persist destination intents before creating or publishing bytes. The workspace/database relationships and `committed` journal status share one business transaction. Apply uses the same transaction boundary, including browser-owned Mock runs. Import duplicate decisions share the tenant storage session lease with Upload and Maintenance. Failed or cancelled operations preserve their journal/profile and quarantine unreferenced bytes rather than deleting evidence. Referenced originals survive stale retries and lost responses after COMMIT.
+
+Portable startup enumerates unfinished owners through its private local admin connection, then repairs through application-role tenant transactions and FORCE RLS. The Web role receives no administrator credentials. Ordinary servers recover only the authenticated tenant. A live PostgreSQL lease prevents takeover; a killed process releases its session lock. Quarantine manifests are durable before moving files and can themselves be repaired. Junction ancestors are rejected before creating child directories.
+
+`npm run test:crash-recovery` tested a fresh ASCII-path PostgreSQL cluster, ten synthetic documents per import, and three actual process-termination windows. At 30% publication and before COMMIT, zero imported documents became visible and unreferenced bytes were quarantined. After COMMIT, all ten documents survived and only staging was quarantined. Existing source/target workspaces remained unchanged, active leases were preserved and repeat recovery did no further work. See `docs/evaluation/phase8-crash-results.json`. These are process crashes, not hard power-loss tests.
