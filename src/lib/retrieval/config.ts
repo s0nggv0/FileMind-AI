@@ -10,5 +10,5 @@ export function indexingConfig(env: Record<string, string | undefined>) {
     if (!Number.isInteger(number) || number < 1 || number > max) throw new Error("Invalid indexing configuration");
     return number;
   };
-  return { batchSize: integer(env.EMBEDDING_BATCH_SIZE, 16, 128), concurrency: integer(env.EMBEDDING_CONCURRENCY, 2, 8), retries: 2, rerankEnabled: env.RAG_RERANK_ENABLED !== "false" };
+  return { batchSize: integer(env.EMBEDDING_BATCH_SIZE, 16, 128), concurrency: integer(env.EMBEDDING_CONCURRENCY, 2, 8), retries: 2, rerankEnabled: env.RAG_RERANK_ENABLED === "true" };
 }

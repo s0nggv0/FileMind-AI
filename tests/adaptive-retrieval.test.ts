@@ -1,0 +1,47 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { QueryAnalyzer } from "../src/lib/retrieval/query-analyzer";
+import { RetrievalRouter } from "../src/lib/retrieval/retrieval-router";
+import { RetrievalEngine } from "../src/lib/retrieval/engine";
+import { EvidenceSufficiencyEvaluator } from "../src/lib/retrieval/evidence-sufficiency";
+import { MockEmbeddingProvider } from "../src/lib/retrieval/embedding-provider";
+import { indexingConfig } from "../src/lib/retrieval/config";
+import type { Evidence } from "../src/lib/retrieval/types";
+import type { VectorStore } from "../src/lib/retrieval/vector-store";
+const scope = { userId: crypto.randomUUID() };
+const evidence = (name: string, score: number): Evidence => ({ id: crypto.randomUUID(), ...scope, workspaceId: crypto.randomUUID(), documentId: crypto.randomUUID(), chunkIndex: 0, content: "Sample independent source", contentHash: "hash", tokenEstimate: 4, chunkVersion: "chunk-v1", pageStart: null, pageEnd: null, lineStart: 1, lineEnd: 1, paragraphStart: null, paragraphEnd: null, headingPath: [], charStart: 0, charEnd: 25, documentName: name, fileType: "txt", summary: "", tags: [], score });
+test("query signals cover semantic, exact, mixed, filenames, code, identifiers, ambiguity and followups", () => {
+  const analyzer = new QueryAnalyzer();
+  for (const [q, type] of [["Transformer 的原理是什么", "semantic"], ["HTTP 429", "exact"], ["useEffect 无限循环在哪份资料", "mixed"], ["final-report-v2.docx", "filename"], ["useEffect", "code"], ["pgvector", "identifier"], ["index", "identifier"], ["索引", "short_ambiguous"], ["它有什么限制", "followup"]]) assert.equal(analyzer.analyze(q).type, type, q);
+  for (const q of ["RFC 9110", "B+ Tree", "NEXT_PUBLIC", "kimi-k2.6", '"lease expiry"']) assert.ok(analyzer.analyze(q).exactnessScore > 0, q);
+  assert.equal(indexingConfig({}).rerankEnabled, false);
+  assert.equal(indexingConfig({ RAG_RERANK_ENABLED: "true" }).rerankEnabled, true);
+  assert.equal(new RetrievalRouter().route(analyzer.analyze("如何减少存储开销")).strategy, "VECTOR_ONLY");
+});
+test("semantic retrieval preserves vector order and never calls lexical; exact adds both; outage falls back", async () => {
+  const a = evidence("semantic.txt", 0.9), b = evidence("keyword.txt", 0.7);
+  let vectorCalls = 0, lexicalCalls = 0, filenameCalls = 0;
+  const vectors = { searchSimilar: async () => { vectorCalls++; return [a, b]; } } as unknown as VectorStore;
+  const lexical = { lexicalSearch: async () => { lexicalCalls++; return [{ ...b, lexicalCoverage: 1 }]; }, filenameSearch: async () => { filenameCalls++; return [{ ...b, lexicalCoverage: 1 }]; } };
+  const provider = new MockEmbeddingProvider();
+  const engine = new RetrievalEngine(provider, vectors, lexical);
+  const semantic = await engine.retrieve(scope, "How can I reduce storage overhead?");
+  assert.equal(semantic.route.strategy, "VECTOR_ONLY"); assert.equal(lexicalCalls, 0); assert.deepEqual(semantic.fused.map(e => e.id), [a.id, b.id]);
+  const exact = await engine.retrieve(scope, "HTTP 429");
+  assert.equal(exact.route.strategy, "VECTOR_WITH_LEXICAL_BOOST"); assert.equal(lexicalCalls, 1); assert.equal(exact.fused[0].id, b.id);
+  const before = vectorCalls;
+  assert.equal((await engine.retrieve(scope, "useEffect")).route.strategy, "LEXICAL_FIRST"); assert.equal(vectorCalls, before);
+  await engine.retrieve(scope, "keyword.txt"); assert.equal(filenameCalls, 1);
+  provider.embedQuery = async () => { throw new Error("outage"); };
+  const fallback = await engine.retrieve(scope, "如何减少存储开销");
+  assert.equal(fallback.route.strategy, "FALLBACK"); assert.equal(fallback.semanticUnavailable, true); assert.equal(fallback.evidence[0].id, b.id);
+});
+test("evidence gate vetoes weak retrieval and unsupported model decisions and exposes source breadth", () => {
+  const evaluator = new EvidenceSufficiencyEvaluator();
+  assert.equal(evaluator.evaluate([]).sufficient, false);
+  assert.equal(evaluator.evaluate([{ ...evidence("weak.txt", 0.41), semanticScore: 0.41 }]).sufficient, false);
+  const strong = [evidence("a.txt", 0.85), evidence("b.txt", 0.6)];
+  const result = evaluator.evaluate(strong, { supported: true, missingInformation: [] });
+  assert.equal(result.sufficient, true); assert.equal(result.documentDiversity, 2); assert.equal(result.confidence, "high");
+  assert.equal(evaluator.evaluate(strong, { supported: true, missingInformation: ["Requested numeric value is absent"] }).sufficient, false);
+});
