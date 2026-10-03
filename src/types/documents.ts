@@ -10,4 +10,5 @@ export interface DemoDocument {
   updatedAt: string;
   size: string;
   relations: number;
+  indexStatus?: string;
 }
