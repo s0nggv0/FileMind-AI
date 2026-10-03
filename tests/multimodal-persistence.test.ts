@@ -30,5 +30,13 @@ test("image analysis FORCE RLS and chunk strategy reindex preserve identity with
       assert.equal((await repo.lexicalSearch({ userId: outsider }, "matrix transformations")).length, 0);
     }
     assert.deepEqual((await db.query(userId, "select content_source,image_width,image_height from filemind.documents where id=$1", [id])).rows[0], { content_source: "image", image_width: 1200, image_height: 720 });
+    await mm.save({ userId, workspaceId: ws.id }, { ...result.analysis, imageType: "slide", visionStatus: "ready", vision: { imageType: "slide", summary: "A learning slide about attention.", topics: ["Self Attention"], visibleConcepts: [], tags: ["Machine learning"], confidence: 0.9 } });
+    const workspaceRepo = new PostgresWorkspaceRepository(db);
+    for (const owner of [userId, outsider]) {
+      const other = await workspaceRepo.create(owner, "Related concept fixture"); const textId = randomUUID();
+      await workspaceRepo.save(owner, { ...other, documents: [{ id: textId, name: "concept.txt", type: "txt", mimeType: "text/plain", size: 40, parseStatus: "completed", metadata: { addedAt: new Date().toISOString() } }], texts: { [textId]: "Self-attention relates tokens in a sequence." } });
+    }
+    const related = await mm.related({ userId }, id); assert.equal(related.length, 1); assert.equal((related[0] as { name: string }).name, "concept.txt");
+    assert.deepEqual(await mm.related({ userId: outsider }, id), []);
   } finally { await sql.close(); }
 });
