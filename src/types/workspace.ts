@@ -12,7 +12,7 @@ export interface ParsedDocument {
 }
 export type RunStatus = "idle" | "planning" | "running" | "waiting_for_review" | "applying" | "completed" | "failed" | "cancelled";
 export type StepStatus = "pending" | "running" | "completed" | "failed" | "skipped";
-export type AgentTool = "read_document" | "analyze_document" | "summarize_document" | "classify_document" | "generate_tags" | "generate_filename" | "detect_duplicates" | "build_relationships" | "generate_organization_plan";
+export type AgentTool = "read_document" | "analyze_document" | "analyze_image" | "summarize_document" | "classify_document" | "generate_tags" | "generate_filename" | "detect_duplicates" | "build_relationships" | "generate_organization_plan";
 export interface AgentStep {
   id: string; title: string; description: string; tool: AgentTool; status: StepStatus; progress: number;
   startedAt?: number; completedAt?: number; input: { documentId?: string }; output?: string; error?: string;
@@ -29,6 +29,7 @@ export interface AgentRun {
   id: string; status: RunStatus; simulation: boolean; startedAt: number; completedAt?: number;
   engine?: "mock" | "llm"; model?: string; promptVersion?: string; interrupted?: boolean; fallback?: string;
   usage?: { promptTokens: number; completionTokens: number; totalTokens: number };
+  visionUsage?: { requests: number; latencyMs: number; inputTokens?: number; outputTokens?: number; totalTokens?: number };
   documents: ParsedDocument[]; steps: AgentStep[]; progress: number;
   activity: { id: string; at: number; message: string }[]; result?: OrganizationPlan; error?: string;
 }

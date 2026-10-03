@@ -15,6 +15,16 @@ export class PrivateFileStorage {
     this.root = resolve(root);
     if (contained(this.publicDirectory, this.root)) throw new WorkspaceError("UNAVAILABLE", "Private storage must be outside the public directory.", 503);
   }
+  async readOriginal(input: { userId: string; workspaceId: string; documentId: string; extension: string }) {
+    const ids = [input.userId, input.workspaceId, input.documentId].map(id => z.uuid().parse(id));
+    if (!uploadConfig.extensions.includes(input.extension)) throw new WorkspaceError("NOT_FOUND", "Source not found.", 404);
+    const root = await realpath(this.root); const target = join(root, ...ids, `original.${input.extension}`);
+    try {
+      const resolved = await realpath(target); const info = await lstat(target);
+      if (!contained(root, resolved) || !info.isFile() || info.isSymbolicLink() || info.size > uploadConfig.maxFileBytes) throw new Error("Invalid source");
+      return await readFile(resolved);
+    } catch { throw new WorkspaceError("NOT_FOUND", "Source not found.", 404); }
+  }
   async putOriginal(input: { userId: string; workspaceId: string; documentId: string; extension: string; bytes: Buffer }) {
     const ids = [input.userId, input.workspaceId, input.documentId].map(id => z.uuid().parse(id));
     if (!uploadConfig.extensions.includes(input.extension) || input.bytes.length > uploadConfig.maxFileBytes) throw new WorkspaceError("INVALID_STATE", "Invalid original file.");

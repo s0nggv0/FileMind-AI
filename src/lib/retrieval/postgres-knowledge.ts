@@ -7,13 +7,14 @@ import { CHUNK_VERSION, retrievalConfig } from "./config";
 import type { Evidence, IndexDocument, RetrievalScope } from "./types";
 const nullableNumber = z.number().int().nullable();
 export const EvidenceSchema = z.object({
+  chunkSource: z.enum(["text", "ocr", "vision_summary", "concepts", "mixed"]).optional(),
   id: z.uuid(), userId: z.uuid(), workspaceId: z.uuid(), documentId: z.uuid(), chunkIndex: z.number().int(), content: z.string(), contentHash: z.string(),
   pageStart: nullableNumber, pageEnd: nullableNumber, lineStart: nullableNumber, lineEnd: nullableNumber, paragraphStart: nullableNumber, paragraphEnd: nullableNumber,
   headingPath: z.array(z.string()), charStart: z.number().int(), charEnd: z.number().int(), tokenEstimate: z.number().int(), chunkVersion: z.string(),
   documentName: z.string(), fileType: z.string(), summary: z.string(), tags: z.array(z.string()), score: z.number(),
   lexicalCoverage: z.number().optional(),
 });
-export const evidenceColumns = `c.id,c.user_id as "userId",c.workspace_id as "workspaceId",c.document_id as "documentId",
+export const evidenceColumns = `c.chunk_source as "chunkSource",c.id,c.user_id as "userId",c.workspace_id as "workspaceId",c.document_id as "documentId",
   c.chunk_index as "chunkIndex",c.content,c.content_hash as "contentHash",c.page_start as "pageStart",c.page_end as "pageEnd",
   c.line_start as "lineStart",c.line_end as "lineEnd",c.paragraph_start as "paragraphStart",c.paragraph_end as "paragraphEnd",
   c.heading_path as "headingPath",c.char_start as "charStart",c.char_end as "charEnd",c.token_estimate as "tokenEstimate",c.chunk_version as "chunkVersion",
@@ -33,8 +34,8 @@ export class PostgresKnowledgeRepository {
     // Preserve unchanged chunks and their cached embeddings; delete removed IDs.
     const result = await this.db.query(document.userId, `with owned as (select id from filemind.documents where user_id=$1 and id=$2 and workspace_id=$3 and index_generation=$4), removed as (
       delete from filemind.document_chunks where user_id=$1 and document_id=$2 and exists(select 1 from owned) and not(id=any($5::uuid[])) returning id)
-      insert into filemind.document_chunks(id,user_id,workspace_id,document_id,chunk_index,content,content_hash,page_start,page_end,line_start,line_end,paragraph_start,paragraph_end,heading_path,char_start,char_end,token_estimate,chunk_version,lexical_tokens)
-      select (v->>'id')::uuid,$1,$3,$2,(v->>'chunkIndex')::integer,v->>'content',v->>'contentHash',(v->>'pageStart')::integer,(v->>'pageEnd')::integer,(v->>'lineStart')::integer,(v->>'lineEnd')::integer,(v->>'paragraphStart')::integer,(v->>'paragraphEnd')::integer,array(select jsonb_array_elements_text(v->'headingPath')),(v->>'charStart')::integer,(v->>'charEnd')::integer,(v->>'tokenEstimate')::integer,v->>'chunkVersion',array(select jsonb_array_elements_text(v->'tokens'))
+      insert into filemind.document_chunks(id,user_id,workspace_id,document_id,chunk_index,content,content_hash,page_start,page_end,line_start,line_end,paragraph_start,paragraph_end,heading_path,char_start,char_end,token_estimate,chunk_version,lexical_tokens,chunk_source)
+      select (v->>'id')::uuid,$1,$3,$2,(v->>'chunkIndex')::integer,v->>'content',v->>'contentHash',(v->>'pageStart')::integer,(v->>'pageEnd')::integer,(v->>'lineStart')::integer,(v->>'lineEnd')::integer,(v->>'paragraphStart')::integer,(v->>'paragraphEnd')::integer,array(select jsonb_array_elements_text(v->'headingPath')),(v->>'charStart')::integer,(v->>'charEnd')::integer,(v->>'tokenEstimate')::integer,v->>'chunkVersion',array(select jsonb_array_elements_text(v->'tokens')),coalesce(v->>'chunkSource','text')
       from jsonb_array_elements($6::jsonb) v where exists(select 1 from owned)
       on conflict(id) do update set updated_at=now() returning id`, [document.userId, document.id, document.workspaceId, generation, chunks.map(c => c.id), JSON.stringify(chunks.map(c => ({ ...c, tokens: lexicalTokens(c.content) })))]);
     if (result.rows.length !== chunks.length) throw new Error("Document changed during chunking");

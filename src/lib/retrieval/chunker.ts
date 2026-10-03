@@ -7,9 +7,10 @@ export function estimateTokens(text: string) {
   const han = [...text.matchAll(/\p{Script=Han}/gu)].length;
   return Math.ceil(han + (text.length - han) / 4);
 }
-interface Unit { start: number; end: number; headingPath: string[]; page: number | null; paragraph: number | null }
+interface Unit { start: number; end: number; headingPath: string[]; page: number | null; paragraph: number | null; source?: DocumentChunk["chunkSource"] }
 function units(document: IndexDocument): Unit[] {
   const { text, structure, fileType } = document;
+  if (fileType === "image") return (structure?.knowledgeSections ?? []).map(s => ({ start: s.charStart, end: s.charEnd, source: s.source, page: null, paragraph: null, headingPath: [] }));
   if (fileType === "pdf" && structure?.pages?.length) return structure.pages.map(p => ({ start: p.charStart, end: p.charEnd, page: p.page, headingPath: [], paragraph: null }));
   if (fileType === "docx" && structure?.paragraphs?.length) {
     const headings: string[] = [];
@@ -58,7 +59,7 @@ function splitUnit(text: string, unit: Unit): Unit[] {
 }
 export class DocumentChunker {
   chunk(document: IndexDocument): DocumentChunk[] {
-    if (document.fileType === "image" || !document.text.trim()) return [];
+    if (!document.text.trim()) return [];
     const lines = (offset: number) => document.text.slice(0, offset).split("\n").length;
     let spans = units(document).flatMap(unit => splitUnit(document.text, unit));
     // DOCX paragraphs merge within a section; PDF pages and Markdown sections
@@ -87,7 +88,7 @@ export class DocumentChunker {
       const hex = contentHash(`${document.userId}:${document.id}:${CHUNK_VERSION}:${chunkIndex}:${hash}`).slice(0, 32).split("");
       hex[12] = "4"; hex[16] = "8";
       const id = `${hex.slice(0, 8).join("")}-${hex.slice(8, 12).join("")}-${hex.slice(12, 16).join("")}-${hex.slice(16, 20).join("")}-${hex.slice(20).join("")}`;
-      return { ...location, id, userId: document.userId, workspaceId: document.workspaceId, documentId: document.id, chunkIndex, content, contentHash: hash, tokenEstimate: estimateTokens(content), chunkVersion: CHUNK_VERSION };
+      return { ...location, chunkSource: span.source ?? "text", id, userId: document.userId, workspaceId: document.workspaceId, documentId: document.id, chunkIndex, content, contentHash: hash, tokenEstimate: estimateTokens(content), chunkVersion: CHUNK_VERSION };
     });
   }
 }

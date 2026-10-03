@@ -46,6 +46,13 @@ export class PersistenceClient {
       this.snapshot = WorkspaceSnapshotSchema.parse(await requestJSON(`/api/workspaces/${this.snapshot!.id}`, { method: "PUT", body: JSON.stringify({ ...this.snapshot, documents: copy.documents, run: copy, proposal: copy.result ?? null }) }));
     });
   }
+  async analyzeImages() {
+    if (!this.snapshot?.documents.some(d => d.type === "image")) return [] as string[];
+    const result = z.object({ snapshot: WorkspaceSnapshotSchema, activity: z.array(z.string()) }).parse(await requestJSON("/api/multimodal", { method: "POST", body: JSON.stringify({ workspaceId: this.snapshot.id }) }));
+    this.snapshot = result.snapshot;
+    for (const d of result.snapshot.documents) restoreDocumentContent(d.id, result.snapshot.texts[d.id] ?? "");
+    return result.activity;
+  }
   saveProposal(proposal: OrganizationPlan) {
     if (!this.persistent || !this.snapshot) return Promise.resolve();
     return this.serial(async () => { this.snapshot = WorkspaceSnapshotSchema.parse(await requestJSON(`/api/workspaces/${this.snapshot!.id}`, { method: "PATCH", body: JSON.stringify({ action: "review", revision: this.snapshot!.revision, proposal }) })); });

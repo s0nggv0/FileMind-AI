@@ -3,6 +3,7 @@ import { MockAgentEngine } from "./mock-agent";
 import { LLMAgentEngine } from "./llm-agent";
 import { PersistenceClient } from "./persistence-client";
 import { parseDocument } from "./file-parser";
+import { buildOrganizationPlan } from "./organization-rules";
 
 // Provider selection belongs to this service boundary; components use AgentEngine only.
 export class WorkspaceAgentEngine implements AgentEngine {
@@ -34,6 +35,17 @@ export class WorkspaceAgentEngine implements AgentEngine {
       }).catch(error => { saveError = error; });
     });
     await pending;
+    if (!saveError && latest?.status === "waiting_for_review" && latest.documents.some(d => d.type === "image")) {
+      try {
+        const processing = structuredClone(latest); processing.status = "running";
+        processing.activity.push({ id: crypto.randomUUID(), at: Date.now(), message: "Extracting visible text · local OCR" }); listener(processing);
+        const messages = await this.persistence.analyzeImages();
+        latest.documents = this.persistence.snapshot!.documents;
+        latest.result = buildOrganizationPlan(latest.documents, d => this.persistence.snapshot!.texts[d.id] ?? "");
+        latest.activity.push(...messages.map(message => ({ id: crypto.randomUUID(), at: Date.now(), message })));
+        await this.persistence.saveRun(latest); this.mock.restoreRun(latest);
+      } catch (error) { saveError = error; }
+    }
     if (saveError && latest) { latest.error = saveError instanceof Error ? saveError.message : "Workspace could not be saved."; latest.status = "failed"; listener(latest); }
     else if (latest?.status === "waiting_for_review") listener(latest);
   }
