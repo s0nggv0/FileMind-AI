@@ -19,7 +19,7 @@ const decision = z.enum(["pending", "accepted", "ignored"]);
 export const OrganizationProposalSchema = z.object({
   documents: z.array(z.object({ id: z.uuid(), originalName: z.string().min(1).max(255), name: z.string().min(1).max(255), category: z.string().trim().min(1).max(80), tags: z.array(z.string().trim().min(1).max(40)).max(8), summary: z.string().max(3000), suggestedName: z.string().max(255).optional(), renameDecision: decision, document: DocumentSchema })).max(30),
   duplicates: z.array(z.object({ id: z.string().max(100), documentIds: z.array(z.uuid()).min(2).max(30), reason: z.string().max(500), decision, kind: z.enum(["exact", "text", "name"]).optional() })).max(90),
-  relationships: z.array(z.object({ id: z.string().max(100), source: z.uuid(), target: z.uuid(), reason: z.string().max(500), decision, kind: z.enum(["rule-based", "ai-inferred"]).optional() })).max(435),
+  relationships: z.array(z.object({ id: z.string().max(100), source: z.uuid(), target: z.uuid(), reason: z.string().max(500), decision, kind: z.enum(["rule-based", "ai-inferred", "shared_concept", "semantic"]).optional() })).max(435),
   simulation: z.boolean(), summary: z.string().max(1500).optional(),
 }).superRefine((plan, ctx) => {
   const ids = new Set(plan.documents.map(d => d.id));

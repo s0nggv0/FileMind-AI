@@ -23,7 +23,7 @@ export interface ProposalDocument {
   suggestedName?: string; renameDecision: Decision; document: ParsedDocument;
 }
 export interface DuplicateCandidate { id: string; documentIds: string[]; reason: string; decision: Decision; kind?: "exact" | "text" | "name" }
-export interface KnowledgeConnection { id: string; source: string; target: string; reason: string; decision: Decision; kind?: "rule-based" | "ai-inferred" }
+export interface KnowledgeConnection { id: string; source: string; target: string; reason: string; decision: Decision; kind?: "rule-based" | "ai-inferred" | "shared_concept" | "semantic" }
 export interface OrganizationPlan { documents: ProposalDocument[]; duplicates: DuplicateCandidate[]; relationships: KnowledgeConnection[]; simulation: boolean; summary?: string }
 export interface AgentRun {
   id: string; status: RunStatus; simulation: boolean; startedAt: number; completedAt?: number;

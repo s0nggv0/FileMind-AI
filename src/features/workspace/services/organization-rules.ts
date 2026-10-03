@@ -39,7 +39,7 @@ export function buildRelationships(documents: ProposalDocument[]) {
       const a = documents[i]; const b = documents[j];
       const shared = a.tags.find((tag) => !["document", "image"].includes(tag.toLowerCase()) && b.tags.some(other => other.toLowerCase() === tag.toLowerCase()));
       const sameCategory = a.category === b.category && a.category !== "Uncategorized" && a.category !== "Images";
-      if (shared || sameCategory) relationships.push({ id: `${a.id}-${b.id}`, source: a.id, target: b.id, reason: shared ? `Shared tag: ${shared}` : `Shared category: ${a.category}`, decision: "pending", kind: "rule-based" });
+      if (shared || sameCategory) relationships.push({ id: `${a.id}-${b.id}`, source: a.id, target: b.id, reason: shared ? `Shared concept: ${shared}` : `Shared category: ${a.category}`, decision: "pending", kind: shared && a.document.type !== b.document.type && [a.document.type, b.document.type].includes("image") ? "shared_concept" : "rule-based" });
     }
   }
   return relationships;
