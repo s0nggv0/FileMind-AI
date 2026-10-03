@@ -3,8 +3,12 @@ import { createHash, randomUUID } from "node:crypto";
 import { readFile, writeFile, rm } from "node:fs/promises";
 import { resolve, relative, isAbsolute } from "node:path";
 import { Client } from "pg";
-test("real DashScope + Kimi: streamed grounded answer, citation DB content, refresh and no-answer", async ({ page, context }) => {
-  const origin = "http://127.0.0.1:3082"; const headers = { origin };
+test("real DashScope + Kimi: verified final answer, citation DB content, refresh and no-answer", async ({ page, context }) => {
+  const origin = process.env.FILEMIND_TEST_ORIGIN!; const headers = { origin };
+  const testRoot = resolve(process.env.FILEMIND_TEST_ROOT!);
+  const testRelative = relative(resolve("artifacts"), testRoot);
+  expect(testRelative).toMatch(/^phase8-fresh-[\w-]+$/);
+  expect(isAbsolute(testRelative)).toBe(false);
   const config = await (await context.request.get("/api/workspace-config")).json(); expect(config).toMatchObject({ persistent: true, intelligence: true });
   const errors: string[] = []; page.on("pageerror", e => errors.push(e.message));
   page.on("console", e => { if (e.type() === "error") errors.push(e.text()); });
@@ -17,7 +21,7 @@ test("real DashScope + Kimi: streamed grounded answer, citation DB content, refr
     };
   });
   let workspace: string | undefined; let user: string | undefined;
-  const report = { REAL_RAG_BROWSER_VERIFIED: false, streamedDraft: false, databaseOriginalMatched: false, refreshPassed: false, noAnswerPassed: false, checkedAt: new Date().toISOString() };
+  const report = { REAL_RAG_BROWSER_VERIFIED: false, noUnverifiedDraft: false, factVerificationPassed: false, databaseOriginalMatched: false, refreshPassed: false, noAnswerPassed: false, checkedAt: new Date().toISOString() };
   try {
     const created = await context.request.post("/api/workspaces", { headers, data: { name: "Synthetic live RAG browser verification" } }); expect(created.ok()).toBe(true);
     const snapshot = await created.json(); workspace = snapshot.id;
@@ -29,9 +33,9 @@ test("real DashScope + Kimi: streamed grounded answer, citation DB content, refr
     const indexed = await context.request.post("/api/index", { headers, data: { workspaceId: workspace } }); expect(indexed.ok()).toBe(true); expect((await indexed.json()).results[0].status).toBe("ready");
     await page.goto("/search"); await expect(page.getByText("Demo / Mock", { exact: true })).toHaveCount(0);
     await page.getByLabel("Ask your knowledge", { exact: true }).fill("简短解释 Query、Key、Value 的作用，并引用我的资料。"); await page.getByRole("button", { name: "搜索", exact: true }).click();
-    await expect(page.getByRole("button", { name: "Citation 1", exact: true }).first()).toBeVisible({ timeout: 60000 });
+    await expect(page.getByRole("button", { name: "Citation 1", exact: true }).first()).toBeVisible({ timeout: 180000 });
     const events = (await page.evaluate(() => (window as unknown as { ragStream: Promise<string> }).ragStream)).split("\n\n").filter(e => e.startsWith("data: ")).map(e => JSON.parse(e.slice(6))); const result = events.find(e => e.type === "result").data;
-    expect(result.mock).toBe(false); expect(result.answerUnavailable).toBe(false); expect(result.answer.citations.length).toBeGreaterThan(0); report.streamedDraft = events.some(e => e.type === "draft" && e.data.length > 0); expect(report.streamedDraft).toBe(true);
+    expect(result.mock).toBe(false); expect(result.answerUnavailable).toBe(false); expect(result.answer.citations.length).toBeGreaterThan(0); report.noUnverifiedDraft = !events.some(e => e.type === "draft"); expect(report.noUnverifiedDraft).toBe(true); expect(result.verification.status).toBe("verified"); report.factVerificationPassed = true;
     await page.getByRole("button", { name: "Citation 1", exact: true }).first().click();
     const source = await (await context.request.get(`/api/search?chunkId=${result.answer.citations[0].chunkId}`)).json();
     await expect(page.getByRole("dialog").locator("mark")).toHaveText(source.content); expect(bytes.toString()).toContain(source.content); report.databaseOriginalMatched = true;
@@ -40,12 +44,12 @@ test("real DashScope + Kimi: streamed grounded answer, citation DB content, refr
     await expect(page.getByText("我没有在你的资料中找到足够依据回答这个问题。", { exact: true })).toBeVisible({ timeout: 60000 }); report.noAnswerPassed = true;
     expect(errors).toEqual([]); report.REAL_RAG_BROWSER_VERIFIED = true;
   } finally {
-    await writeFile("docs/phase-checklists/rag-live-browser.json", JSON.stringify(report, null, 2) + "\n");
+    await writeFile("docs/evaluation/phase8-rag-live-browser.json", JSON.stringify(report, null, 2) + "\n");
     if (workspace && user) {
-      const instance = JSON.parse(await readFile(".filemind/postgresql/instance.json", "utf8")); const password = (await readFile(".filemind/postgresql/admin.password", "utf8")).trim();
+      const instance = JSON.parse(await readFile(resolve(testRoot, ".filemind/postgresql/instance.json"), "utf8")); const password = (await readFile(resolve(testRoot, ".filemind/postgresql/admin.password"), "utf8")).trim();
       const client = new Client({ host: "127.0.0.1", port: instance.port, database: "filemind_ai", user: "filemind_admin", password });
       try { await client.connect(); await client.query("delete from filemind.retrieval_runs where user_id=$1", [user]); await client.query("delete from filemind.workspaces where id=$1 and user_id=$2", [workspace, user]); await client.query("delete from filemind.profiles where id=$1", [user]); } finally { await client.end(); }
-      const root = resolve(".filemind/storage"); const directory = resolve(root, user, workspace); const rel = relative(root, directory); if (rel && !rel.startsWith("..") && !isAbsolute(rel)) await rm(directory, { recursive: true, force: true });
+      const root = resolve(testRoot, ".filemind/storage"); const directory = resolve(root, user, workspace); const rel = relative(root, directory); if (rel && !rel.startsWith("..") && !isAbsolute(rel)) await rm(directory, { recursive: true, force: true });
     }
   }
 });

@@ -13,7 +13,7 @@ const suggestions = ["我哪些资料讲过 Transformer 的 Query、Key、Value�
 export function KnowledgeSearch({ persistent, mock }: { persistent: boolean; mock: boolean }) {
   const [query, setQuery] = useState(""); const [mode, setMode] = useState<"ask" | "find">("ask");
   const [result, setResult] = useState<SearchResult | null>(null); const [stage, setStage] = useState("");
-  const [draft, setDraft] = useState(""); const [busy, setBusy] = useState(false); const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false); const [error, setError] = useState("");
   const [recent, setRecent] = useState<{ id: string; query: string; mode: "ask" | "find" }[]>([]);
   const [selected, setSelected] = useState<RAGSource | null>(null); const [source, setSource] = useState<Evidence | null>(null); const [sourceError, setSourceError] = useState("");
   const [indexing, setIndexing] = useState(false); const [indexMessage, setIndexMessage] = useState("");
@@ -39,7 +39,7 @@ export function KnowledgeSearch({ persistent, mock }: { persistent: boolean; moc
   async function search() {
     if (!query.trim() || busy) return;
     controller.current?.abort(); const abort = new AbortController(); controller.current = abort;
-    setBusy(true); setError(""); setDraft(""); setStage("Searching your knowledge");
+    setBusy(true); setError(""); setStage("Searching your knowledge");
     const previousRunId = result?.id; setResult(null);
     try {
       const response = await fetch("/api/search", { method: "POST", signal: abort.signal, headers: { "content-type": "application/json" }, body: JSON.stringify({ query, mode, ...(previousRunId ? { previousRunId } : {}) }) });
@@ -48,22 +48,22 @@ export function KnowledgeSearch({ persistent, mock }: { persistent: boolean; moc
       const decoder = new TextDecoder(); let buffer = ""; let completed = false;
       while (true) {
         const { value, done } = await reader.read(); if (done) break;
+        abort.signal.throwIfAborted();
         buffer += decoder.decode(value, { stream: true }); const events = buffer.split("\n\n"); buffer = events.pop() ?? "";
         for (const event of events) {
           const line = event.split("\n").find(l => l.startsWith("data: ")); if (!line) continue;
           const payload = JSON.parse(line.slice(6));
           if (payload.type === "stage") setStage(payload.data);
-          if (payload.type === "draft") setDraft(payload.data);
           if (payload.type === "error") throw new Error(payload.data);
           if (payload.type === "result") {
-            const data = payload.data as SearchResult; setResult(data); setDraft(""); completed = true;
+            abort.signal.throwIfAborted(); const data = payload.data as SearchResult; setResult(data); completed = true;
             window.history.replaceState(null, "", `/search?run=${data.id}`);
             setRecent(old => [{ id: data.id, query: data.query, mode: data.mode }, ...old.filter(r => r.id !== data.id)].slice(0, 10));
           }
         }
       }
       if (!completed) throw new Error("Search was interrupted. Please retry.");
-    } catch (e) { if (!abort.signal.aborted) setError(e instanceof Error ? e.message : "Search unavailable."); setDraft(""); }
+    } catch (e) { if (!abort.signal.aborted) setError(e instanceof Error ? e.message : "Search unavailable."); }
     finally { setBusy(false); setStage(""); }
   }
   async function preview(item: RAGSource) {
@@ -89,15 +89,16 @@ export function KnowledgeSearch({ persistent, mock }: { persistent: boolean; moc
       {!result && !busy && <div className="mt-7 space-y-5"><div><h3 className="text-xs text-muted-foreground">Suggested queries</h3><div className="mt-3 flex flex-wrap gap-2">{suggestions.map(s => <button key={s} type="button" onClick={() => setQuery(s)} className="min-h-11 rounded-lg border px-3 py-2 text-left text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">{s}</button>)}</div></div>{recent.length > 0 && <div><h3 className="text-xs text-muted-foreground">Recent searches</h3><div className="mt-2 divide-y">{recent.map(r => <button key={r.id} type="button" onClick={() => { setQuery(r.query); setMode(r.mode); }} className="flex min-h-11 w-full items-center justify-between gap-3 py-3 text-left text-sm">{r.query}<ArrowUpRight size={14} className="shrink-0 text-muted-foreground" /></button>)}</div></div>}</div>}
     </section>
     {error && <p role="alert" className="mx-auto max-w-3xl rounded-lg border border-destructive/30 p-4 text-sm text-destructive">{error}</p>}
-    {busy && <section className="mx-auto max-w-3xl" aria-busy="true"><p role="status" className="flex items-center gap-3 text-sm text-muted-foreground"><Loader2 size={16} className="animate-spin" />{stage}</p>{draft && <><p className="mt-5 whitespace-pre-wrap text-base leading-8">{draft}</p><p className="mt-2 text-xs text-muted-foreground">生成中 · 完成后校验引用</p></>}</section>}
+    {busy && <section className="mx-auto max-w-3xl" aria-busy="true"><p role="status" className="flex items-center gap-3 text-sm text-muted-foreground"><Loader2 size={16} className="animate-spin" />{stage}</p><div className="mt-3 flex flex-wrap items-center justify-between gap-3"><p className="text-sm text-muted-foreground">正在检查原文依据，完成后显示回答。</p><Button type="button" size="sm" variant="ghost" onClick={()=>{controller.current?.abort();setError("搜索已取消，可以重试。");}}>取消搜索</Button></div></section>}
     {result && <section className="grid min-w-0 gap-8 border-t pt-7 lg:grid-cols-[minmax(0,1fr)_320px]">
       <div className="min-w-0 space-y-6">
         {result.semanticUnavailable && <p role="status" className="text-sm text-muted-foreground">Semantic search temporarily unavailable. 当前展示关键词检索结果。</p>}
-        {result.mode === "ask" && <article><h3 className="text-sm font-semibold">AI Answer</h3>{result.answer ? <p className="mt-4 whitespace-pre-wrap text-base leading-8">{result.answer.answer.split(/(\[S\d+\])/g).map((part, i) => {
+        {result.verification?.status==="conflict" && <p role="status" className="text-sm leading-7 text-muted-foreground">资料存在冲突，回答保留了双方来源，请结合原文核对。</p>}
+        {result.mode === "ask" && <article><h3 className="text-sm font-semibold">AI Answer</h3>{result.answer && (result.answer.insufficientEvidence || ["verified","conflict"].includes(result.verification?.status??"")) ? <p className="mt-4 whitespace-pre-wrap text-base leading-8">{result.answer.answer.split(/(\[S\d+\])/g).map((part, i) => {
           const match = /^\[S(\d+)\]$/.exec(part); if (!match) return <span key={i}>{part}</span>;
           const item = result.sources.find(s => s.sourceId === `S${match[1]}`); if (!item) return null;
           return <button key={i} type="button" aria-label={`Citation ${match[1]}`} title={`${item.documentName} · ${item.location}\n${item.content.slice(0, 240)}`} onClick={() => void preview(item)} className="mx-1 inline-flex min-h-9 min-w-9 items-center justify-center rounded-md bg-primary/10 px-1.5 text-sm font-medium text-primary">[{match[1]}]</button>;
-        })}</p> : <p className="mt-4 text-sm leading-7 text-muted-foreground">I found these relevant passages, but AI answer generation is currently unavailable.</p>}</article>}
+        })}</p> : <div className="mt-4 space-y-3"><p className="text-sm leading-7 text-muted-foreground">{result.answer&&!result.verification?"这条历史回答尚未经过事实依据验证。来源仍可查看，可重新提问。":"找到相关段落，但 AI 回答的生成或依据验证暂时不可用。来源仍可查看。"}</p><Button variant="outline" size="sm" onClick={()=>void search()}>重试回答</Button></div>}</article>}
         <article><h3 className="text-sm font-semibold">{nearestOnly ? "Closest passages" : "Relevant Documents"}</h3>{nearestOnly && <p className="mt-2 text-xs leading-6 text-muted-foreground">这些是最接近的段落，尚不足以作为回答依据。</p>}<div className="mt-3 divide-y">{shownSources.map((s, i) => <button key={s.id} type="button" onClick={() => void preview(s)} className="flex w-full gap-3 py-5 text-left"><FileText size={18} className="mt-1 shrink-0 text-muted-foreground" /><span className="min-w-0 flex-1"><span className="block break-words text-sm font-medium">{s.documentName}</span><span className="mt-1 block text-xs text-muted-foreground">{s.fileType === "image" ? "Image" : s.fileType.toUpperCase()} · {s.location} · Rank #{i + 1}</span><span className="mt-3 line-clamp-3 whitespace-pre-wrap text-sm leading-7 text-muted-foreground">{s.content}</span></span></button>)}</div>{!shownSources.length && <p className="mt-4 text-sm leading-7 text-muted-foreground">没有匹配段落。导入相关资料或更新知识索引后再试。</p>}</article>
         <p className="text-xs text-muted-foreground">{result.candidateCount} 个候选段落 · {result.evidenceCount} 个证据段落{result.answer && !result.answer.insufficientEvidence && ` · Evidence confidence: ${result.answer.confidence}（依据支持程度，不是准确率）`}</p>
         {result.debug && <details className="rounded-lg border p-4"><summary className="cursor-pointer text-xs text-muted-foreground">Retrieval Debug Panel</summary><pre className="mt-4 overflow-x-auto whitespace-pre-wrap break-all font-mono text-xs">{JSON.stringify({ query: result.rewrittenQuery, ...result.debug, evidence: result.sources.map(s => ({ id: s.id, location: s.location })) }, null, 2)}</pre></details>}

@@ -1,0 +1,31 @@
+import {test,expect} from "@playwright/test";
+import {mkdir} from "node:fs/promises";
+import {randomUUID} from "node:crypto";
+for(const width of [1440,390]) test(`verified Search states preserve sources and never display drafts at ${width}px`,async({page})=> {
+  await page.setViewportSize({width,height:900});
+  const id=randomUUID(),documentId=randomUUID(),userId=randomUUID(),workspaceId=randomUUID();
+  const source={id,userId,workspaceId,documentId,sourceId:"S1",location:"L1",chunkIndex:0,content:"Synthetic source: retention is 6 hours.",contentHash:"fixture",chunkVersion:"chunk-v1",tokenEstimate:12,pageStart:null,pageEnd:null,lineStart:1,lineEnd:1,paragraphStart:null,paragraphEnd:null,headingPath:[],charStart:0,charEnd:40,documentName:"retention.txt",fileType:"txt",summary:"",tags:[],score:0.9};
+  let requests=0;
+  await page.route("**/api/search",async route=> {
+    if(route.request().method()==="GET")return route.fulfill({json:{recent:[]}});
+    requests++;
+    await new Promise(done=>setTimeout(done,700));
+    const success=requests>1;
+    const result={id:randomUUID(),query:"Retention?",rewrittenQuery:"Retention?",mode:"ask",answer:success?{answer:"Retention is 6 hours [S1].",citations:[{sourceId:"S1",chunkId:id,documentId}],confidence:"high",insufficientEvidence:false}:null,sources:[source],nearest:[],semanticUnavailable:false,answerUnavailable:!success,mock:true,evidenceCount:1,candidateCount:1,verification:{version:"answer-verifier-v1",status:success?"verified":"unavailable"}};
+    const events=[{type:"stage",data:"Checking claims and conflicting sources"},{type:"draft",data:"UNVERIFIED ANSWER MUST STAY HIDDEN"},{type:"result",data:result}];
+    await route.fulfill({contentType:"text/event-stream",body:events.map(e=>`data: ${JSON.stringify(e)}\n\n`).join("")});
+  });
+  await page.route("**/api/search?chunkId=*",route=>route.fulfill({json:source}));
+  const errors:string[]=[];page.on("pageerror",e=>errors.push(e.message));
+  await page.goto("/search");await page.getByLabel("Ask your knowledge",{exact:true}).fill("Retention?");await page.getByRole("button",{name:"搜索",exact:true}).click();
+  await expect(page.getByText("正在检查原文依据，完成后显示回答。")).toBeVisible();
+  await expect(page.getByText("UNVERIFIED ANSWER MUST STAY HIDDEN")).toHaveCount(0);
+  await expect(page.getByText("找到相关段落，但 AI 回答的生成或依据验证暂时不可用。来源仍可查看。")).toBeVisible();
+  await expect(page.getByRole("button",{name:/retention.txt/}).first()).toBeVisible();
+  await mkdir("artifacts/phase8-qa",{recursive:true});await page.screenshot({path:`artifacts/phase8-qa/search-unavailable-${width}.png`,fullPage:true});
+  await page.getByRole("button",{name:"重试回答",exact:true}).click();await expect(page.getByRole("button",{name:"Citation 1",exact:true})).toBeVisible();
+  await expect(page.getByText("UNVERIFIED ANSWER MUST STAY HIDDEN")).toHaveCount(0);
+  await page.screenshot({path:`artifacts/phase8-qa/search-verified-${width}.png`,fullPage:true});
+  await page.getByRole("button",{name:"Citation 1",exact:true}).click();await expect(page.getByRole("dialog").locator("mark")).toHaveText(source.content);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);expect(errors).toEqual([]);
+});
