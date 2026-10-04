@@ -10,7 +10,7 @@ test("Phase 9 route matrix at mobile, 1280, 1440 and 1920",async({page})=>{
     if(route==="/settings"){await expect(page.getByRole("heading",{name:"About FileMind AI"})).toBeVisible();await expect(page.getByRole("heading",{name:"界面状态预览"})).toHaveCount(0);}
     await page.screenshot({path:`artifacts/phase9-qa/${route.slice(1)||"landing"}-${width}.png`,fullPage:true,animations:"disabled"});rows.push({route,width,overflow:false,passed:true});
   }
-  await writeFile("docs/evaluation/phase9-browser-matrix.json",JSON.stringify({checkedAt:new Date().toISOString(),mode:"Competition Mode, no cloud credentials, injected Search transport only",rows},null,2)+"\n");
+  await writeFile(process.env.FILEMIND_BROWSER_MATRIX_REPORT||"docs/evaluation/phase9-browser-matrix.json",JSON.stringify({checkedAt:new Date().toISOString(),mode:"Competition Mode, no cloud credentials, injected Search transport only",rows},null,2)+"\n");
 });
 for(const width of [390,1440])test(`Phase 9 clarification choice, conflict citations and saved states ${width}`,async({page})=>{
   await page.setViewportSize({width,height:900});
