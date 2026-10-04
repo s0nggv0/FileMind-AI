@@ -1,0 +1,7 @@
+Original synthetic laboratory record: lotus review. 
+
+Lotus' project requires human review before applying proposed renames. Analysis completion alone does not authorize application.
+
+Only recorded fields may be used; omitted quantities, passwords and external claims are unknown.
+
+合成实验记录，仅陈述本样例；未记载的信息不得推断。

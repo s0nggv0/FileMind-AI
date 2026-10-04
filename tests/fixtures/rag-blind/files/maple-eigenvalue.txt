@@ -1,0 +1,7 @@
+Original synthetic laboratory record: maple eigenvalue. 
+
+Maple's diagonal example has eigenvalues 2, 7 and 11. The document makes no assertion about a different non-diagonal matrix.
+
+Only recorded fields may be used; omitted quantities, passwords and external claims are unknown.
+
+合成实验记录，仅陈述本样例；未记载的信息不得推断。
