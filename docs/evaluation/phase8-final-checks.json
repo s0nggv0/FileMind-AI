@@ -11,7 +11,8 @@
       "command": "npm run lint -- --max-warnings=0",
       "exitCode": 0,
       "errors": 0,
-      "warnings": 0
+      "warnings": 0,
+      "postReportVerifiedAt": "2026-10-04T03:58:41.194Z"
     },
     "unitIntegration": {
       "command": "npm test",
@@ -63,6 +64,34 @@
       "receipt": "phase8-demo-preflight.json",
       "syntheticOnly": true,
       "checkedAt": "2026-10-04T03:33:12.132Z"
+    },
+    "blind": {
+      "completed": 180,
+      "queries": 180,
+      "documents": 90,
+      "receipt": "rag-blind-run1-results.json",
+      "reruns": 0,
+      "runtimeUnavailable": 1,
+      "goldJudgeUnavailable": 9,
+      "conflictCorrect": 2,
+      "conflictTotal": 8,
+      "ambiguousClarification": 0,
+      "ambiguousTotal": 8
+    },
+    "frozenSources": {
+      "verified": 231,
+      "unchanged": true
+    },
+    "originalUserDocuments": {
+      "verified": 5,
+      "unchanged": true,
+      "staged": false
+    },
+    "postRunReporting": {
+      "command": "node scripts/report-phase8-blind.mjs",
+      "noProviderCalls": true,
+      "metricConsistency": true,
+      "rawLedgerAndInputHashesMatch": true
     }
   },
   "scope": {
@@ -75,6 +104,6 @@
     "Compiler and ESLint reported no issues. Browser runners emitted a NO_COLOR/FORCE_COLOR environment notice, which is not an ESLint warning.",
     "Cloud quality, real OCR/Vision and retrieval metrics are reported separately; Mock success is not AI quality evidence."
   ],
-  "checkedAt": "2026-10-04T03:35:38.690Z",
+  "checkedAt": "2026-10-04T03:58:41.194Z",
   "buildId": "lywSAi5EzEGM9X4HWXaWD"
 }

@@ -13,8 +13,8 @@
 | 0:00–0:20 | 展示空专用 Workspace，上传八份资料，启动 Agent | “这里有文件和图片。系统提出整理建议，最终由我决定。” |
 | 0:20–1:25 | 展示实际进度/工具活动；等待 Review | 说明提取文字和图像解释分开；等待是真实处理时间，不展示伪造百分比。 |
 | 1:25–1:45 | 修改或拒绝一项建议，再 Apply；Library 查看索引 | “模型的建议不是自动对我的文件生效。” |
-| 1:45–2:30 | Search Ask：`What does Query, Key, Value do in attention?` | 回答经过引用和事实检查才显示；点击 PDF 或图片 citation，对照原文/原图。 |
-| 2:30–3:10 | Ask：`According to the Aurora demo policies, how long are temporary audit records retained? Explain the change and cite both versions.` | 旧版 6 小时、新版 12 小时；明确 supersedes 来自原文，两个来源都保留。 |
+| 1:45–2:30 | Search Ask：`哪些资料讲过 Query Key Value？简短解释三者作用，引用资料。` | 回答经过引用和事实检查才显示；点击 PDF 或图片 citation，对照原文/原图。 |
+| 2:30–3:10 | Ask：`Aurora Demo 的 temporary audit records 保留多久？解释新旧文档差异，并引用双方。` | 旧版 6 小时、新版 12 小时；明确 supersedes 来自原文，两个来源都保留。 |
 | 3:10–3:35 | 打开 Graph，再展示备份预览或校验结果 | 展示资料关联和可迁移性；备份默认没有加密。 |
 | 3:35–4:00 | Settings 中打开 Reset 确认后取消，展示评测证据 | “只允许重置专用 Demo；普通资料保留。”说明合成盲测与已知限制。 |
 
