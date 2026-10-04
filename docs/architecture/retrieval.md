@@ -1,5 +1,7 @@
 # Phase 5：个人知识检索与引用
 
+> 历史阶段记录。当前版本已加入图片、Adaptive Retrieval、身份恢复、原子索引发布和发布前事实门；不会向用户发送未验证回答草稿，实验 reranker 默认关闭。以 [Phase 8 系统架构](system-overview.md) 和 [答案验证](answer-verification.md) 为准。下文保留 Phase 5 当时的实现和评测上下文。
+
 知识来源只包含当前浏览器身份拥有的已保存资料；没有互联网 RAG、OCR、图片理解或跨用户搜索。
 
 ## 数据与索引

@@ -1,5 +1,7 @@
 # Phase 6: multimodal knowledge
 
+> Historical Phase 6 record. Phase 8 now serializes whole-workspace image preparation with the tenant storage lease, publishes replacement indexes atomically and checks factual support before releasing an answer. See [current system](system-overview.md) and [answer gate](answer-verification.md). Original/OCR/Vision source distinctions below still apply.
+
 PNG, JPG and JPEG originals enter the same owned Workspace, review, Apply and index flow as text documents. The server checks extension, declared MIME, magic bytes, full decoding, 20 MB and 40 million pixel limits before accepting an image. SVG, animation and mismatched payloads are rejected. Private originals are served only through an authenticated document ID, with containment checks and no-store/nosniff headers.
 
 ## Two independent sources

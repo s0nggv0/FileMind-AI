@@ -1,5 +1,7 @@
 # Identity recovery and verified backup
 
+> Phase 8 supersedes the historical failure-cleanup and index-replacement descriptions below. Durable owner-scoped Journal intents now protect committed files after lost responses, quarantine unreferenced bytes and atomically publish complete replacement indexes. See [current system](system-overview.md), [storage recovery](storage-maintenance.md) and [five real crash windows](../evaluation/phase8-crash-results.json). Archive v1 remains compatible and unencrypted; Recovery Key semantics are unchanged. The user cancelled Unicode installation-path work.
+
 Phase 7 implements two independent operations. Recovery Key restores an existing identity in the **same database** after a browser cookie is lost. A `.filemind-backup` restores knowledge data into the current signed identity, including a new identity in an empty installation. A key cannot recover a lost database; an archive carries no authentication authority.
 
 ## Recovery Key
