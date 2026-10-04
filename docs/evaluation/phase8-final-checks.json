@@ -1,0 +1,80 @@
+{
+  "phase": 8,
+  "implementationFrozen": true,
+  "checks": {
+    "typecheck": {
+      "command": "npm run typecheck",
+      "exitCode": 0,
+      "errors": 0
+    },
+    "lint": {
+      "command": "npm run lint -- --max-warnings=0",
+      "exitCode": 0,
+      "errors": 0,
+      "warnings": 0
+    },
+    "unitIntegration": {
+      "command": "npm test",
+      "exitCode": 0,
+      "passed": 81,
+      "failed": 0,
+      "skipped": 0
+    },
+    "build": {
+      "command": "npm run build",
+      "exitCode": 0,
+      "portablePostbuild": true
+    },
+    "offlineBrowser": {
+      "command": "npm run test:e2e",
+      "exitCode": 0,
+      "passed": 17,
+      "failed": 0,
+      "duration": "1.1m",
+      "mode": "explicit mock and labelled fault injection"
+    },
+    "liveDemo": {
+      "passed": true,
+      "receipt": "phase8-demo-live.json",
+      "syntheticOnly": true
+    },
+    "crashRecovery": {
+      "passed": 5,
+      "total": 5,
+      "receipt": "phase8-crash-results.json",
+      "faultType": "real process termination"
+    },
+    "portableCopy": {
+      "passed": true,
+      "receipt": "phase8-portable-copy.json",
+      "ascii": true,
+      "spaces": true,
+      "rootCharacters": 178
+    },
+    "securityHTTP": {
+      "passed": 12,
+      "total": 12,
+      "receipt": "phase8-security-http.json",
+      "mode": "mock extraction with actual isolated PostgreSQL"
+    },
+    "demoPreflight": {
+      "passed": 12,
+      "total": 12,
+      "receipt": "phase8-demo-preflight.json",
+      "syntheticOnly": true,
+      "checkedAt": "2026-10-04T03:33:12.132Z"
+    }
+  },
+  "scope": {
+    "unicodeInstallationPath": "cancelled by user",
+    "phase9": "not started",
+    "protectedExistingDocuments": 5
+  },
+  "notes": [
+    "Command results were recorded from the final production-build acceptance session, not inferred from earlier phase reports.",
+    "Compiler and ESLint reported no issues. Browser runners emitted a NO_COLOR/FORCE_COLOR environment notice, which is not an ESLint warning.",
+    "Cloud quality, real OCR/Vision and retrieval metrics are reported separately; Mock success is not AI quality evidence."
+  ],
+  "checkedAt": "2026-10-04T03:35:38.690Z",
+  "buildId": "lywSAi5EzEGM9X4HWXaWD"
+}

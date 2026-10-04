@@ -1,13 +1,13 @@
 {
   "version": "demo-preflight-v1",
-  "checkedAt": "2026-10-03T14:02:58.171Z",
+  "checkedAt": "2026-10-04T03:33:12.132Z",
   "ready": true,
   "syntheticSmoke": true,
   "checks": [
     {
       "name": "Database",
       "ok": true,
-      "durationMs": 29.78200000000004,
+      "durationMs": 24.788299999999992,
       "detail": {
         "reachable": true
       }
@@ -15,22 +15,22 @@
     {
       "name": "Storage",
       "ok": true,
-      "durationMs": 17.182399999999973
+      "durationMs": 20.355099999999993
     },
     {
       "name": "Kimi Key",
       "ok": true,
-      "durationMs": 0.032300000000020646
+      "durationMs": 0.03289999999998372
     },
     {
       "name": "DashScope Key",
       "ok": true,
-      "durationMs": 0.01310000000000855
+      "durationMs": 0.017500000000040927
     },
     {
       "name": "Kimi Smoke",
       "ok": true,
-      "durationMs": 965.9601000000001,
+      "durationMs": 896.6796,
       "detail": {
         "model": "kimi-k2.6"
       }
@@ -38,7 +38,7 @@
     {
       "name": "Embedding Smoke",
       "ok": true,
-      "durationMs": 268.9752000000001,
+      "durationMs": 224.41259999999988,
       "detail": {
         "provider": "dashscope",
         "model": "qwen3.7-text-embedding-flash",
@@ -48,7 +48,7 @@
     {
       "name": "Demo Data",
       "ok": true,
-      "durationMs": 35.94640000000004,
+      "durationMs": 91.30959999999982,
       "detail": {
         "documents": 10,
         "recommended": 8
@@ -57,7 +57,7 @@
     {
       "name": "Vision Smoke",
       "ok": true,
-      "durationMs": 6753.6687999999995,
+      "durationMs": 4251.8289,
       "detail": {
         "model": "kimi-k2.6"
       }
@@ -65,7 +65,7 @@
     {
       "name": "OCR Worker",
       "ok": true,
-      "durationMs": 1147.3279999999995,
+      "durationMs": 1215.1113999999998,
       "detail": {
         "engine": "tesseract.js",
         "confidence": 0.95
@@ -74,26 +74,26 @@
     {
       "name": "Disk Space",
       "ok": true,
-      "durationMs": 0.2960000000002765,
+      "durationMs": 0.21129999999993743,
       "detail": {
-        "availableBytes": 308924190720
+        "availableBytes": 308830900224
       }
     },
     {
       "name": "Port",
       "ok": true,
-      "durationMs": 1.9083000000009633,
+      "durationMs": 2.195199999999204,
       "detail": {
-        "port": 61940,
+        "port": 54839,
         "available": true
       }
     },
     {
       "name": "Build Version",
       "ok": true,
-      "durationMs": 0.4464000000007218,
+      "durationMs": 0.3704999999999927,
       "detail": {
-        "buildId": "CkeA3NJ9q56WXb_73H77G"
+        "buildId": "lywSAi5EzEGM9X4HWXaWD"
       }
     }
   ]
