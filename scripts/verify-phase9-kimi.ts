@@ -14,7 +14,9 @@ loadEnvConfig(process.cwd(), false, { info() {}, error() {} });
 const destination=join(process.cwd(),"docs/evaluation/phase9-kimi-samples.json");
 const budgetFile=join(process.cwd(),"artifacts/phase9-kimi-budget.json");
 await mkdir(join(process.cwd(),"artifacts"),{recursive:true});
-let used=await readFile(budgetFile,"utf8").then(s=>JSON.parse(s).used as number,()=>0);
+const recorded=await readFile(destination,"utf8").then(s=>JSON.parse(s).callsUsed as number,()=>0);
+let used=Math.max(recorded,await readFile(budgetFile,"utf8").then(s=>JSON.parse(s).used as number,()=>0));
+if(!Number.isInteger(used)||used<0||used>=6){console.error("Phase 9 Kimi budget exhausted. No provider request was sent; retained receipts are unchanged.");process.exitCode=1;return;}
 const calls:{number:number;ok:boolean;durationMs:number}[]=[];
 const provider=createKimiProvider({apiKey:process.env.KIMI_API_KEY,baseURL:process.env.KIMI_BASE_URL,models:readModelConfig(process.env),fetch:async(input,init)=>{
   const url=new URL(typeof input==="string"?input:input instanceof URL?input.href:input.url);
