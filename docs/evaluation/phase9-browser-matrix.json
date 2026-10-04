@@ -1,0 +1,198 @@
+{
+  "checkedAt": "2026-10-04T06:59:23.302Z",
+  "mode": "Competition Mode, no cloud credentials, injected Search transport only",
+  "rows": [
+    {
+      "route": "/",
+      "width": 390,
+      "overflow": false,
+      "passed": true
+    },
+    {
+      "route": "/dashboard",
+      "width": 390,
+      "overflow": false,
+      "passed": true
+    },
+    {
+      "route": "/workspace",
+      "width": 390,
+      "overflow": false,
+      "passed": true
+    },
+    {
+      "route": "/library",
+      "width": 390,
+      "overflow": false,
+      "passed": true
+    },
+    {
+      "route": "/search",
+      "width": 390,
+      "overflow": false,
+      "passed": true
+    },
+    {
+      "route": "/graph",
+      "width": 390,
+      "overflow": false,
+      "passed": true
+    },
+    {
+      "route": "/cleanup",
+      "width": 390,
+      "overflow": false,
+      "passed": true
+    },
+    {
+      "route": "/settings",
+      "width": 390,
+      "overflow": false,
+      "passed": true
+    },
+    {
+      "route": "/",
+      "width": 1280,
+      "overflow": false,
+      "passed": true
+    },
+    {
+      "route": "/dashboard",
+      "width": 1280,
+      "overflow": false,
+      "passed": true
+    },
+    {
+      "route": "/workspace",
+      "width": 1280,
+      "overflow": false,
+      "passed": true
+    },
+    {
+      "route": "/library",
+      "width": 1280,
+      "overflow": false,
+      "passed": true
+    },
+    {
+      "route": "/search",
+      "width": 1280,
+      "overflow": false,
+      "passed": true
+    },
+    {
+      "route": "/graph",
+      "width": 1280,
+      "overflow": false,
+      "passed": true
+    },
+    {
+      "route": "/cleanup",
+      "width": 1280,
+      "overflow": false,
+      "passed": true
+    },
+    {
+      "route": "/settings",
+      "width": 1280,
+      "overflow": false,
+      "passed": true
+    },
+    {
+      "route": "/",
+      "width": 1440,
+      "overflow": false,
+      "passed": true
+    },
+    {
+      "route": "/dashboard",
+      "width": 1440,
+      "overflow": false,
+      "passed": true
+    },
+    {
+      "route": "/workspace",
+      "width": 1440,
+      "overflow": false,
+      "passed": true
+    },
+    {
+      "route": "/library",
+      "width": 1440,
+      "overflow": false,
+      "passed": true
+    },
+    {
+      "route": "/search",
+      "width": 1440,
+      "overflow": false,
+      "passed": true
+    },
+    {
+      "route": "/graph",
+      "width": 1440,
+      "overflow": false,
+      "passed": true
+    },
+    {
+      "route": "/cleanup",
+      "width": 1440,
+      "overflow": false,
+      "passed": true
+    },
+    {
+      "route": "/settings",
+      "width": 1440,
+      "overflow": false,
+      "passed": true
+    },
+    {
+      "route": "/",
+      "width": 1920,
+      "overflow": false,
+      "passed": true
+    },
+    {
+      "route": "/dashboard",
+      "width": 1920,
+      "overflow": false,
+      "passed": true
+    },
+    {
+      "route": "/workspace",
+      "width": 1920,
+      "overflow": false,
+      "passed": true
+    },
+    {
+      "route": "/library",
+      "width": 1920,
+      "overflow": false,
+      "passed": true
+    },
+    {
+      "route": "/search",
+      "width": 1920,
+      "overflow": false,
+      "passed": true
+    },
+    {
+      "route": "/graph",
+      "width": 1920,
+      "overflow": false,
+      "passed": true
+    },
+    {
+      "route": "/cleanup",
+      "width": 1920,
+      "overflow": false,
+      "passed": true
+    },
+    {
+      "route": "/settings",
+      "width": 1920,
+      "overflow": false,
+      "passed": true
+    }
+  ]
+}

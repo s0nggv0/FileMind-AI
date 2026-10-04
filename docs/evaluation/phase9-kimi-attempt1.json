@@ -1,0 +1,201 @@
+{
+  "version": "phase9-budgeted-samples-v1",
+  "checkedAt": "2026-10-04T06:44:13.678Z",
+  "live": true,
+  "syntheticSources": true,
+  "retrievalTested": false,
+  "callLimit": 6,
+  "callsUsed": 3,
+  "calls": [
+    {
+      "number": 1,
+      "ok": true,
+      "durationMs": 2234.5076
+    },
+    {
+      "number": 2,
+      "ok": true,
+      "durationMs": 2034.7966999999999
+    },
+    {
+      "number": 3,
+      "ok": true,
+      "durationMs": 781.1813000000002
+    }
+  ],
+  "rows": [
+    {
+      "name": "ambiguous-project",
+      "passed": false,
+      "result": {
+        "answer": null,
+        "sources": [
+          {
+            "id": "5f30c8fb-8b29-4ed4-a872-acf6bffb4473",
+            "documentId": "bdce31b5-5dad-4c89-80a9-76493a4d64cb",
+            "userId": "b6714519-defc-4c23-8917-9f0208832689",
+            "workspaceId": "122be862-e521-45c0-8e41-eed9bee25db1",
+            "chunkIndex": 0,
+            "content": "AI Competition project deadline is June 10.",
+            "contentHash": "AI Competition project deadline is June 10.",
+            "chunkVersion": "chunk-v1",
+            "tokenEstimate": 20,
+            "pageStart": null,
+            "pageEnd": null,
+            "lineStart": 1,
+            "lineEnd": 1,
+            "paragraphStart": null,
+            "paragraphEnd": null,
+            "headingPath": [],
+            "charStart": 0,
+            "charEnd": 43,
+            "documentName": "ai-project.txt",
+            "fileType": "txt",
+            "summary": "",
+            "tags": [],
+            "score": 0.9,
+            "semanticScore": 0.9,
+            "sourceId": "S1",
+            "location": "L1–L1"
+          },
+          {
+            "id": "07d0562f-54bf-4fdd-917e-5a820e074a94",
+            "documentId": "b5411861-1822-4c65-9ee1-b7b7a6c7a6a6",
+            "userId": "b6714519-defc-4c23-8917-9f0208832689",
+            "workspaceId": "122be862-e521-45c0-8e41-eed9bee25db1",
+            "chunkIndex": 0,
+            "content": "Database Course Project deadline is June 15.",
+            "contentHash": "Database Course Project deadline is June 15.",
+            "chunkVersion": "chunk-v1",
+            "tokenEstimate": 20,
+            "pageStart": null,
+            "pageEnd": null,
+            "lineStart": 1,
+            "lineEnd": 1,
+            "paragraphStart": null,
+            "paragraphEnd": null,
+            "headingPath": [],
+            "charStart": 0,
+            "charEnd": 44,
+            "documentName": "course-project.txt",
+            "fileType": "txt",
+            "summary": "",
+            "tags": [],
+            "score": 0.9,
+            "semanticScore": 0.9,
+            "sourceId": "S2",
+            "location": "L1–L1"
+          },
+          {
+            "id": "54261d47-fa58-42a8-ab08-df8fff17c161",
+            "documentId": "b6bb1e13-3e95-4fb2-ab0c-4bce691cd5e7",
+            "userId": "b6714519-defc-4c23-8917-9f0208832689",
+            "workspaceId": "122be862-e521-45c0-8e41-eed9bee25db1",
+            "chunkIndex": 0,
+            "content": "Research Proposal project deadline is June 20.",
+            "contentHash": "Research Proposal project deadline is June 20.",
+            "chunkVersion": "chunk-v1",
+            "tokenEstimate": 20,
+            "pageStart": null,
+            "pageEnd": null,
+            "lineStart": 1,
+            "lineEnd": 1,
+            "paragraphStart": null,
+            "paragraphEnd": null,
+            "headingPath": [],
+            "charStart": 0,
+            "charEnd": 46,
+            "documentName": "research-project.txt",
+            "fileType": "txt",
+            "summary": "",
+            "tags": [],
+            "score": 0.9,
+            "semanticScore": 0.9,
+            "sourceId": "S3",
+            "location": "L1–L1"
+          }
+        ],
+        "unavailable": true,
+        "errorCode": "STRUCTURED_OUTPUT",
+        "verificationAttempts": []
+      }
+    },
+    {
+      "name": "conflict-and-date-regression",
+      "passed": false,
+      "result": {
+        "answer": null,
+        "sources": [
+          {
+            "id": "9a91492c-dc9f-4979-99e4-f6a46fa964a4",
+            "documentId": "85259fc7-0bc5-4572-b0a7-fb19c6736b92",
+            "userId": "b6714519-defc-4c23-8917-9f0208832689",
+            "workspaceId": "122be862-e521-45c0-8e41-eed9bee25db1",
+            "chunkIndex": 0,
+            "content": "Orion policy edition 2028-01 specifies that temporary records last 3 hours.",
+            "contentHash": "Orion policy edition 2028-01 specifies that temporary records last 3 hours.",
+            "chunkVersion": "chunk-v1",
+            "tokenEstimate": 20,
+            "pageStart": null,
+            "pageEnd": null,
+            "lineStart": 1,
+            "lineEnd": 1,
+            "paragraphStart": null,
+            "paragraphEnd": null,
+            "headingPath": [],
+            "charStart": 0,
+            "charEnd": 75,
+            "documentName": "orion-policy-old.txt",
+            "fileType": "txt",
+            "summary": "",
+            "tags": [],
+            "score": 0.9,
+            "semanticScore": 0.9,
+            "sourceId": "S1",
+            "location": "L1–L1"
+          },
+          {
+            "id": "5f2166d6-8769-4422-a770-4d115446c140",
+            "documentId": "4cde83a0-d56d-4413-8e90-7dea309d0c9f",
+            "userId": "b6714519-defc-4c23-8917-9f0208832689",
+            "workspaceId": "122be862-e521-45c0-8e41-eed9bee25db1",
+            "chunkIndex": 0,
+            "content": "Orion policy edition 2028-03 explicitly replaces the prior temporary-record retention clause. Temporary records now last 8 hours.",
+            "contentHash": "Orion policy edition 2028-03 explicitly replaces the prior temporary-record retention clause. Temporary records now last 8 hours.",
+            "chunkVersion": "chunk-v1",
+            "tokenEstimate": 20,
+            "pageStart": null,
+            "pageEnd": null,
+            "lineStart": 1,
+            "lineEnd": 1,
+            "paragraphStart": null,
+            "paragraphEnd": null,
+            "headingPath": [],
+            "charStart": 0,
+            "charEnd": 129,
+            "documentName": "orion-policy-update.txt",
+            "fileType": "txt",
+            "summary": "",
+            "tags": [],
+            "score": 0.9,
+            "semanticScore": 0.9,
+            "sourceId": "S2",
+            "location": "L1–L1"
+          }
+        ],
+        "unavailable": true,
+        "errorCode": "STRUCTURED_OUTPUT",
+        "verificationAttempts": []
+      }
+    },
+    {
+      "name": "specific-query-no-overclarification",
+      "passed": false,
+      "result": {
+        "unavailable": true
+      }
+    }
+  ],
+  "passed": false,
+  "scope": "One ambiguity pipeline sample, one conflict pipeline sample, and an optional specificity guard. Not a 20-query real-model regression, global false-refusal metric or full Demo."
+}

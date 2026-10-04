@@ -13,6 +13,7 @@ import { getAIProvider } from "@/lib/ai/get-provider";
 import type { AIProvider } from "@/lib/ai/provider";
 import { VERIFIER_VERSION } from "@/lib/retrieval/answer-verifier";
 import { applicationLog,loggedProvider,ApplicationLogSchema } from "@/lib/reliability/application-log";
+import { realAIRequired, developmentControls } from "@/lib/competition";
 export async function GET(request: Request) {
   try {
     const userId = await getUserId();
@@ -31,7 +32,9 @@ export async function GET(request: Request) {
       const id = z.uuid().parse(url.searchParams.get("runId"));
       const result = await database.query(userId, "select result from filemind.retrieval_runs where user_id=$1 and id=$2", [userId, id]);
       if (!result.rows.length) throw new WorkspaceError("NOT_FOUND", "Search no longer available.", 404);
-      return Response.json((result.rows[0] as { result: unknown }).result, { headers: { "cache-control": "no-store" } });
+      const saved = (result.rows[0] as { result: SearchResult }).result;
+      if (!developmentControls()) delete saved.debug;
+      return Response.json(saved, { headers: { "cache-control": "no-store" } });
     }
     const recent = await database.query(userId, "select id,query,mode,created_at from filemind.retrieval_runs where user_id=$1 order by created_at desc limit 10", [userId]);
     return Response.json({ recent: recent.rows }, { headers: { "cache-control": "no-store" } });
@@ -45,9 +48,17 @@ export async function POST(request: Request) {
     const scope = { userId, workspaceId: input.workspaceId };
     await refreshIndexVersions(scope);
     let rewrittenQuery = input.query;
+    let selectedDocumentIds: string[] | undefined;
+    if (input.clarificationOption !== undefined && !input.previousRunId) throw new WorkspaceError("NOT_FOUND", "Clarification no longer available. Search again.", 404);
     if (input.previousRunId) {
-      const previous = await database.query(userId, "select coalesce(rewritten_query,query) as query from filemind.retrieval_runs where user_id=$1 and id=$2 and ($3::uuid is null or workspace_id=$3)", [userId, input.previousRunId, input.workspaceId ?? null]);
-      if (previous.rows.length && /\b(it|that|those|these|there)\b|它|这|那/i.test(input.query)) rewrittenQuery = `${(previous.rows[0] as { query: string }).query.slice(-3000)}\nFollow-up: ${input.query}`;
+      const previous = await database.query(userId, "select coalesce(rewritten_query,query) as query,result from filemind.retrieval_runs where user_id=$1 and id=$2 and ($3::uuid is null or workspace_id=$3)", [userId, input.previousRunId, input.workspaceId ?? null]);
+      const prior = (previous.rows[0] as { query: string; result: SearchResult } | undefined);
+      if (input.clarificationOption !== undefined) {
+        const option = prior?.result.answer?.clarification?.options?.[input.clarificationOption];
+        if (!option || prior?.result.answerState !== "needs_clarification") throw new WorkspaceError("NOT_FOUND", "Clarification no longer available. Search again.", 404);
+        selectedDocumentIds = option.documentIds;
+        rewrittenQuery = `${prior.query.slice(-3000)}\nSelected subject: ${option.label}`;
+      } else if (prior && /\b(it|that|those|these|there)\b|它|这|那/i.test(input.query)) { rewrittenQuery = `${prior.query.slice(-3000)}\nFollow-up: ${input.query}`; selectedDocumentIds = prior.result.selectedDocumentIds; }
     }
     const stream = new ReadableStream({
       async start(controller) {
@@ -57,21 +68,24 @@ export async function POST(request: Request) {
           const started = performance.now(); const embedding = configuredEmbedding();
           const engine = new RetrievalEngine(embedding, vectorStore, knowledgeRepository, indexingConfig(process.env).rerankEnabled ? new DeterministicReranker() : null);
           const retrieved = await engine.retrieve(scope, rewrittenQuery, stage => send("stage", stage));
+          if (selectedDocumentIds) { retrieved.evidence = retrieved.evidence.filter(s => selectedDocumentIds!.includes(s.documentId)); retrieved.nearest = retrieved.nearest.filter(s => selectedDocumentIds!.includes(s.documentId)); }
           let provider: AIProvider | null = null;
-          if (process.env.AI_ENGINE === "mock") provider = offlineRAGProvider();
+          if (!realAIRequired()) provider = offlineRAGProvider();
           else { try { provider = getAIProvider(); } catch {} }
           const llmStarted = performance.now();
           if (input.mode === "ask" && retrieved.evidence.length) send("stage", "Generating answer");
           const grounded = input.mode === "ask" ? await generateGroundedAnswer(rewrittenQuery, retrieved.evidence, scope, provider, knowledgeRepository.getSource.bind(knowledgeRepository), request.signal, stage => send("stage", stage)) : { answer: null, sources: buildRAGContext(retrieved.evidence).sources, unavailable: false };
           request.signal.throwIfAborted();
           const latency = { ...retrieved.latency, llm: input.mode === "ask" ? performance.now() - llmStarted : 0, total: performance.now() - started };
-          const result: SearchResult = { id: crypto.randomUUID(), query: input.query, rewrittenQuery, mode: input.mode, answer: grounded.answer, sources: grounded.sources, nearest: buildRAGContext(retrieved.nearest).sources, semanticUnavailable: retrieved.semanticUnavailable, answerUnavailable: grounded.unavailable, mock: retrieved.mock || process.env.AI_ENGINE === "mock", evidenceCount: grounded.sources.length, candidateCount: retrieved.fused.length };
-          if(input.mode==="ask")result.verification={version:VERIFIER_VERSION,status:grounded.unavailable?"unavailable":"verification" in grounded && grounded.verification?.accepted?(grounded.verification.conflicts.length?"conflict":"verified"):"rejected"};
+          const result: SearchResult = { id: crypto.randomUUID(), query: input.query, rewrittenQuery, mode: input.mode, answer: grounded.answer, sources: grounded.sources, nearest: buildRAGContext(retrieved.nearest).sources, semanticUnavailable: retrieved.semanticUnavailable, answerUnavailable: grounded.unavailable, mock: retrieved.mock || !realAIRequired(), evidenceCount: grounded.sources.length, candidateCount: retrieved.fused.length };
+          if (input.mode === "ask") result.answerState = grounded.unavailable ? "error" : grounded.answer?.answerState ?? "no_answer";
+          if (selectedDocumentIds) result.selectedDocumentIds = selectedDocumentIds;
+          if(input.mode==="ask")result.verification={version:VERIFIER_VERSION,status:grounded.unavailable?"unavailable":result.answerState==="needs_clarification"?"needs_clarification":result.answerState==="no_answer"?"no_answer":"verification" in grounded && grounded.verification?.accepted?(grounded.verification.conflicts.length?"conflict":"verified"):"rejected"};
           const verified="verification" in grounded?grounded.verification:undefined;
           const publicError=ApplicationLogSchema.shape.error_code.safeParse("errorCode" in grounded?grounded.errorCode:null);
           const errorCode=publicError.success?publicError.data:grounded.unavailable?"UNAVAILABLE":null;
           if(errorCode)result.answerErrorCode=errorCode;
-          if (process.env.NODE_ENV !== "production" && process.env.DEMO_MODE!=="true") result.debug = { queryProfile: retrieved.profile, selectedStrategy: retrieved.route.strategy, reason: retrieved.route.reason, evidenceAssessment: "assessment" in grounded ? grounded.assessment : undefined, verification:verified?{version:verified.version,accepted:verified.accepted,reason:verified.reason,completeness:verified.completeness,faithfulness:verified.faithfulness}:undefined, semantic: retrieved.semantic.map(s => ({ id: s.id, score: s.score })), lexical: retrieved.lexical.map(s => ({ id: s.id, score: s.score })), fused: retrieved.fused.map(s => ({ id: s.id, score: s.score, fusedRank: s.fusedRank })), reranker: retrieved.reranker, latency };
+          if (developmentControls()) result.debug = { queryProfile: retrieved.profile, selectedStrategy: retrieved.route.strategy, reason: retrieved.route.reason, evidenceAssessment: "assessment" in grounded ? grounded.assessment : undefined, verification:verified?{version:verified.version,accepted:verified.accepted,reason:verified.reason,completeness:verified.completeness,faithfulness:verified.faithfulness}:undefined, semantic: retrieved.semantic.map(s => ({ id: s.id, score: s.score })), lexical: retrieved.lexical.map(s => ({ id: s.id, score: s.score })), fused: retrieved.fused.map(s => ({ id: s.id, score: s.score, fusedRank: s.fusedRank })), reranker: retrieved.reranker, latency };
           await database.query(userId, `insert into filemind.retrieval_runs(id,user_id,workspace_id,query,rewritten_query,mode,vector_model,vector_provider,top_k,retrieved_chunk_ids,evidence_ids,reranker_status,latency,result) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::uuid[],$11::uuid[],$12,$13,$14)`, [result.id, userId, input.workspaceId ?? null, input.query, rewrittenQuery, input.mode, embedding?.getModelInfo().model ?? null, embedding?.getModelInfo().provider ?? null, retrievalConfig.vectorTopK, retrieved.fused.map(s => s.id), grounded.sources.map(s => s.id), retrieved.reranker, latency, result]);
           await applicationLog({level:grounded.unavailable?"warn":"info",event:"search_completed",request_id:result.id,workspace_id:input.workspaceId??null,operation_id:null,provider:provider?loggedProvider(provider.name):null,error_code:errorCode??(grounded.unavailable?"UNAVAILABLE":null),duration:latency.total});
           request.signal.throwIfAborted(); send("result", result);

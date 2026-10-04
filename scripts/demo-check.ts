@@ -34,6 +34,6 @@ async function main() {
   await check("Build Version",async()=>{const build=(await readFile(join(root,".next/standalone/.next/BUILD_ID"),"utf8")).trim();if(!build)throw new Error();return {buildId:build};});
   const report={version:"demo-preflight-v1",checkedAt:new Date().toISOString(),ready:checks.every(c=>c.ok),syntheticSmoke:true,checks};
   await mkdir(join(root,".filemind/diagnostics"),{recursive:true});await writeFile(join(root,".filemind/diagnostics/demo-preflight.json"),JSON.stringify(report,null,2)+"\n");
-  console.log(report.ready?"Ready for demo.":"Preflight has failures. Check the named services.");if(!report.ready)process.exitCode=1;
+  console.log(report.ready?"READY: 12 / 12 checks passed.":"NOT READY: preflight has failed checks. Check the named services.");if(!report.ready)process.exitCode=1;
 }
 void main().catch(()=>{console.error("Demo preflight could not finish; connection details suppressed.");process.exitCode=1;});

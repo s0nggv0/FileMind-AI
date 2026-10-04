@@ -26,6 +26,7 @@ try {
   const standalone = join(root, ".next/standalone");
   if (!(await exists(join(standalone, "server.js")))) throw new Error("Run npm run build before preparing the portable folder.");
   await cp(join(root, "public"), join(standalone, "public"), { recursive: true });
+  await cp(join(root, ".filemind/build-info.json"), join(standalone, "build-info.json"));
   await cp(join(root, "tests/fixtures/demo"), join(standalone, "tests/fixtures/demo"), { recursive: true });
   await cp(join(root, ".next/static"), join(standalone, ".next/static"), { recursive: true });
   // Turbopack may trace absolute dependency symlinks. A moved folder needs real files.

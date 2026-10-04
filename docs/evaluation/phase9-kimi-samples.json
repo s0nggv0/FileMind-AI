@@ -1,0 +1,47 @@
+{
+  "version": "phase9-budgeted-samples-v1",
+  "checkedAt": "2026-10-04T06:45:52.530Z",
+  "live": true,
+  "syntheticSources": true,
+  "retrievalTested": false,
+  "callLimit": 6,
+  "callsUsed": 6,
+  "calls": [
+    {
+      "number": 4,
+      "ok": true,
+      "durationMs": 13713.4996
+    },
+    {
+      "number": 5,
+      "ok": true,
+      "durationMs": 791.9009999999998
+    },
+    {
+      "number": 6,
+      "ok": true,
+      "durationMs": 595.0226000000002
+    }
+  ],
+  "rows": [
+    {
+      "name": "ambiguous-project",
+      "passed": false,
+      "result": null
+    },
+    {
+      "name": "conflict-and-date-regression",
+      "passed": false,
+      "result": null
+    },
+    {
+      "name": "specific-query-no-overclarification",
+      "passed": false,
+      "result": {
+        "unavailable": true
+      }
+    }
+  ],
+  "passed": false,
+  "scope": "After retained failed attempt 1, three context-verification samples only. Final answer generation and release verification were tested locally, not with this live sample. Not a 20-query real-model regression, global false-refusal metric or full Demo."
+}

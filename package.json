@@ -1,11 +1,11 @@
 {
   "name": "filemind-ai",
-  "version": "0.1.0",
+  "version": "1.0.0-rc.1",
   "private": true,
   "scripts": {
     "predev": "node scripts/prepare-pdf-worker.mjs",
     "dev": "next dev",
-    "prebuild": "node scripts/prepare-pdf-worker.mjs",
+    "prebuild": "node scripts/prepare-build.mjs",
     "build": "next build",
     "postbuild": "node scripts/prepare-portable.mjs",
     "start": "next start",
@@ -26,7 +26,9 @@
     "test:backup-portable": "node scripts/verify-backup-portable.mjs",
     "test:crash-recovery": "tsx scripts/verify-crash-recovery.ts",
     "demo:check": "tsx scripts/demo-check.ts",
-    "test:demo-preflight": "node scripts/verify-demo-preflight.mjs"
+    "test:demo-preflight": "node scripts/verify-demo-preflight.mjs",
+    "test:phase9": "tsx --test tests/answer-context.test.ts tests/answer-verifier.test.ts",
+    "test:phase9:kimi": "tsx scripts/verify-phase9-kimi.ts --live"
   },
   "dependencies": {
     "@ai-sdk/openai-compatible": "3.0.62",

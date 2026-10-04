@@ -5,7 +5,7 @@ export function draftFixture(answer:{answer:string;confidence:string;insufficien
 }
 export function verifierFixtureResponse(prompt:string):unknown|undefined {
   const input=JSON.parse(prompt);
-  if(input.task==="verify_answer_context")return {clarification:{required:false,question:"",options:[]},conflicts:[]};
+  if(input.task==="verify_answer_context")return {needsClarification:false,question:"",options:[],conflicts:[]};
   if(input.task==="extract_atomic_claims")return {claims:input.untrustedAnswerUnits.map((u:{id:string;text:string})=>({unitId:u.id,text:u.text.replace(/\[S\d+\]/g,"").trim()}))};
   if(input.task==="check_evidence_support")return {unitCoverage:input.untrustedAnswerUnits.map((u:{id:string})=>({unitId:u.id,allFactsCovered:true,missingFacts:[]})),claims:input.atomicClaims.map((c:{claimId:string})=>({claimId:c.claimId,status:"supported",supportingSourceIds:[input.untrustedSources[0].sourceId],contradictingSourceIds:[]})),conflicts:[]};
 }

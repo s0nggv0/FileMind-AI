@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { generateGroundedAnswer, buildRAGContext } from "../src/lib/retrieval/rag";
-import { validateAnswerContext, emptyAnswerContext, type AnswerContext } from "../src/lib/retrieval/answer-context";
+import { validateAnswerContext, emptyAnswerContext, AnswerContextWireSchema, type AnswerContext } from "../src/lib/retrieval/answer-context";
 import { numericEvidenceSupported } from "../src/lib/retrieval/answer-verifier";
 import type { AIProvider } from "../src/lib/ai/provider";
 import type { Evidence } from "../src/lib/retrieval/types";
@@ -13,7 +13,7 @@ function scripted(context:AnswerContext, firstRefusal=false):AIProvider {
   let generations=0;
   return {name:"scripted-semantic-laboratory",models:{main:"fixture",small:"fixture"},async generateObject(input:{prompt:string}) {
     const p=JSON.parse(input.prompt);
-    if(p.task==="verify_answer_context")return {object:context,usage};
+    if(p.task==="verify_answer_context")return {object:{needsClarification:context.clarification.required,question:context.clarification.question,options:context.clarification.options,conflicts:context.conflicts},usage};
     if(p.task==="extract_atomic_claims")return {object:{claims:p.untrustedAnswerUnits.map((u:{id:string;text:string})=>({unitId:u.id,text:u.text.replace(/\[S\d+\]/g,"").trim()}))},usage};
     if(p.task==="check_evidence_support")return {object:{unitCoverage:p.untrustedAnswerUnits.map((u:{id:string})=>({unitId:u.id,allFactsCovered:true,missingFacts:[]})),claims:p.atomicClaims.map((c:{claimId:string;text:string})=>({claimId:c.claimId,status:"supported",supportingSourceIds:p.untrustedSources.filter((s:{content:string})=>s.content.includes(c.text)).map((s:{sourceId:string})=>s.sourceId),contradictingSourceIds:[]})),conflicts:context.conflicts.map(c=>({topic:c.topic,sourceIds:c.values.map(v=>v.sourceId),versionRelationship:c.versionRelationship,disclosed:true}))},usage};
     generations++;
@@ -55,9 +55,14 @@ test("untrusted metadata, foreign options and stale clarification sources fail c
   const r=await generateGroundedAnswer("Which deadline?",sources,{userId},scripted(context),async()=>null,AbortSignal.timeout(1000));assert.equal(r.unavailable,true);assert.equal(r.answer,null);
 });
 test("date followed by English words cannot be parsed as an s/h/m unit",()=>{
+  assert.equal(numericEvidenceSupported("保留 6 小时。",["保留 360 分钟后清理。"]),true);
   assert.equal(numericEvidenceSupported("Edition 2028-01 specifies retention is 3 hours.",["Edition 2028-01. Records last 3 hours."]),true);
   assert.equal(numericEvidenceSupported("Edition 2028-01 remains available.",["Edition 2028-01 is archived."]),true);
   assert.equal(numericEvidenceSupported("Retention is 72 hours.",["Retention is 3 hours."]),false);
+});
+test("empty nested provider replies cannot become a guessed answer or default clarification",()=>{
+  assert.equal(AnswerContextWireSchema.safeParse({clarification:{},conflicts:[]}).success,false);
+  assert.equal(AnswerContextWireSchema.safeParse({needsClarification:false,question:"",options:[],conflicts:[]}).success,true);
 });
 test("specific short queries and complementary sources stay answered in a non-ambiguous context",async()=>{
   const sources=[evidence("Query represents the current token.",1),evidence("Key represents matching information.",2)];

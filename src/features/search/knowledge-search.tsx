@@ -36,13 +36,13 @@ export function KnowledgeSearch({ persistent, mock }: { persistent: boolean; moc
     } catch (e) { setIndexMessage(e instanceof Error ? e.message : "Indexing is unavailable."); }
     finally { setIndexing(false); }
   }
-  async function search() {
+  async function search(clarificationOption?: number) {
     if (!query.trim() || busy) return;
     controller.current?.abort(); const abort = new AbortController(); controller.current = abort;
     setBusy(true); setError(""); setStage("Searching your knowledge");
     const previousRunId = result?.id; setResult(null);
     try {
-      const response = await fetch("/api/search", { method: "POST", signal: abort.signal, headers: { "content-type": "application/json" }, body: JSON.stringify({ query, mode, ...(previousRunId ? { previousRunId } : {}) }) });
+      const response = await fetch("/api/search", { method: "POST", signal: abort.signal, headers: { "content-type": "application/json" }, body: JSON.stringify({ query, mode, ...(previousRunId ? { previousRunId } : {}), ...(clarificationOption !== undefined ? { clarificationOption } : {}) }) });
       if (!response.ok) { const data = await response.json(); throw new Error(data.error); }
       const reader = response.body?.getReader(); if (!reader) throw new Error("Search stream unavailable.");
       const decoder = new TextDecoder(); let buffer = ""; let completed = false;
@@ -93,8 +93,9 @@ export function KnowledgeSearch({ persistent, mock }: { persistent: boolean; moc
     {result && <section className="grid min-w-0 gap-8 border-t pt-7 lg:grid-cols-[minmax(0,1fr)_320px]">
       <div className="min-w-0 space-y-6">
         {result.semanticUnavailable && <p role="status" className="text-sm text-muted-foreground">Semantic search temporarily unavailable. 当前展示关键词检索结果。</p>}
-        {result.verification?.status==="conflict" && <p role="status" className="text-sm leading-7 text-muted-foreground">资料存在冲突，回答保留了双方来源，请结合原文核对。</p>}
-        {result.mode === "ask" && <article><h3 className="text-sm font-semibold">AI Answer</h3>{result.answer && (result.answer.insufficientEvidence || ["verified","conflict"].includes(result.verification?.status??"")) ? <p className="mt-4 whitespace-pre-wrap text-base leading-8">{result.answer.answer.split(/(\[S\d+\])/g).map((part, i) => {
+        {result.answer?.conflict?.detected && <section role="status" className="space-y-3 rounded-lg border p-4"><h3 className="text-sm font-semibold">Conflicting information found</h3><p className="text-sm leading-7 text-muted-foreground">资料包含不同的值。FileMind 保留双方来源，缺少额外依据时不替你判断哪一方正确。</p>{result.answer.conflict.claims.map((claim, i) => <div key={i} className="space-y-2"><p className="break-words text-sm font-medium">{claim.topic}</p>{claim.sourceIds.map((id, j) => { const item = result.sources.find(s => s.sourceId === id); return item ? <button key={`${id}-${j}`} type="button" onClick={() => void preview(item)} className="block min-h-11 w-full break-words text-left text-sm text-primary underline underline-offset-4">{item.documentName}: {claim.values[j]}</button> : null; })}</div>)}</section>}
+        {result.answerState === "needs_clarification" && result.answer?.clarification?.required && <section role="status" className="space-y-4"><h3 className="text-sm font-semibold">Which one do you mean?</h3><p className="text-base leading-8">{result.answer.clarification.question}</p><div className="flex flex-wrap gap-3">{result.answer.clarification.options?.map((option, i) => <Button key={i} type="button" variant="outline" className="h-auto min-h-11 max-w-full whitespace-normal text-left" disabled={busy} onClick={() => void search(i)}>{option.label}</Button>)}</div></section>}
+        {result.mode === "ask" && result.answerState !== "needs_clarification" && <article><h3 className="text-sm font-semibold">AI Answer</h3>{result.answer && (result.answer.insufficientEvidence || ["verified","conflict"].includes(result.verification?.status??"")) ? <p className="mt-4 whitespace-pre-wrap text-base leading-8">{result.answer.answer.split(/(\[S\d+\])/g).map((part, i) => {
           const match = /^\[S(\d+)\]$/.exec(part); if (!match) return <span key={i}>{part}</span>;
           const item = result.sources.find(s => s.sourceId === `S${match[1]}`); if (!item) return null;
           return <button key={i} type="button" aria-label={`Citation ${match[1]}`} title={`${item.documentName} · ${item.location}\n${item.content.slice(0, 240)}`} onClick={() => void preview(item)} className="mx-1 inline-flex min-h-9 min-w-9 items-center justify-center rounded-md bg-primary/10 px-1.5 text-sm font-medium text-primary">[{match[1]}]</button>;

@@ -36,7 +36,7 @@ export function GraphPreview({ nodes, edges, documents, dataset = "example" }: {
               })}
             </svg>
           </div>
-          <p className="border-t border-border px-5 py-3 text-[11px] text-muted-foreground">{dataset === "workspace" ? "本地 Workspace 关系 · 基于共享分类和标签的演示规则" : "SVG 关系预览 · 完整交互图谱将在 Phase 8 使用 React Flow 实现。"}</p>
+          <p className="border-t border-border px-5 py-3 text-[11px] text-muted-foreground">{dataset === "workspace" ? "本地 Workspace 关系 · 基于共享分类和标签的演示规则" : "知识关联预览 · 选择节点查看资料与概念的联系。"}</p>
         </section>
         <aside className="border-t border-border p-5 xl:border-l xl:border-t-0" aria-live="polite">
           {selected ? <div><Badge variant="secondary">{selected.kind === "concept" ? "概念节点" : "文件节点"}</Badge><h3 className="mt-4 text-lg font-medium leading-7">{selected.label}</h3><p className="mt-3 text-xs leading-6 text-muted-foreground">{document?.summary ?? "这个概念连接了不同文件中的主题。以下关联来自预置演示数据。"}</p>{document && <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground"><FileText size={14} /> {document.category} · {document.size}</div>}<div className="mt-6 border-t border-border pt-5"><p className="mb-4 flex items-center gap-2 text-xs font-medium"><Link2 size={14} /> 关联节点 · {connections.length}</p><div className="space-y-2">{connections.map((edge) => {

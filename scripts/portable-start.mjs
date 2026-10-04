@@ -190,9 +190,10 @@ async function prepareDatabase() {
   finally { await recoveryAdministrator.end(); }
   Object.assign(process.env, config, {
     NODE_ENV: "production", FILE_STORAGE_ROOT: storage, WORKSPACE_COOKIE_SECURE: "false",
-    AI_ENGINE: !args.includes("--mock") && config.KIMI_API_KEY?.trim() ? "llm" : "mock",
+    AI_ENGINE: config.COMPETITION_MODE === "true" || (!args.includes("--mock") && config.KIMI_API_KEY?.trim()) ? "llm" : "mock",
   });
-  console.log(`Private database ready on 127.0.0.1:${metadata.port}. Kimi key ${config.KIMI_API_KEY?.trim() ? "configured" : "not configured; using Mock"}.`);
+  if (config.COMPETITION_MODE === "true" && args.includes("--mock")) throw new Error("Competition Mode cannot start with --mock.");
+  console.log(`Private database ready on 127.0.0.1:${metadata.port}. Kimi key ${config.KIMI_API_KEY?.trim() ? "configured" : config.COMPETITION_MODE === "true" ? "not configured; Cloud AI provider unavailable" : "not configured; using Mock"}.`);
 }
 
 function shutdown() {

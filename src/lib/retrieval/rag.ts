@@ -112,7 +112,7 @@ export async function generateGroundedAnswer(query: string, evidence: Evidence[]
       await validateCitations(object,sources,scope,getSource);signal.throwIfAborted();
       const final = finalizeAnswer({...object,confidence:finalAssessment.confidence}, answerContext);
       // Only conflicts independently confirmed by the release verifier survive.
-      final.conflict = { detected: verification.conflicts.length > 0, claims: verification.conflicts.map(c => ({ topic: c.topic, sourceIds: c.sourceIds, values: answerContext.conflicts.find(v => v.values.every(value => c.sourceIds.includes(value.sourceId)))?.values.map(v => v.value) ?? c.sourceIds.map(id => sources.find(s => s.sourceId === id)!.content.slice(0,300)) })) };
+      final.conflict = { detected: verification.conflicts.length > 0, claims: verification.conflicts.map(c => ({ topic: c.topic, sourceIds: c.sourceIds, values: c.sourceIds.map(id => answerContext.conflicts.flatMap(v=>v.values).find(v=>v.sourceId===id)?.value ?? sources.find(s=>s.sourceId===id)!.content.slice(0,300)) })) };
       final.answerState = final.conflict.detected ? "conflicting" : "answered";
       return {answer:final,sources,unavailable:false,repaired:attempt===1,assessment:finalAssessment,verification,verificationAttempts};
     }

@@ -52,7 +52,7 @@ function quantities(text:string) {
   // List ordinals describe presentation, not source quantities. Hyphenated
   // adjectival units ("6-hour") still denote the same factual quantity.
   const factual=text.replace(/\[S\d+\]/g,"").replace(/^\s*(?:\d+[.)、]\s+)/gm,"").replaceAll("小時","小时").replaceAll("分鐘","分钟");
-  return [...factual.matchAll(/(?<![\p{L}\d])(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?\s*(?:(?:[-–—]\s*)?(?:milliseconds|minutes|seconds|percent|second|minute|hours|hour|毫秒|分钟|小时|毫米|厘米|千米|秒|米|ms|mm|cm|km|min|%|s|h|m)(?![\p{L}]))?/giu)].map(m=>{
+  return [...factual.matchAll(/(?<![\p{L}\d])(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?\s*(?:(?:[-–—]\s*)?(?:milliseconds|minutes|seconds|percent|second|minute|hours|hour|毫秒|分钟|小时|毫米|厘米|千米|秒|米|ms|mm|cm|km|min|%|s|h|m)(?![A-Za-z]))?/giu)].map(m=>{
     const number=/^(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?/.exec(m[0])![0];
     const unit=m[0].slice(number.length).trim().replace(/^[-–—]\s*/,"").toLowerCase(),value=Number(number.replaceAll(",","")),scale=multipliers[unit];
     return {value:scale?value*scale[1]:value,dimension:scale?.[0]??"number"};

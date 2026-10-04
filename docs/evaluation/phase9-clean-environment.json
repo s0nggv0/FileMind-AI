@@ -1,0 +1,53 @@
+{
+  "passed": true,
+  "checkedAt": "2026-10-04T06:59:07.728Z",
+  "freshDatabase": true,
+  "copiedUserData": false,
+  "competitionMode": true,
+  "kimiCalls": 0,
+  "checks": {
+    "noMockSubstitution": true,
+    "recoveryKeyGenerated": true,
+    "eightMixedFixtures": true,
+    "fiveScopedResets": true,
+    "backupExport": true,
+    "backupIntegrityValidation": true,
+    "recoveryKeyRestoredOwner": true,
+    "resetDatabaseEmpty": true,
+    "localOCR": true,
+    "honestNotReady": true
+  },
+  "resets": [
+    {
+      "cycle": 1,
+      "passed": true,
+      "ordinaryOwnerPreserved": true,
+      "siblingPreserved": true
+    },
+    {
+      "cycle": 2,
+      "passed": true,
+      "ordinaryOwnerPreserved": true,
+      "siblingPreserved": true
+    },
+    {
+      "cycle": 3,
+      "passed": true,
+      "ordinaryOwnerPreserved": true,
+      "siblingPreserved": true
+    },
+    {
+      "cycle": 4,
+      "passed": true,
+      "ordinaryOwnerPreserved": true,
+      "siblingPreserved": true
+    },
+    {
+      "cycle": 5,
+      "passed": true,
+      "ordinaryOwnerPreserved": true,
+      "siblingPreserved": true
+    }
+  ],
+  "backupSha256": "5b7c1b1db16237c729950a38102b6283b26408424e3279d9aa0534b95e0dede1"
+}
