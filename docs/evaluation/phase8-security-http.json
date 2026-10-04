@@ -1,0 +1,60 @@
+{
+  "passed": true,
+  "checkedAt": "2026-10-04T03:03:12.216Z",
+  "mode": "real HTTP + isolated native PostgreSQL, explicit Mock extraction; not AI quality",
+  "checks": [
+    {
+      "case": "/api/workspaces/foreign-workspace",
+      "passed": true,
+      "status": 404
+    },
+    {
+      "case": "/api/search",
+      "passed": true,
+      "status": 404
+    },
+    {
+      "case": "/api/documents/foreign-document/original",
+      "passed": true,
+      "status": 404
+    },
+    {
+      "case": "/api/images/foreign-document",
+      "passed": true,
+      "status": 404
+    },
+    {
+      "case": "foreign save rejected",
+      "passed": true
+    },
+    {
+      "case": "same-origin mutation guard",
+      "passed": true
+    },
+    {
+      "case": "foreign lexical/vector results empty",
+      "passed": true
+    },
+    {
+      "case": "maintenance metadata tenant isolation",
+      "passed": true
+    },
+    {
+      "case": "backup excludes other owners",
+      "passed": true
+    },
+    {
+      "case": "source and answer render as React text (static code inspection)",
+      "passed": true
+    },
+    {
+      "case": "untrusted content never executes export/delete tools",
+      "passed": true,
+      "mode": "stored data and find route; live model injection measured separately in blind set"
+    },
+    {
+      "case": "Web SQL role is neither admin nor RLS bypass",
+      "passed": true
+    }
+  ]
+}
