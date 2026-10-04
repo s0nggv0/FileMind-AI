@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { AIProvider } from "../ai/provider";
 import type { RAGAnswer, RAGSource } from "./rag";
 import type { AnswerContext } from "./answer-context";
-export const VERIFIER_VERSION="answer-verifier-v3", CLAIM_PROMPT_VERSION="atomic-claims-v2", SUPPORT_PROMPT_VERSION="evidence-support-v3";
+export const VERIFIER_VERSION="answer-verifier-v4", CLAIM_PROMPT_VERSION="atomic-claims-v2", SUPPORT_PROMPT_VERSION="evidence-support-v4";
 const sourceId=z.string().regex(/^S[1-9]\d*$/);
 export const ClaimExtractionSchema=z.object({claims:z.array(z.object({unitId:z.string().regex(/^U[1-9]\d*$/),text:z.string().min(1).max(700)}).strict()).min(1).max(120)}).strict();
 export const SupportCheckSchema=z.object({
@@ -86,7 +86,7 @@ export class AnswerVerifier {
       }
       if(!extracted)throw new AnswerVerificationError("INCOMPLETE_CLAIM_COVERAGE");extraction=extracted;
       onStage?.("Checking claims and conflicting sources");
-      support=SupportCheckSchema.parse((await this.provider.generateObject({system:supportSystem+"\nIndependently validate the candidate sourceDifferences. Record every actual relevant source disagreement and explicit_superseded update in conflicts EVEN WHEN all attributed claims are supported separately. Source-level conflicts and claim support are distinct. Explicit supersession is recorded as explicit_superseded, not silently dropped. disclosed must check that the answer explains both values and the relationship accurately.",prompt:JSON.stringify({task:"check_evidence_support",query,sourceDifferences,untrustedAnswer:answer.answer,untrustedAnswerUnits:units,atomicClaims:extraction.claims.map((c,i)=>({claimId:`C${i+1}`,...c})),untrustedSources:sources.map(s=>({sourceId:s.sourceId,documentId:s.documentId,document:s.documentName,updatedAt:s.documentUpdatedAt??null,content:s.content}))}),schema:SupportCheckSchema,signal})).object);
+      support=SupportCheckSchema.parse((await this.provider.generateObject({system:supportSystem+"\nA supported claim MUST have nonempty supportingSourceIds. Document identity claims can be supported by the supplied document metadata; record that sourceId. Comparisons and update claims must list EVERY source needed for their named version identifiers, quantities and replacement relationship. A newer source stating that it replaces a prior clause does not alone support an older version identifier absent from its content. Independently validate the candidate sourceDifferences. Record every actual relevant source disagreement and explicit_superseded update in conflicts EVEN WHEN all attributed claims are supported separately. Source-level conflicts and claim support are distinct. Explicit supersession is recorded as explicit_superseded, not silently dropped. disclosed must check that the answer explains both values and the relationship accurately.",prompt:JSON.stringify({task:"check_evidence_support",query,sourceDifferences,untrustedAnswer:answer.answer,untrustedAnswerUnits:units,atomicClaims:extraction.claims.map((c,i)=>({claimId:`C${i+1}`,...c})),untrustedSources:sources.map(s=>({sourceId:s.sourceId,documentId:s.documentId,document:s.documentName,updatedAt:s.documentUpdatedAt??null,content:s.content}))}),schema:SupportCheckSchema,signal})).object);
       signal.throwIfAborted();
     }
     if(support.claims.length!==extraction.claims.length || new Set(support.claims.map(c=>c.claimId)).size!==extraction.claims.length)throw new AnswerVerificationError("INCOMPLETE_SUPPORT_COVERAGE");

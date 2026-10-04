@@ -1,0 +1,725 @@
+{
+  "version": "release-provider-v1",
+  "checkedAt": "2026-10-04T10:15:17.918Z",
+  "live": true,
+  "syntheticSources": true,
+  "retrievalTested": false,
+  "pipeline": "Actual grounded answer, clarification ownership checks, conflict draft, citation freshness, atomic claims and semantic release verification",
+  "model": "kimi-k2.6",
+  "callLimit": 12,
+  "callsUsed": 8,
+  "calls": [
+    {
+      "number": 1,
+      "status": 200,
+      "durationMs": 1539.4515,
+      "flatContextSchema": true,
+      "usage": {
+        "prompt_tokens": 552,
+        "completion_tokens": 65,
+        "total_tokens": 617,
+        "completion_tokens_details": {
+          "reasoning_tokens": 1
+        }
+      }
+    },
+    {
+      "number": 2,
+      "status": 200,
+      "durationMs": 1968.1621999999998,
+      "flatContextSchema": true,
+      "usage": {
+        "prompt_tokens": 542,
+        "completion_tokens": 111,
+        "total_tokens": 653,
+        "cached_tokens": 256,
+        "completion_tokens_details": {
+          "reasoning_tokens": 1
+        },
+        "prompt_tokens_details": {
+          "cached_tokens": 256
+        }
+      }
+    },
+    {
+      "number": 3,
+      "status": 200,
+      "durationMs": 3805.8437000000004,
+      "flatContextSchema": false,
+      "usage": {
+        "prompt_tokens": 716,
+        "completion_tokens": 202,
+        "total_tokens": 918,
+        "completion_tokens_details": {
+          "reasoning_tokens": 1
+        }
+      }
+    },
+    {
+      "number": 4,
+      "status": 200,
+      "durationMs": 2540.8821000000007,
+      "flatContextSchema": false,
+      "usage": {
+        "prompt_tokens": 326,
+        "completion_tokens": 176,
+        "total_tokens": 502,
+        "completion_tokens_details": {
+          "reasoning_tokens": 1
+        }
+      }
+    },
+    {
+      "number": 5,
+      "status": 200,
+      "durationMs": 3566.5815000000002,
+      "flatContextSchema": false,
+      "usage": {
+        "prompt_tokens": 1132,
+        "completion_tokens": 238,
+        "total_tokens": 1370,
+        "completion_tokens_details": {
+          "reasoning_tokens": 1
+        }
+      }
+    },
+    {
+      "number": 6,
+      "status": 200,
+      "durationMs": 4125.8675,
+      "flatContextSchema": false,
+      "usage": {
+        "prompt_tokens": 1006,
+        "completion_tokens": 228,
+        "total_tokens": 1234,
+        "cached_tokens": 512,
+        "completion_tokens_details": {
+          "reasoning_tokens": 1
+        },
+        "prompt_tokens_details": {
+          "cached_tokens": 512
+        }
+      }
+    },
+    {
+      "number": 7,
+      "status": 200,
+      "durationMs": 3990.357400000001,
+      "flatContextSchema": false,
+      "usage": {
+        "prompt_tokens": 356,
+        "completion_tokens": 217,
+        "total_tokens": 573,
+        "completion_tokens_details": {
+          "reasoning_tokens": 1
+        }
+      }
+    },
+    {
+      "number": 8,
+      "status": 200,
+      "durationMs": 4743.0049,
+      "flatContextSchema": false,
+      "usage": {
+        "prompt_tokens": 1259,
+        "completion_tokens": 358,
+        "total_tokens": 1617,
+        "cached_tokens": 512,
+        "completion_tokens_details": {
+          "reasoning_tokens": 1
+        },
+        "prompt_tokens_details": {
+          "cached_tokens": 512
+        }
+      }
+    }
+  ],
+  "flatWireLiveVerified": false,
+  "rows": [
+    {
+      "name": "ambiguity",
+      "passed": true,
+      "result": {
+        "answer": {
+          "answer": "您指的是哪个项目？",
+          "citations": [],
+          "confidence": "low",
+          "insufficientEvidence": false,
+          "answerState": "needs_clarification",
+          "conflict": {
+            "detected": false,
+            "claims": []
+          },
+          "clarification": {
+            "required": true,
+            "question": "您指的是哪个项目？",
+            "options": [
+              {
+                "label": "AI Competition project",
+                "documentIds": [
+                  "7b3d9c99-1342-41aa-88e6-7b9f34df81a6"
+                ]
+              },
+              {
+                "label": "Database Course Project",
+                "documentIds": [
+                  "93fb4ca8-f949-44a6-b982-39d86e7e306a"
+                ]
+              },
+              {
+                "label": "Research Proposal project",
+                "documentIds": [
+                  "06429964-bf41-49e3-a810-af0ced53aecd"
+                ]
+              }
+            ]
+          }
+        },
+        "sources": [
+          {
+            "userId": "a7f8c666-0d6c-4339-910d-618b70983344",
+            "workspaceId": "b8052c2e-c874-4b33-9b59-86fb2fbd4c4a",
+            "id": "84f2589a-41de-4a2f-bd35-3b4beb25c44f",
+            "documentId": "7b3d9c99-1342-41aa-88e6-7b9f34df81a6",
+            "documentName": "ai-project.txt",
+            "content": "AI Competition project deadline is June 10.",
+            "contentHash": "e1d9a07d28854cfb5d9b835b902bf36ebe2c6050f0a5bf601d73fc2eba4e3d5d",
+            "chunkIndex": 0,
+            "chunkVersion": "chunk-v1",
+            "tokenEstimate": 30,
+            "pageStart": null,
+            "pageEnd": null,
+            "lineStart": 1,
+            "lineEnd": 1,
+            "paragraphStart": null,
+            "paragraphEnd": null,
+            "headingPath": [],
+            "charStart": 0,
+            "charEnd": 43,
+            "fileType": "txt",
+            "summary": "",
+            "tags": [],
+            "score": 0.9,
+            "semanticScore": 0.9,
+            "sourceId": "S1",
+            "location": "L1–L1"
+          },
+          {
+            "userId": "a7f8c666-0d6c-4339-910d-618b70983344",
+            "workspaceId": "b8052c2e-c874-4b33-9b59-86fb2fbd4c4a",
+            "id": "02c72c8a-d17d-464d-bf2c-7d8382242676",
+            "documentId": "93fb4ca8-f949-44a6-b982-39d86e7e306a",
+            "documentName": "course-project.txt",
+            "content": "Database Course Project deadline is June 15.",
+            "contentHash": "3ba2b9186a52cdbff3b0f6484d9c11cb215916f48b9bc5f99be96ece3361aea9",
+            "chunkIndex": 0,
+            "chunkVersion": "chunk-v1",
+            "tokenEstimate": 30,
+            "pageStart": null,
+            "pageEnd": null,
+            "lineStart": 1,
+            "lineEnd": 1,
+            "paragraphStart": null,
+            "paragraphEnd": null,
+            "headingPath": [],
+            "charStart": 0,
+            "charEnd": 44,
+            "fileType": "txt",
+            "summary": "",
+            "tags": [],
+            "score": 0.9,
+            "semanticScore": 0.9,
+            "sourceId": "S2",
+            "location": "L1–L1"
+          },
+          {
+            "userId": "a7f8c666-0d6c-4339-910d-618b70983344",
+            "workspaceId": "b8052c2e-c874-4b33-9b59-86fb2fbd4c4a",
+            "id": "d27069c8-e925-4cab-885b-9d501065c373",
+            "documentId": "06429964-bf41-49e3-a810-af0ced53aecd",
+            "documentName": "research-project.txt",
+            "content": "Research Proposal project deadline is June 20.",
+            "contentHash": "94ef4af58386d93071c795a6cc2d5da49dd1f3fc3e727c48903c1ae7d6f381be",
+            "chunkIndex": 0,
+            "chunkVersion": "chunk-v1",
+            "tokenEstimate": 30,
+            "pageStart": null,
+            "pageEnd": null,
+            "lineStart": 1,
+            "lineEnd": 1,
+            "paragraphStart": null,
+            "paragraphEnd": null,
+            "headingPath": [],
+            "charStart": 0,
+            "charEnd": 46,
+            "fileType": "txt",
+            "summary": "",
+            "tags": [],
+            "score": 0.9,
+            "semanticScore": 0.9,
+            "sourceId": "S3",
+            "location": "L1–L1"
+          }
+        ],
+        "unavailable": false,
+        "assessment": {
+          "sufficient": true,
+          "confidence": "high",
+          "reasons": [
+            "Usable support spans multiple documents."
+          ],
+          "evidenceCount": 3,
+          "documentDiversity": 3,
+          "topSemanticScore": 0.9,
+          "topEvidenceGap": 0,
+          "topLexicalCoverage": 0
+        }
+      }
+    },
+    {
+      "name": "conflict",
+      "passed": false,
+      "result": {
+        "answer": {
+          "answer": "我没有在你的资料中找到足够依据回答这个问题。",
+          "citations": [],
+          "confidence": "low",
+          "insufficientEvidence": true,
+          "answerState": "no_answer",
+          "conflict": {
+            "detected": false,
+            "claims": []
+          },
+          "clarification": {
+            "required": false
+          }
+        },
+        "sources": [
+          {
+            "userId": "a7f8c666-0d6c-4339-910d-618b70983344",
+            "workspaceId": "b8052c2e-c874-4b33-9b59-86fb2fbd4c4a",
+            "id": "e93ef54e-4dbd-42f2-8ead-80f1008f2c2d",
+            "documentId": "47c25be5-fcf2-4196-934f-3bdb9d3105af",
+            "documentName": "orion-policy-old.txt",
+            "content": "Orion policy edition 2028-01 specifies that temporary records last 3 hours.",
+            "contentHash": "d2a21758afa61414731c17f29c812f3ce028c4593882cd1df582602f037bba3d",
+            "chunkIndex": 0,
+            "chunkVersion": "chunk-v1",
+            "tokenEstimate": 30,
+            "pageStart": null,
+            "pageEnd": null,
+            "lineStart": 1,
+            "lineEnd": 1,
+            "paragraphStart": null,
+            "paragraphEnd": null,
+            "headingPath": [],
+            "charStart": 0,
+            "charEnd": 75,
+            "fileType": "txt",
+            "summary": "",
+            "tags": [],
+            "score": 0.9,
+            "semanticScore": 0.9,
+            "sourceId": "S1",
+            "location": "L1–L1"
+          },
+          {
+            "userId": "a7f8c666-0d6c-4339-910d-618b70983344",
+            "workspaceId": "b8052c2e-c874-4b33-9b59-86fb2fbd4c4a",
+            "id": "c717fcc4-afd0-4645-8914-7fa89b54e95e",
+            "documentId": "eed1a6a2-dfcb-40da-a2dd-28975a782b84",
+            "documentName": "orion-policy-update.txt",
+            "content": "Orion policy edition 2028-03 explicitly replaces the prior temporary-record retention clause. Temporary records now last 8 hours.",
+            "contentHash": "18d0653981baf1dad49949a238e83e118ce407adc939498e9cd81842f5677ce4",
+            "chunkIndex": 0,
+            "chunkVersion": "chunk-v1",
+            "tokenEstimate": 30,
+            "pageStart": null,
+            "pageEnd": null,
+            "lineStart": 1,
+            "lineEnd": 1,
+            "paragraphStart": null,
+            "paragraphEnd": null,
+            "headingPath": [],
+            "charStart": 0,
+            "charEnd": 129,
+            "fileType": "txt",
+            "summary": "",
+            "tags": [],
+            "score": 0.9,
+            "semanticScore": 0.9,
+            "sourceId": "S2",
+            "location": "L1–L1"
+          }
+        ],
+        "unavailable": false,
+        "repaired": true,
+        "assessment": {
+          "sufficient": true,
+          "confidence": "high",
+          "reasons": [
+            "Usable support spans multiple documents."
+          ],
+          "evidenceCount": 2,
+          "documentDiversity": 2,
+          "topSemanticScore": 0.9,
+          "topEvidenceGap": 0,
+          "topLexicalCoverage": 0
+        },
+        "verification": {
+          "version": "answer-verifier-v3",
+          "claimPromptVersion": "atomic-claims-v2",
+          "supportPromptVersion": "evidence-support-v3",
+          "provider": "kimi",
+          "model": "kimi-k2.6",
+          "method": "semantic",
+          "accepted": false,
+          "claims": [
+            {
+              "id": "C1",
+              "unitId": "U1",
+              "text": "Orion policy edition 2028-01 is in orion-policy-old.txt.",
+              "status": "supported",
+              "supportingSourceIds": [],
+              "contradictingSourceIds": [],
+              "numericSupport": false,
+              "cited": false
+            },
+            {
+              "id": "C2",
+              "unitId": "U1",
+              "text": "Orion policy edition 2028-01 specifies that temporary records last 3 hours.",
+              "status": "supported",
+              "supportingSourceIds": [
+                "S1"
+              ],
+              "contradictingSourceIds": [],
+              "numericSupport": true,
+              "cited": true
+            },
+            {
+              "id": "C3",
+              "unitId": "U2",
+              "text": "Orion policy edition 2028-03 is in orion-policy-update.txt.",
+              "status": "supported",
+              "supportingSourceIds": [],
+              "contradictingSourceIds": [],
+              "numericSupport": false,
+              "cited": false
+            },
+            {
+              "id": "C4",
+              "unitId": "U2",
+              "text": "Orion policy edition 2028-03 specifies that temporary records now last 8 hours.",
+              "status": "supported",
+              "supportingSourceIds": [
+                "S2"
+              ],
+              "contradictingSourceIds": [],
+              "numericSupport": true,
+              "cited": true
+            },
+            {
+              "id": "C5",
+              "unitId": "U3",
+              "text": "Edition 2028-03 explicitly replaces the prior temporary-record retention clause.",
+              "status": "supported",
+              "supportingSourceIds": [
+                "S2"
+              ],
+              "contradictingSourceIds": [],
+              "numericSupport": true,
+              "cited": true
+            },
+            {
+              "id": "C6",
+              "unitId": "U3",
+              "text": "Edition 2028-03 establishes an explicit superseded relationship between the two versions.",
+              "status": "supported",
+              "supportingSourceIds": [
+                "S2"
+              ],
+              "contradictingSourceIds": [],
+              "numericSupport": true,
+              "cited": true
+            },
+            {
+              "id": "C7",
+              "unitId": "U4",
+              "text": "The retention period changed from 3 hours to 8 hours.",
+              "status": "supported",
+              "supportingSourceIds": [
+                "S1",
+                "S2"
+              ],
+              "contradictingSourceIds": [],
+              "numericSupport": true,
+              "cited": true
+            },
+            {
+              "id": "C8",
+              "unitId": "U4",
+              "text": "S1 records the earlier value.",
+              "status": "supported",
+              "supportingSourceIds": [
+                "S1"
+              ],
+              "contradictingSourceIds": [],
+              "numericSupport": true,
+              "cited": true
+            },
+            {
+              "id": "C9",
+              "unitId": "U4",
+              "text": "S2 records the updated value.",
+              "status": "supported",
+              "supportingSourceIds": [
+                "S2"
+              ],
+              "contradictingSourceIds": [],
+              "numericSupport": true,
+              "cited": true
+            }
+          ],
+          "conflicts": [
+            {
+              "topic": "Orion policy temporary records retention period",
+              "sourceIds": [
+                "S1",
+                "S2"
+              ],
+              "disclosed": true,
+              "versionRelationship": "explicit_superseded"
+            }
+          ],
+          "completeness": 0.7777777777777778,
+          "faithfulness": 0.7777777777777778,
+          "reason": "UNSUPPORTED_CLAIM",
+          "durationMs": 8737.472099999999
+        },
+        "verificationAttempts": [
+          {
+            "version": "answer-verifier-v3",
+            "claimPromptVersion": "atomic-claims-v2",
+            "supportPromptVersion": "evidence-support-v3",
+            "provider": "kimi",
+            "model": "kimi-k2.6",
+            "method": "semantic",
+            "accepted": false,
+            "claims": [
+              {
+                "id": "C1",
+                "unitId": "U1",
+                "text": "The Orion policy in orion-policy-old.txt (edition 2028-01) specified that temporary records last 3 hours.",
+                "status": "supported",
+                "supportingSourceIds": [
+                  "S1"
+                ],
+                "contradictingSourceIds": [],
+                "numericSupport": true,
+                "cited": true
+              },
+              {
+                "id": "C2",
+                "unitId": "U2",
+                "text": "The Orion policy in orion-policy-update.txt (edition 2028-03) updated the temporary-record retention period to 8 hours.",
+                "status": "supported",
+                "supportingSourceIds": [
+                  "S2"
+                ],
+                "contradictingSourceIds": [],
+                "numericSupport": true,
+                "cited": true
+              },
+              {
+                "id": "C3",
+                "unitId": "U3",
+                "text": "The two versions have an explicit superseded relationship.",
+                "status": "supported",
+                "supportingSourceIds": [
+                  "S2"
+                ],
+                "contradictingSourceIds": [],
+                "numericSupport": true,
+                "cited": true
+              },
+              {
+                "id": "C4",
+                "unitId": "U3",
+                "text": "Edition 2028-03 explicitly replaces the prior temporary-record retention clause from edition 2028-01.",
+                "status": "supported",
+                "supportingSourceIds": [
+                  "S2"
+                ],
+                "contradictingSourceIds": [],
+                "numericSupport": false,
+                "cited": true
+              },
+              {
+                "id": "C5",
+                "unitId": "U3",
+                "text": "Edition 2028-03 changes the retention period from 3 hours to 8 hours.",
+                "status": "supported",
+                "supportingSourceIds": [
+                  "S1",
+                  "S2"
+                ],
+                "contradictingSourceIds": [],
+                "numericSupport": true,
+                "cited": true
+              }
+            ],
+            "conflicts": [
+              {
+                "topic": "Orion policy temporary records retention period",
+                "sourceIds": [
+                  "S1",
+                  "S2"
+                ],
+                "disclosed": true,
+                "versionRelationship": "explicit_superseded"
+              }
+            ],
+            "completeness": 0.8,
+            "faithfulness": 0.8,
+            "reason": "UNSUPPORTED_CLAIM",
+            "durationMs": 6114.311900000001
+          },
+          {
+            "version": "answer-verifier-v3",
+            "claimPromptVersion": "atomic-claims-v2",
+            "supportPromptVersion": "evidence-support-v3",
+            "provider": "kimi",
+            "model": "kimi-k2.6",
+            "method": "semantic",
+            "accepted": false,
+            "claims": [
+              {
+                "id": "C1",
+                "unitId": "U1",
+                "text": "Orion policy edition 2028-01 is in orion-policy-old.txt.",
+                "status": "supported",
+                "supportingSourceIds": [],
+                "contradictingSourceIds": [],
+                "numericSupport": false,
+                "cited": false
+              },
+              {
+                "id": "C2",
+                "unitId": "U1",
+                "text": "Orion policy edition 2028-01 specifies that temporary records last 3 hours.",
+                "status": "supported",
+                "supportingSourceIds": [
+                  "S1"
+                ],
+                "contradictingSourceIds": [],
+                "numericSupport": true,
+                "cited": true
+              },
+              {
+                "id": "C3",
+                "unitId": "U2",
+                "text": "Orion policy edition 2028-03 is in orion-policy-update.txt.",
+                "status": "supported",
+                "supportingSourceIds": [],
+                "contradictingSourceIds": [],
+                "numericSupport": false,
+                "cited": false
+              },
+              {
+                "id": "C4",
+                "unitId": "U2",
+                "text": "Orion policy edition 2028-03 specifies that temporary records now last 8 hours.",
+                "status": "supported",
+                "supportingSourceIds": [
+                  "S2"
+                ],
+                "contradictingSourceIds": [],
+                "numericSupport": true,
+                "cited": true
+              },
+              {
+                "id": "C5",
+                "unitId": "U3",
+                "text": "Edition 2028-03 explicitly replaces the prior temporary-record retention clause.",
+                "status": "supported",
+                "supportingSourceIds": [
+                  "S2"
+                ],
+                "contradictingSourceIds": [],
+                "numericSupport": true,
+                "cited": true
+              },
+              {
+                "id": "C6",
+                "unitId": "U3",
+                "text": "Edition 2028-03 establishes an explicit superseded relationship between the two versions.",
+                "status": "supported",
+                "supportingSourceIds": [
+                  "S2"
+                ],
+                "contradictingSourceIds": [],
+                "numericSupport": true,
+                "cited": true
+              },
+              {
+                "id": "C7",
+                "unitId": "U4",
+                "text": "The retention period changed from 3 hours to 8 hours.",
+                "status": "supported",
+                "supportingSourceIds": [
+                  "S1",
+                  "S2"
+                ],
+                "contradictingSourceIds": [],
+                "numericSupport": true,
+                "cited": true
+              },
+              {
+                "id": "C8",
+                "unitId": "U4",
+                "text": "S1 records the earlier value.",
+                "status": "supported",
+                "supportingSourceIds": [
+                  "S1"
+                ],
+                "contradictingSourceIds": [],
+                "numericSupport": true,
+                "cited": true
+              },
+              {
+                "id": "C9",
+                "unitId": "U4",
+                "text": "S2 records the updated value.",
+                "status": "supported",
+                "supportingSourceIds": [
+                  "S2"
+                ],
+                "contradictingSourceIds": [],
+                "numericSupport": true,
+                "cited": true
+              }
+            ],
+            "conflicts": [
+              {
+                "topic": "Orion policy temporary records retention period",
+                "sourceIds": [
+                  "S1",
+                  "S2"
+                ],
+                "disclosed": true,
+                "versionRelationship": "explicit_superseded"
+              }
+            ],
+            "completeness": 0.7777777777777778,
+            "faithfulness": 0.7777777777777778,
+            "reason": "UNSUPPORTED_CLAIM",
+            "durationMs": 8737.472099999999
+          }
+        ],
+        "errorCode": "VERIFICATION_REJECTED"
+      }
+    }
+  ],
+  "passed": false
+}

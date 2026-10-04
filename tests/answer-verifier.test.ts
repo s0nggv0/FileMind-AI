@@ -28,6 +28,9 @@ test("semantic verification requires full cited support and numerical equivalenc
   assert.equal(numericEvidenceSupported("3. Retention is 6 hours.",["The prior 6-hour statement remains visible."]),true);
   assert.equal(numericEvidenceSupported("2. Retention is 72 hours.",["The prior 6-hour statement remains visible."]),false);
   assert.equal(numericEvidenceSupported("72 hours [S1]",[s.content]),false);
+  const prior="Policy edition 2028-01 retains records for 3 hours.",update="Policy edition 2028-03 explicitly replaces the prior retention clause with 8 hours.";
+  assert.equal(numericEvidenceSupported("Edition 2028-03 replaces edition 2028-01.",[update]),false,"Cross-version identifiers require both original sources");
+  assert.equal(numericEvidenceSupported("Edition 2028-03 replaces edition 2028-01.",[prior,update]),true);
   assert.deepEqual(answerUnits("保留 6 小时。[S1]\n来源已经核对。[S2]").map(u=>u.citedSourceIds),[["S1"],["S2"]]);
   assert.equal(answerUnits("**相关资料：**\nRetention is 6 hours [S1].").length,1);
   const quoted=answerUnits('Query 的含义是“我找什么？”[S1]，Key 的含义是"What can I match?"。[S2]');
