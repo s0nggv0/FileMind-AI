@@ -1,88 +1,106 @@
-# FileMind AI — 比赛交付说明
+# FileMind AI
 
-FileMind AI 面向拥有学习笔记、课程文件和图片资料的个人用户：先导入资料，让 Agent 提议分类和标签，再由用户审阅确认；之后通过语义或关键词查找，用带原文引用的答案回答问题。项目把可核对的来源、可恢复的本地数据和人工确认放在同一条流程里。
+**Turn scattered files into connected knowledge.**
 
-本页单独整理比赛材料，保留根目录 README 和另外四份既有用户文档的未提交修改。Phase 8 的完整验收见 [最终评测](../evaluation/final-evaluation-summary.md)；比赛评分项对应证据见 [评分映射](scoring-map.md)。
+FileMind AI transforms scattered personal files into an intelligent, searchable and connected knowledge space using AI Agents, multimodal understanding and citation-grounded RAG.
 
-## 核心能力与 AI 技术
+FileMind AI 通过 AI Agent、多模态理解与可引用 RAG，将散乱的个人数字资料转化为可理解、可搜索、可关联的个人知识空间。
 
-| 能力 | 当前实现 |
-| --- | --- |
-| LLM 与 Agent | Kimi 结构化分析；有界工具调用、参数验证、超时与 Planner fallback 记录；Review 后才 Apply。 |
-| RAG | 持久化 chunks/Embedding、来源位置、追问重检索；只发布完成引用与事实检查的答案。 |
-| Adaptive Retrieval | 根据查询信号选择语义、关键词、文件名或混合检索；Embedding 故障保留关键词来源。 |
-| Multimodal | PNG/JPG 原图、独立本地 OCR 与 Kimi Vision；提取文字和 AI 解释分开呈现。 |
-| AI Safety | 不可信资料边界、工具 allowlist、租户 FORCE RLS、同源写入检查、事实门、冲突双来源说明。 |
-| 本地数据与恢复 | 私有原文件、PostgreSQL real[] 向量、Operation Journal、隔离恢复、原子索引替换。 |
-| 迁移 | 同数据库 Recovery Key、校验备份导入、停服后便携目录复制分别解决不同问题。 |
-| 界面 | Workspace、Review、Library、Search、Graph、Settings；桌面与手机宽度浏览器验收。 |
+This competition README is separate because the user explicitly required preserving five existing uncommitted documents, including the root README. Candidate version: **v1.0.0-rc.1**. **Online acceptance remains NOT READY**: six budgeted Kimi requests failed structured-output validation. Do not present local test fixtures as live AI.
 
-[完整架构图](../architecture/system-overview.md) 展示 UI → Agent/Tools → 文档与图像处理 → Chunking/Embedding → Adaptive Retrieval → RAG/Citation/Fact Gate，以及 PostgreSQL 和私有存储的恢复边界。
+## Introduction
 
-## Quick Start：源码开发
+A personal knowledge space for students and researchers. Import mixed materials, watch FileMind Agent propose organization, review its decisions, and ask questions with clickable sources. The application preserves originals and makes the user's approval part of the workflow.
 
-使用 Windows x64 的 ASCII 安装目录，例如 `E:\FileMind AI`；路径含空格已验证。需要 Node.js ≥22.13、npm 和本项目专用 PostgreSQL 数据库。不要把别的项目数据库配置直接复用为本项目实例。
+## Problem
+
+Useful knowledge is spread across lecture PDFs, project documents, Markdown notes and classroom images. A user may remember an idea while forgetting its filename. Filename search cannot connect the same concept across these formats, and unsupported AI answers make the result hard to trust.
+
+## Solution
+
+FileMind connects document understanding, reviewed organization and source-grounded answers. It proposes categories, tags, names and relationships, then searches only the current user's saved knowledge. It distinguishes supported answers, absent evidence, source conflicts and questions needing clarification.
+
+## Core Features
+
+- FileMind Agent with visible tools and human Review → Apply.
+- PDF, DOCX, Markdown and TXT parsing, plus PNG/JPG image understanding and local OCR.
+- Semantic and lexical retrieval, with an evaluation-driven adaptive Router.
+- Grounded answers, source locations, clickable citations and original-file previews.
+- Knowledge Graph from saved document relationships and concepts, plus reviewed cleanup suggestions.
+- Private PostgreSQL persistence, scoped recovery, integrity-checked backup and Windows portable runtime.
+
+## AI Architecture
+
+Kimi `kimi-k2.6` handles structured analysis, Agent planning, grounded generation and fact checking. Kimi Vision and bundled Tesseract provide separate image interpretation and visible-text extraction. DashScope `qwen3.7-text-embedding-flash` provides independent 1024-dimensional embeddings. Credentials remain server-side. See [one-page architecture](architecture.svg).
+
+## Agent Workflow
+
+Upload → local parsing → allowlisted tools → structured proposal → human review → Apply → saved Library and index. Tool inputs and outputs are validated. The Agent has no arbitrary shell, browser or deletion tools. Failure preserves the workspace and exposes a retry path.
+
+## RAG Architecture
+
+Question → owner-scoped retrieval → source context → question-scope/source-difference verification → generation → citation identity/freshness validation → atomic-claim and factual support verification → bounded repair → final result. Unverified model drafts never reach the browser. Clarification returns choices; selecting one resolves server-stored document IDs and retrieves again.
+
+## Multimodal AI
+
+Image sources preserve the original image, OCR text and separately labelled AI interpretation. OCR can continue locally during a Vision outage. Failed extraction does not produce fabricated searchable content. Text-layer PDFs are supported; automatic scanned-PDF page rendering is outside the current scope.
+
+## Adaptive Retrieval
+
+Phase 6 found that always combining rankings degraded Hit@1: Vector 0.942 versus Hybrid 0.733. FileMind therefore chooses a strategy from the question rather than always blending scores. Phase 7 independent holdout measured Adaptive Hit@1 0.9674, Hit@5 1.0 and MRR 0.9837. Phase 9 retains the frozen model, chunk settings, Router, VectorStore, RRF and evidence thresholds.
+
+## AI Safety
+
+Human approval, untrusted-content boundaries, allowlisted tools, source ownership, citation checks, numerical checks, factual verification, explicit no-answer, conflict disclosure and clarification. These reduce specific risks; none is a guarantee of universal correctness. Competition Mode requires real AI and disables development controls. Cloud failure remains visible.
+
+## Evaluation
+
+| Dataset / measurement | Result | Scope |
+| --- | --- | --- |
+| Phase 8 Blind Run #1 | 90 documents / 180 queries | New synthetic corpus after algorithm freeze, same-agent authorship disclosed |
+| Adaptive Hit@1 / Hit@5 / MRR | 1.0000 / 1.0000 / 1.0000 | 136 relevant-document questions |
+| No-answer | 36/36 | Gold no-answer questions |
+| False refusal / answer recall | 8/136 (5.88%) / 114/136 (83.82%) | Both remain part of the published result |
+| Multimodal Hit@5 | 37/37 | Image-only question subset |
+| Citation validity | 169/169 | Returned citations |
+| Post-publication completeness / faithfulness | 378/378 claims | Automated checks, conditional on 127 released answers |
+| Full conflict / ambiguity | 2/8 / 0/8 | Original Phase 8 weaknesses, never overwritten |
+| Phase 9 local targeted pipeline | 10/10 conflicts, 10/10 clarification cases | Scripted transport decisions, not real-model accuracy |
+| Phase 9 live samples | Not passed | Six calls exhausted; invalid structured output preserved |
+
+See [Phase 5–8 evaluation](../evaluation/final-evaluation-summary.md) and [new targeted regression](../evaluation/phase9-targeted-regression.md). Do not merge local and live denominators.
+
+## System Architecture
+
+Next.js App Router + React + TypeScript; server Route Handlers; FileMind Agent and tool registry; local document pipeline; Kimi/Vision/OCR/Embedding layer; retrieval and verification; PostgreSQL with FORCE RLS; private originals and PortableVectorStore. Operation Journal and atomic writes support recovery. [Architecture diagram](architecture.svg) and [technical report](technical-report.pdf) describe the boundaries.
+
+## Quick Start
+
+Use an ASCII installation directory on Windows x64, Node.js ≥22.13 and a dedicated PostgreSQL database. The bundled runtime is an alternative to global installations; PostgreSQL runtime binaries are distributed in the private release artifact, not Git.
 
 ```powershell
 npm ci
 Copy-Item .env.example .env.local
-```
-
-在 `.env.local` 配置专用 `DATABASE_URL`、至少 32 随机字节的 `WORKSPACE_SESSION_SECRET` 和私有 `FILE_STORAGE_ROOT`，再执行：
-
-```powershell
+# Configure DATABASE_URL, WORKSPACE_SESSION_SECRET and real provider credentials.
 npm run db:migrate
-npm run dev
-```
-
-默认 `AI_ENGINE=mock` 明确是本地模拟。真实演示需要设置 `AI_ENGINE=llm`、`KIMI_API_KEY`、`EMBEDDING_API_KEY`，使用 `.env.example` 中对应地域的 HTTPS endpoint 与 Embedding 模型/1024 维配置。两个 Key 独立；Kimi 网页订阅不能替代模型 API。执行 `npm run test:vision` 完成当前模型/endpoint 的 Vision Gate 后才启用真实图像理解；这是自制图片的付费 smoke 请求。OCR 引擎与中英文语言包随构建打包。
-
-本地 HTTP 的 production preview 使用 `WORKSPACE_COOKIE_SECURE=false`；部署到 HTTPS 使用 Secure Cookie。数据库口令、模型 Key、签名 secret 不能提交到 Git 或发送给浏览器。
-
-## 构建与便携目录
-
-```powershell
-npm run typecheck
-npm run lint -- --max-warnings=0
-npm test
 npm run build
+npm start
 ```
 
-`build` 后自动整理 standalone、静态文件、OCR 资产和 Demo fixtures。开发依赖中的 Node 并不等于便携包已经包含 PostgreSQL：准备发行目录时，需要合法的 Windows x64 PostgreSQL runtime，并使用项目现有准备命令：
-
-```powershell
-npm run portable:prepare -- --postgres-runtime C:\Runtimes\pgsql
-.\.filemind\runtime\node.exe scripts\portable-start.mjs --port 3000
-```
-
-运行时目录包含本地 Node、PostgreSQL 及所需 VC DLL；启动器初始化当前目录自己的数据库、迁移 schema、执行恢复，再启动 Web 服务。现有机器上的已准备目录不需要再次获取 runtime。正式发布压缩包属于下一阶段，应检查授权、版本和资产清单后再交付；本阶段没有发布新发行包。
-
-整体迁移先用 `scripts\portable-start.mjs --stop` 停止原目录服务，再复制完整目录；新目录用内置 Node 启动。物理复制含安装凭据，要保管好整个目录。新浏览器身份不会自动取得旧资料，使用事先保存的同数据库 Recovery Key 或原浏览器 Cookie。资料备份是另一个选项：导入到当前身份，不复制安装凭据。
-
-[实际迁移验收](../evaluation/phase8-portable-copy.json) 在 ASCII、空格、178 字符根路径上验证无全局 Node/根 node_modules 依赖、原文与 chunks/向量/图片分析保留、真实 RAG/citation 和两个独立数据库并行。中文安装路径已由用户取消验证，不能当成已支持。
+For competition, set `AI_ENGINE=llm`, `COMPETITION_MODE=true`, `DEMO_MODE=true`, real Kimi/DashScope credentials, and the existing verified Vision marker. `npm run portable:start -- --port 3000` starts the bundled Windows runtime after the private artifact is prepared. It initializes a new dedicated local instance when needed. Keep the `.env.local`, recovery key, database and originals outside the public repository. Follow [deployment and runtime guide](release-guide.md) for the actual package structure and negative offline acceptance.
 
 ## Demo
 
-设置 `DEMO_MODE=true` 并重启已构建服务。Settings 中打开专用 Demo 身份，下载八份推荐资料 ZIP，导入 Workspace，等待 Agent，Review 后 Apply。另两份研究笔记用于可选重复演示。Reset 有第二次确认，服务器只允许清空注册的专用 Demo workspace，不清空普通身份资料。
+Ten original fixtures, eight recommended, cover PDF/DOCX/Markdown/TXT/PNG/JPG. Open the dedicated Competition Demo Workspace in Settings and download its fixture ZIP. Follow the [single main script](demo-script.md), [video script](video-script.md), [12-slide pitch outline](pitch-deck-outline.md) and [outage Plan B](fallback-demo.md). Five backup queries are listed with their evidence and current acceptance status. Main Demo on the current candidate still needs online rehearsal; the prior Phase 8 success is historical.
 
-上场前执行 `npm run demo:check`，目标数据库须可连接、预定 Web 端口须空闲；检查会调用真实 Kimi、Embedding、Vision 和 OCR。可用 `npm run test:demo-preflight` 在新建空实例中验证并保留验收报告，不能把这个报告当成现场机器健康状态。详见 [3–4 分钟演示稿](demo-script.md) 与 [网络故障备用流程](fallback-demo.md)。
+## Privacy
 
-## Evaluation 与隐私
+Parsing and OCR run locally. Real AI mode sends extracted text to Kimi, image bytes to Kimi Vision and index/query text to DashScope. Private storage and PostgreSQL isolate browser identities; TLS and filesystem permissions remain deployment responsibilities. Recovery keys act as bearer credentials. Backups are integrity-checked ZIP archives and **not encrypted**.
 
-Phase 5、6、7 的结果以及 Phase 8 首轮 90 份/180 题冻结评测一起报告，不能只展示最佳一轮。所有演示和评测文件都是原创合成资料。Phase 8 在创建新数据前冻结生产代码和评测协议，首轮每题结果 fsync 保存，服务不可用独立计数；语料仍由同一开发代理制作，生成、支持检查和 gold judge 使用同一 Kimi 模型，不能等同于外部人工独立审计。
+## Known Limitations
 
-首轮 Adaptive Hit@1/5/MRR 均为 1.0000，但协议答案召回为 83.82%、可回答题误拒答 5.88%、完整冲突检测 2/8、歧义澄清 0/8；另有 1 次运行时与 9 次 gold judge 不可用。四个冲突答案文字正确却漏记运行时冲突状态，按冻结规则仍未算通过。不能用检索满分或发布后引用指标隐藏这些限制。
+Fresh real-model verification is incomplete under the six-call budget. The context wire schema was subsequently flattened and locally checked, but not re-tested with Kimi. PortableVectorStore uses a linear scan, scanned PDFs need a text layer, OCR/Vision can misinterpret content, provider outages affect answers, and the synthetic shared-model evaluation does not establish general accuracy. No OAuth, multi-user collaboration, cloud sync, payments or mobile application. Unicode installation paths remain unsupported in this release scope.
 
-数据库和原文件在本地，真实 AI 模式仍会把选中文本、图片、问题和证据发往配置的 Kimi/DashScope。日志仅保存受限运行元数据。普通备份包含原文和知识数据，不含模型 Key、Recovery Key 或签名 Cookie，但默认未加密；校验和只能发现损坏，不能防止持有者改写后重新计算。
+## Team
 
-## 已知限制
-
-- PortableVectorStore 线性扫描，已测到 5,000 chunks，不能宣传为 ANN 或无限资料库。
-- 扫描 PDF 尚无自动 OCR fallback；可将页面导出为 PNG/JPG 使用图片流程。
-- OCR 手写、公式和小字可能不准确；Vision 与事实 judge 也可能出错，需回看原文。
-- 同模型的自动验证可能有相关错误；严格事实门也会误拒答。高引用有效率不等于高答案正确率。
-- 备份未加密且有内存/大小配额；同数据库恢复 Key 不能找回丢失的数据库。
-- 目标是个人 Windows x64 本地浏览器产品，没有 OAuth、多用户协作、云同步或原生手机 App。
-- 中文文件内容可处理；中文安装目录不在本次已验证范围。进程中断测试不等于突然断电测试。
-
-Phase 8 完成后停止；Phase 9 是否开始比赛录屏、发行包和提交材料，由用户决定。
+Repository maintainer: `s0nggv0`. Formal competition team name, school, members and role assignments have not been supplied. Confirm them before submission. [Repository](https://github.com/s0nggv0/FileMind-AI) · [MIT license](../../LICENSE).
