@@ -1,6 +1,6 @@
 # Plan A / Plan B
 
-**Plan A**：真实在线 AI。当前 schema 抽验无效、主 Demo 未复验，新环境 preflight 7/12，尚未就绪。需新的明确调用授权，取得当前构建 12/12 READY 和完整彩排。Phase 9 六次上限已用满。
+**Plan A**：真实在线 AI。2026-10-04 重新授权的真实验收已通过扁平 schema、Conflict、Ambiguity、主 Demo 全链路与最终构建 12/12 READY。Agent 无 Planner 回退；详见 [当前冻结记录](release-freeze.md)。Phase 9 原六次失败记录保留。
 
 **Plan B**：使用已保存、已索引的真实资料展示本地能力，流程和材料已准备。明确说明 **Cloud AI provider unavailable.** 旧答案注明历史生成；Competition Mode 不提供 Mock 冒充路径。
 

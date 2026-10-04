@@ -1,0 +1,159 @@
+{
+  "version": "release-freeze-v1",
+  "checkedAt": "2026-10-04T10:55:48.373Z",
+  "displayDate": "2026/10/4 18:55:48",
+  "timeZone": "Asia/Shanghai",
+  "releaseFreezeReady": true,
+  "passedGates": 9,
+  "totalGates": 9,
+  "build": {
+    "BUILD_VERSION": "1.0.0-rc.1",
+    "BUILD_COMMIT": "f43575dc783a0bf90447cc645f82f04c120acc9d",
+    "BUILD_DATE": "2026-10-04T10:34:51.879Z"
+  },
+  "checks": {
+    "build": {
+      "ok": true,
+      "build": {
+        "BUILD_VERSION": "1.0.0-rc.1",
+        "BUILD_COMMIT": "f43575dc783a0bf90447cc645f82f04c120acc9d",
+        "BUILD_DATE": "2026-10-04T10:34:51.879Z"
+      }
+    },
+    "TypeScript": {
+      "ok": true,
+      "command": "npm run typecheck"
+    },
+    "lint": {
+      "ok": true,
+      "command": "npm run lint"
+    },
+    "unitTests": {
+      "ok": true,
+      "passed": 106,
+      "failed": 0
+    },
+    "browserTests": {
+      "ok": true,
+      "baseline": 17,
+      "competition": 3,
+      "routeViewportCombinations": 32,
+      "liveMainDemo": 1,
+      "baselineAndCompetitionUseInjectedOrMockTransport": true
+    },
+    "demoCheck": {
+      "ok": true,
+      "passed": 12,
+      "total": 12,
+      "ready": true,
+      "realProviderSmoke": true
+    },
+    "secretScan": {
+      "ok": true,
+      "fullHistoryBlobs": 1048,
+      "additionalHistoryBlobs": 1,
+      "browserAssets": 33,
+      "configuredSecretValues": 4,
+      "hits": 0
+    },
+    "cleanEnvironmentStartup": {
+      "ok": true,
+      "cloudCalls": 0,
+      "copiedUserData": false,
+      "restartPersistence": true
+    },
+    "gitStatus": {
+      "ok": true,
+      "branch": "main",
+      "sourceHead": "65511c9b0508212581819de1a84a599e86c1c7e0",
+      "ahead": 0,
+      "behind": 0,
+      "uncommittedTaskSourceFiles": [],
+      "preservedUserDocumentEdits": [
+        "README.md",
+        "docs/architecture/ai-provider.md",
+        "docs/architecture/persistence.md",
+        "docs/phase-checklists/phase4.md",
+        "docs/setup/postgresql-kimi.md"
+      ],
+      "scope": "Source is synchronized before the final evidence commit; evidence documents are pending their own commit."
+    }
+  },
+  "realProviderAcceptance": {
+    "conflict": true,
+    "ambiguity": true,
+    "flatWireLiveVerified": true,
+    "targetedSampleCallsUsed": 16,
+    "targetedSampleCallLimit": 24,
+    "sampleRAGSourceCommit": "6ee4525",
+    "sampleRAGSourceUnchanged": true,
+    "retrievalTestedByTargetedSamples": false
+  },
+  "mainDemo": {
+    "passed": true,
+    "completedStages": [
+      "Upload",
+      "Agent",
+      "Review",
+      "Apply",
+      "Search",
+      "RAG",
+      "Citation",
+      "Image Citation",
+      "Graph",
+      "Cleanup"
+    ],
+    "documents": 8,
+    "images": 2,
+    "elapsedMs": 84364.6644,
+    "plannerMetrics": {
+      "planner_runs": 1,
+      "llm_success": 1,
+      "fallback_count": 0,
+      "fallback_reason": [],
+      "tool_validation_failure": 0,
+      "timeout": 0
+    },
+    "plannerFallback": null,
+    "pdfCitation": true,
+    "imageCitation": true,
+    "graphDocuments": 8,
+    "cleanup": {
+      "candidateCount": 1,
+      "realWorkspace": true,
+      "originalsPreserved": true
+    },
+    "ordinaryOwnerPreservedByScopedReset": true,
+    "freshDatabase": true,
+    "copiedUserData": false
+  },
+  "retrievalFreeze": {
+    "unchangedFiles": 12,
+    "normalizesLineEndings": true
+  },
+  "protectedUserDocuments": {
+    "README.md": "8eacd7e32f76cb0c832dbde28642148000894765efe2367068666b8b0ead7d12",
+    "docs/architecture/ai-provider.md": "ec5666d3b6b66008bcbd6bab25ed744f589f122d22122a5ea7b5176530ec8abb",
+    "docs/architecture/persistence.md": "3c9a523e568dafbf643abf1a7d9b105240aa3f33144a715e4536f224a656476b",
+    "docs/phase-checklists/phase4.md": "36d83cd9fd33f444904e3a3a1a2db8a5a67376742920886c830080900eb8c4d3",
+    "docs/setup/postgresql-kimi.md": "b228729621d94819f71bbdeca5847ab6e0eba21db2bd1a8ee71c795b4666d77b"
+  },
+  "evidenceHashes": {
+    "docs/evaluation/release-provider.json": "4970677e717cbd35d956a292acfe8592170fa805e1f95f075a48573b83f7b6fb",
+    "docs/evaluation/release-main-demo.json": "b162d1346ca98fbc6079224e7b4ee0b5cdb157897835e9b4a8d24fbedda0aad9",
+    "docs/evaluation/release-demo-preflight.json": "8becf5dc306f622edd8529b7a3f68261d05983a0e01d02ed0235eae943cb0657",
+    "docs/evaluation/release-browser-matrix.json": "de419c9063e2307e55f3b8d7bb09da244ebb6f6deb129df52407ff68111d4d74",
+    "docs/evaluation/release-clean-environment.json": "d668864413cccd40bd51d1c82967427aadd477f600c58d7db0b821243bfbc23c",
+    "docs/evaluation/release-secret-scan.json": "b4392a24075724d611ba792f5d56d03ae32f49ed1fe34d55a125bbde9407a497",
+    "docs/evaluation/release-client-secret-boundary.json": "f8e3503cd0fb455974e29669117a0d9c6902092a77179353dd742af00e1bb491"
+  },
+  "commitsBeforeEvidenceCommit": [
+    "6ee4525 fix(rag): require complete provenance for live version comparisons",
+    "9aaffce fix(cleanup): display duplicate candidates from applied workspaces",
+    "fc38568 fix(agent): constrain organization output to owned IDs and allowed categories",
+    "f43575d test(release): require real planner and verify every demo stage",
+    "2608319 test(security): scan client assets for session and database secrets",
+    "65511c9 fix(test): retain live acceptance budget after artifact cleanup"
+  ],
+  "scope": "Requested current-source Release Freeze and real main Demo. Earlier failed receipts remain intact. Five backup queries, the supplemental deadline UI flow, a new 20-query regression and regeneration of the earlier ZIP are outside this acceptance."
+}

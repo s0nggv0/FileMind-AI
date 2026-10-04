@@ -6,7 +6,7 @@ FileMind AI transforms scattered personal files into an intelligent, searchable 
 
 FileMind AI 通过 AI Agent、多模态理解与可引用 RAG，将散乱的个人数字资料转化为可理解、可搜索、可关联的个人知识空间。
 
-This competition README is separate because the user explicitly required preserving five existing uncommitted documents, including the root README. Candidate version: **v1.0.0-rc.1**. **Online acceptance remains NOT READY**: six budgeted Kimi requests failed structured-output validation. Do not present local test fixtures as live AI.
+This competition README is separate to preserve five existing uncommitted documents, including the root README. Candidate version: **v1.0.0-rc.1**. The newly authorized real-provider acceptance passed Conflict, Ambiguity, the flat context schema, and the complete eight-file Demo with `llm_success=1`, `fallback_count=0` and **12/12 READY**. See [the current release freeze](release-freeze.md). Earlier failed Phase 9 receipts remain historical evidence.
 
 ## Introduction
 

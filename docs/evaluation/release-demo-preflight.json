@@ -1,0 +1,105 @@
+{
+  "version": "demo-preflight-v1",
+  "checkedAt": "2026-10-04T10:38:46.925Z",
+  "ready": true,
+  "syntheticSmoke": true,
+  "checks": [
+    {
+      "name": "Database",
+      "ok": true,
+      "durationMs": 137.2933,
+      "detail": {
+        "reachable": true
+      }
+    },
+    {
+      "name": "Storage",
+      "ok": true,
+      "durationMs": 9.119499999999903
+    },
+    {
+      "name": "Kimi Key",
+      "ok": true,
+      "durationMs": 0.02719999999999345
+    },
+    {
+      "name": "DashScope Key",
+      "ok": true,
+      "durationMs": 0.013799999999946522
+    },
+    {
+      "name": "Kimi Smoke",
+      "ok": true,
+      "durationMs": 846.7440999999999,
+      "detail": {
+        "model": "kimi-k2.6"
+      }
+    },
+    {
+      "name": "Embedding Smoke",
+      "ok": true,
+      "durationMs": 302.9290000000001,
+      "detail": {
+        "provider": "dashscope",
+        "model": "qwen3.7-text-embedding-flash",
+        "dimensions": 1024
+      }
+    },
+    {
+      "name": "Demo Data",
+      "ok": true,
+      "durationMs": 90.83600000000001,
+      "detail": {
+        "documents": 10,
+        "recommended": 8
+      }
+    },
+    {
+      "name": "Vision Smoke",
+      "ok": true,
+      "durationMs": 4110.9315,
+      "detail": {
+        "model": "kimi-k2.6"
+      }
+    },
+    {
+      "name": "OCR Worker",
+      "ok": true,
+      "durationMs": 1142.2026000000005,
+      "detail": {
+        "engine": "tesseract.js",
+        "confidence": 0.95
+      }
+    },
+    {
+      "name": "Disk Space",
+      "ok": true,
+      "durationMs": 0.3478000000004613,
+      "detail": {
+        "availableBytes": 307907522560
+      }
+    },
+    {
+      "name": "Port",
+      "ok": true,
+      "durationMs": 1.7185000000008586,
+      "detail": {
+        "port": 60156,
+        "available": true
+      }
+    },
+    {
+      "name": "Build Version",
+      "ok": true,
+      "durationMs": 0.45830000000023574,
+      "detail": {
+        "buildId": "E5nTKOIsCKpP9E6ksjZs_"
+      }
+    }
+  ],
+  "build": {
+    "BUILD_VERSION": "1.0.0-rc.1",
+    "BUILD_COMMIT": "f43575dc783a0bf90447cc645f82f04c120acc9d",
+    "BUILD_DATE": "2026-10-04T10:34:51.879Z"
+  }
+}
