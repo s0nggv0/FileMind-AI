@@ -1,0 +1,3 @@
+# Preserve original immutable synthetic Run #1 bytes in every checkout.
+rag-blind-run1*.json* -text
+phase8-blind-analysis.json -text
