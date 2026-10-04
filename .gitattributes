@@ -1,3 +1,5 @@
 # Hash manifests and PDF byte offsets must survive Git checkouts unchanged.
+*.bat text eol=crlf
+tests/fixtures/rag-holdout/files/* -text
 tests/fixtures/demo/** -text
 tests/fixtures/rag-blind/** -text

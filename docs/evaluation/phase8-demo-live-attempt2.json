@@ -1,0 +1,82 @@
+{
+  "passed": false,
+  "live": true,
+  "syntheticFixtures": true,
+  "checkedAt": "2026-10-03T14:10:12.000Z",
+  "plannerMetrics": {
+    "planner_runs": 1,
+    "llm_success": 0,
+    "fallback_count": 1,
+    "fallback_reason": [
+      "plan_validation"
+    ],
+    "tool_validation_failure": 0,
+    "timeout": 0
+  },
+  "plannerFallback": "AI plan unavailable — using a deterministic proposal from document analyses.",
+  "imageCount": 2,
+  "agentThroughApplyMs": 46361.270000000004,
+  "indexResponse": {
+    "status": 200,
+    "data": {
+      "results": [
+        {
+          "documentId": "00a98358-40d4-41e4-a1d0-189081161458",
+          "chunks": 1,
+          "embedded": 0,
+          "cached": 1,
+          "status": "ready"
+        },
+        {
+          "documentId": "035d1a5b-deae-48f9-85cf-a8d53609f0d2",
+          "chunks": 1,
+          "embedded": 0,
+          "cached": 1,
+          "status": "ready"
+        },
+        {
+          "documentId": "498b0070-6b9c-4050-a700-f5aa405634e4",
+          "chunks": 1,
+          "embedded": 0,
+          "cached": 1,
+          "status": "ready"
+        },
+        {
+          "documentId": "4cc9cc96-ef14-4673-874d-0c63ee775134",
+          "chunks": 1,
+          "embedded": 0,
+          "cached": 1,
+          "status": "ready"
+        },
+        {
+          "documentId": "5cb7bb76-1fa3-4e56-ae95-648bd0118fc9",
+          "chunks": 1,
+          "embedded": 0,
+          "cached": 1,
+          "status": "ready"
+        },
+        {
+          "documentId": "76837871-7ff5-4e9c-8436-b8964713dee9",
+          "chunks": 1,
+          "embedded": 0,
+          "cached": 1,
+          "status": "ready"
+        },
+        {
+          "documentId": "84b8c2c8-aba2-4290-9aa8-1bfdb3e60e7f",
+          "chunks": 3,
+          "embedded": 0,
+          "cached": 3,
+          "status": "ready"
+        },
+        {
+          "documentId": "bb3d8530-fc54-4e34-bb4b-f775b9b516a0",
+          "chunks": 1,
+          "embedded": 0,
+          "cached": 1,
+          "status": "ready"
+        }
+      ]
+    }
+  }
+}

@@ -13,6 +13,7 @@ import { MULTIMODAL_INDEX_VERSION, VISION_PROMPT_VERSION } from "../multimodal/c
 import type { WorkspaceSnapshot } from "../workspace/schemas";
 import type { RetrievalScope } from "../retrieval/types";
 import { WorkspaceError } from "../workspace/authorization";
+import { recoveryService } from "./reliability";
 export const multimodalRepository = new MultimodalRepository(database);
 async function visionProvider() {
   if (process.env.AI_ENGINE !== "llm") return null;
@@ -53,14 +54,16 @@ export async function refreshMultimodalVersions(scope: RetrievalScope) {
   }
 }
 export async function prepareImageIndexes(scope: RetrievalScope, documentId?: string) {
+  return recoveryService().journal.lock(scope.userId,"storage",async leaseSignal=>{
   const rows = await database.query(scope.userId, "select id,workspace_id from filemind.documents where user_id=$1 and file_type='image' and parse_status='completed' and storage_path is not null and storage_status='available' and ($2::uuid is null or workspace_id=$2) and ($3::uuid is null or id=$3)", [scope.userId, scope.workspaceId ?? null, documentId ?? null]);
   const { workspaceRepository } = await import("./workspace-repository");
   for (const row of rows.rows as { id: string; workspace_id: string }[]) {
     const snapshot = await workspaceRepository.get(scope.userId, row.workspace_id);
-    await analyzeWorkspaceImage(scope.userId, snapshot, row.id, AbortSignal.timeout(120000));
+    await analyzeWorkspaceImage(scope.userId, snapshot, row.id, AbortSignal.any([leaseSignal,AbortSignal.timeout(120000)]));
     // Save only if server knowledge differs; index retries retain stable content.
     const persisted = mergeKnowledge((await multimodalRepository.get(scope, row.id))!);
     snapshot.texts[row.id] = persisted.text;
     await workspaceRepository.save(scope.userId, snapshot);
   }
+  });
 }

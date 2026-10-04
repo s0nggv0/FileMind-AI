@@ -10,6 +10,7 @@ export interface SearchResult {
   answer: RAGAnswer | null; sources: RAGSource[]; nearest: RAGSource[];
   semanticUnavailable: boolean; answerUnavailable: boolean; mock: boolean;
   evidenceCount: number; candidateCount: number;
+  answerErrorCode?:string;
   verification?:{status:"verified"|"conflict"|"rejected"|"unavailable";version:string};
   debug?: { queryProfile: QueryProfile; selectedStrategy: RetrievalRoute["strategy"]; reason: string; evidenceAssessment?: EvidenceAssessment; verification?:Pick<VerificationReport,"version"|"accepted"|"reason"|"completeness"|"faithfulness">; semantic: { id: string; score: number }[]; lexical: { id: string; score: number }[]; fused: { id: string; score: number; fusedRank?: number }[]; reranker: string; latency: Record<string, number> };
 }

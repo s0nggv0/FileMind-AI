@@ -35,7 +35,7 @@ export function offlineRAGProvider() {
     async generateObject<T>(input: { prompt: string; schema: import("zod").z.ZodType<T> }) {
       const payload = JSON.parse(input.prompt) as { evidence: { untrustedSources: { sourceId: string; chunkId: string; documentId: string; content: string }[] } };
       const sources = payload.evidence.untrustedSources;
-      return { object: input.schema.parse({ answer: sources.map(s => s.content.slice(0,400).split(/(?<=[。！？!?])|\n+/u).map(line=>line.trim()).filter(Boolean).map(line=>`${line} [${s.sourceId}]`).join("\n")).join("\n\n"), citations: sources.map(s => ({ sourceId: s.sourceId, chunkId: s.chunkId, documentId: s.documentId })), confidence: "low", insufficientEvidence: false }), usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 } };
+      return { object: input.schema.parse({statements:sources.flatMap(s=>s.content.slice(0,400).split(/(?<=[。！？!?])|\n+/u).map(line=>line.trim()).filter(Boolean).map(text=>({text,sourceIds:[s.sourceId]}))).slice(0,40),confidence:"low",insufficientEvidence:false,evidenceDecision:{supported:true,missingInformation:[]}}), usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 } };
     },
     async generateText() { throw new Error("Mock RAG supports extractive output only"); },
     async *streamText() { yield ""; },

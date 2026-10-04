@@ -1,0 +1,19 @@
+{
+  "passed": false,
+  "live": true,
+  "syntheticFixtures": true,
+  "checkedAt": "2026-10-03T14:05:44.694Z",
+  "plannerMetrics": {
+    "planner_runs": 1,
+    "llm_success": 0,
+    "fallback_count": 1,
+    "fallback_reason": [
+      "plan_validation"
+    ],
+    "tool_validation_failure": 0,
+    "timeout": 0
+  },
+  "plannerFallback": "AI plan unavailable — using a deterministic proposal from document analyses.",
+  "imageCount": 2,
+  "agentThroughApplyMs": 45845.6606
+}

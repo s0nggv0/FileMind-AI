@@ -1,0 +1,30 @@
+{
+  "passed": true,
+  "checkedAt": "2026-10-04T02:57:32.844Z",
+  "syntheticOnly": true,
+  "ascii": true,
+  "spaces": true,
+  "rootLength": 178,
+  "sourcePath": "artifacts\\phase8-fresh-d014f533-9542-4fbc-9fe9-4dc12896b9f8",
+  "targetPath": "artifacts\\phase8-portable-342cd924-0f07-4cf6-8e18-cb5cba0bed0e\\ASCII directory with spaces\\long-ascii-rehearsal-directory-segment\\another-ascii-directory-segment",
+  "globalNodeNeeded": false,
+  "sourceNodeModulesNeeded": false,
+  "checks": {
+    "sourceIndexed": true,
+    "chunksVectorsImageAnalysisPreserved": true,
+    "workspaceAndIdentityPreserved": true,
+    "originalsPreserved": true,
+    "realRAGAndCitationAfterCopy": true,
+    "imageSearchAfterCopy": true,
+    "localDatabaseDirectoryAndRole": true,
+    "simultaneousSeparateDatabases": true
+  },
+  "answer": {
+    "verification": {
+      "version": "answer-verifier-v2",
+      "status": "verified"
+    },
+    "unavailable": false,
+    "errorCode": null
+  }
+}
