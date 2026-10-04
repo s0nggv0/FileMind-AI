@@ -1,0 +1,7 @@
+Original synthetic laboratory record: martin limit. 
+
+Martin limits query text to 1200 characters. This is an input-size limit, not a token quota.
+
+Only recorded fields may be used; omitted quantities, passwords and external claims are unknown.
+
+合成实验记录，仅陈述本样例；未记载的信息不得推断。

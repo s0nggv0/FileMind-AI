@@ -1,0 +1,7 @@
+Original synthetic laboratory record: otter vector. 
+
+The Otter coordinate record defines vector v=(4,-3). In this coordinate system the second component is negative.
+
+Only recorded fields may be used; omitted quantities, passwords and external claims are unknown.
+
+合成实验记录，仅陈述本样例；未记载的信息不得推断。

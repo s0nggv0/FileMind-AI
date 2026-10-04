@@ -1,0 +1,7 @@
+Original synthetic laboratory record: tern quantile. 
+
+Tern's ninety-fifth percentile latency is 118 ms. Its median latency is 42 ms; these are distinct quantiles.
+
+Only recorded fields may be used; omitted quantities, passwords and external claims are unknown.
+
+合成实验记录，仅陈述本样例；未记载的信息不得推断。

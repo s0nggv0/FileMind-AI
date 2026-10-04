@@ -1,0 +1,1 @@
+Bracken fixture report A states that its sensor offset is 0.21 mm. The report does not retract or supersede another report.

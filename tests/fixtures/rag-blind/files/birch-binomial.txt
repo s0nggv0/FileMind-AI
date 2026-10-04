@@ -1,0 +1,7 @@
+Original synthetic laboratory record: birch binomial. 
+
+Birch models 17 independent trials, each with success probability 0.2. A trial outcome is either success or failure.
+
+Only recorded fields may be used; omitted quantities, passwords and external claims are unknown.
+
+合成实验记录，仅陈述本样例；未记载的信息不得推断。

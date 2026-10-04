@@ -1,0 +1,14 @@
+{
+  "version": "rag-blind-freeze-v1",
+  "frozenAt": "2026-10-04T03:17:29.439Z",
+  "algorithmFreezeHash": "106e6cd2eaaaa87534a86028fea648937eaa24d26f24f15de9951a68c02e3db0",
+  "algorithmCommit": "f14a0d60af3cdab2a1a0b045e6449b682f5b17b7",
+  "manifestHash": "c3710c4159df39c5471de6657a3596f7a60c6ad90aa6594ae7f21eb90ca200ad",
+  "queryHash": "a8d4178431c8ebbacd5342629d175ed57b78b270d2c510c909ee8be5faa66a5b",
+  "documents": 90,
+  "images": 18,
+  "tricky": 9,
+  "queries": 180,
+  "noAnswer": 36,
+  "policy": "Preserve all first-run outcomes. Do not tune frozen production using this corpus."
+}

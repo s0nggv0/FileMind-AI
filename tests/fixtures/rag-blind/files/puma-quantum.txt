@@ -1,0 +1,7 @@
+Original synthetic laboratory record: puma quantum. 
+
+Puma's scheduling rehearsal uses a 12 ms time quantum. The sheet does not record total completion time.
+
+Only recorded fields may be used; omitted quantities, passwords and external claims are unknown.
+
+合成实验记录，仅陈述本样例；未记载的信息不得推断。

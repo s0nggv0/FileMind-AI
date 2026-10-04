@@ -1,0 +1,1 @@
+Mosaic comparison router accepts at most 512 tokens. It is a DIFFERENT device from the Mosaic router fixture. Do not transfer its budget to the other device.

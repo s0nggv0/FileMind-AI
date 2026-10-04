@@ -1,0 +1,458 @@
+{
+  "version": "rag-blind-corpus-v1",
+  "createdAfterAlgorithmFreeze": true,
+  "createdAt": "2026-10-04T03:17:29.438Z",
+  "authorship": "Original synthetic fixtures created by the same coding agent after code freeze; not an external audit.",
+  "documents": [
+    {
+      "name": "mosaic-router.pdf",
+      "sha256": "6d4ec2cd869af353a0f1546bdcc6fd68895f520f8728cb0a21a19acff480b516",
+      "group": "text"
+    },
+    {
+      "name": "fern-encoder.docx",
+      "sha256": "0ce5f1d6f3150b64e3062f1f2c25bb86754bb751f68afc06354e7b44907fb87b",
+      "group": "text"
+    },
+    {
+      "name": "ion-sampler.md",
+      "sha256": "ffb83a99689594b54769e741416e9b6f22228d3803f5eddd2b564fa27d3583d7",
+      "group": "text"
+    },
+    {
+      "name": "cedar-trainer.txt",
+      "sha256": "c39299006dc5a501f6b15308ef4d516864d7a00680ec21fed7149ae3b1d1c776",
+      "group": "text"
+    },
+    {
+      "name": "silver-window.pdf",
+      "sha256": "06279397d73b805761ee844b842f26a9de8ea2e16e8c6c45ba198adc979eb414",
+      "group": "text"
+    },
+    {
+      "name": "jade-projector.docx",
+      "sha256": "dcb5d051d5a3eecfc2fb5457afe4657d232fae8ab1b986b713f3fb6d77631abe",
+      "group": "text"
+    },
+    {
+      "name": "amber-normalizer.md",
+      "sha256": "42a57c85e061b84de918cc21decab58e1ba821bce5cfc4928875d64b4cf27c27",
+      "group": "text"
+    },
+    {
+      "name": "otter-vector.txt",
+      "sha256": "f1d4f561af2ba536bf300325455b69d7d4d541d26106f1e49744ba993e0a5409",
+      "group": "text"
+    },
+    {
+      "name": "juniper-matrix.pdf",
+      "sha256": "ccbea699bf81f070868d68aef6e8f73a88632648afa69da9c360fcb579d164c3",
+      "group": "text"
+    },
+    {
+      "name": "quartz-basis.docx",
+      "sha256": "81cef08c043001cd086e4e4cf04ef4dc9c89d50eae8d393bd021c54692ca4432",
+      "group": "text"
+    },
+    {
+      "name": "falcon-system.md",
+      "sha256": "ff3d9533fb661782d4cbc2d5311ace74c0455edf9408ba031d50e7f062a5d689",
+      "group": "text"
+    },
+    {
+      "name": "maple-eigenvalue.txt",
+      "sha256": "45fcadb47662844e9f38b70dd6ab5bf272583aa8166228e9d21795148d674b99",
+      "group": "text"
+    },
+    {
+      "name": "opal-distance.pdf",
+      "sha256": "25fa93f2d5b59c9177c5aa230d5533a5fa0db681036e89fcbaa2ee7da14f8f23",
+      "group": "text"
+    },
+    {
+      "name": "harbor-projection.docx",
+      "sha256": "2a420da89e793c25663b7e809b33005d45ee223fd92c82c80210159de656e9f7",
+      "group": "text"
+    },
+    {
+      "name": "lark-confidence.md",
+      "sha256": "79e246524fb99d64ee1760fe2ea07678874b85203855f4f71516f41d482b3f9c",
+      "group": "text"
+    },
+    {
+      "name": "birch-binomial.txt",
+      "sha256": "eecf3273d95398a0db72681246094ed8c1517d1c1562490bc369a50fed6a31ef",
+      "group": "text"
+    },
+    {
+      "name": "pelican-poisson.pdf",
+      "sha256": "83f48423fe4d9d859ad2d946668a05c3e09cd52eac6d8e3dc92dcc723941ad2c",
+      "group": "text"
+    },
+    {
+      "name": "copper-variance.docx",
+      "sha256": "de3d3a6c33d1fc9fbac952cabc5bf46f4efe839038d5f44cd0cdd8abcfa784cd",
+      "group": "text"
+    },
+    {
+      "name": "willow-sample.md",
+      "sha256": "5d6005ca0f2a91fca1400eb53612ab408b86fa21f83fe8cca32ee58967dd32af",
+      "group": "text"
+    },
+    {
+      "name": "tern-quantile.txt",
+      "sha256": "d0e194d6e6f86efdd8471d9fb92af2c480248756ccfae968b89aa3d522ae7a9f",
+      "group": "text"
+    },
+    {
+      "name": "iris-correlation.pdf",
+      "sha256": "08cffa571cb6e3e9fe93cf06e786bc145cc6af3195241e1da08404a7ada28134",
+      "group": "text"
+    },
+    {
+      "name": "dune-handshake.docx",
+      "sha256": "7f49aea8c9a3e187ba246618df923c0bdd228b2a0fb5e2063353c0e89a758fb6",
+      "group": "text"
+    },
+    {
+      "name": "spruce-retry.md",
+      "sha256": "c992f7c3751aea7260fb000865cf1719694d95d36718030b8750413e7c1715b3",
+      "group": "text"
+    },
+    {
+      "name": "kestrel-packet.txt",
+      "sha256": "96f5d4912128e347986930c284bfde6eaa0f0a904ad4cacd33f6015e9a29a676",
+      "group": "text"
+    },
+    {
+      "name": "delta-subnet.pdf",
+      "sha256": "89035f9cd08c6df5dd56eda374b37377c45a7de51427f3af606dac1e72cafe44",
+      "group": "text"
+    },
+    {
+      "name": "sable-ttl.docx",
+      "sha256": "fd54ac559088c38b18250000e8f78e55088ae1ff31bfe6327c2a38835ea75624",
+      "group": "text"
+    },
+    {
+      "name": "elm-frame.md",
+      "sha256": "89ab95c450a382054806c5f0d26b1dc95fb28f36daba48daef6408aa0e6dd59b",
+      "group": "text"
+    },
+    {
+      "name": "wren-route.txt",
+      "sha256": "5fb7e51c56a1c6224002908a77b6bbda16b1dcc77529b1fdc1ed9eb330aa97d6",
+      "group": "text"
+    },
+    {
+      "name": "moss-checkpoint.pdf",
+      "sha256": "b0c6df27c56bc8e4d9cbb345058a62dce167a276ceebf579de663b1ce9f2124d",
+      "group": "text"
+    },
+    {
+      "name": "agate-batch.docx",
+      "sha256": "e02f5c004d13afceabf454a54c99997ba2b25e7157bc1e9395fa97c60bf804e1",
+      "group": "text"
+    },
+    {
+      "name": "rook-journal.md",
+      "sha256": "8c58e629b9541f444212d969288cfc1cada7bd3ccb025c465ec2138edeaa9856",
+      "group": "text"
+    },
+    {
+      "name": "aspen-lock.txt",
+      "sha256": "fe9c64277b87a419f1d6bdb521882ffc6072b58a00f756f4c10e1dc4474f93df",
+      "group": "text"
+    },
+    {
+      "name": "garnet-index.pdf",
+      "sha256": "af659363e25c824b1508ee733a142903993edf2af88045e1746438d21fa7c90d",
+      "group": "text"
+    },
+    {
+      "name": "heron-isolation.docx",
+      "sha256": "5923d236e5b99989f6ee913ec35003cfd77b98b70df5ec1ce87bc5c2e9056c0d",
+      "group": "text"
+    },
+    {
+      "name": "slate-export.md",
+      "sha256": "b69d5900b6780493179d708bdf1744ab9fc141b5e2f8c566fedc23b218ef9197",
+      "group": "text"
+    },
+    {
+      "name": "puma-quantum.txt",
+      "sha256": "fd795ae61b4066b65ac9c7e340abd84ea2589b3cec383c65ea189dd7331b4186",
+      "group": "text"
+    },
+    {
+      "name": "cypress-page.pdf",
+      "sha256": "8962bba33c29ea6772fbf6673acfedb4332923c5061b691fad1a01a2a9aa7f21",
+      "group": "text"
+    },
+    {
+      "name": "lynx-descriptor.docx",
+      "sha256": "cc0400b0a1f8bdd52749cc599c72978aa1db0d08a6ee0e11ffe689e098e1192d",
+      "group": "text"
+    },
+    {
+      "name": "reed-signal.md",
+      "sha256": "6ec3b40b17fc56a6711c88bf13d73d5000c87d146a9e8effc4f1405d6d47e516",
+      "group": "text"
+    },
+    {
+      "name": "topaz-inode.txt",
+      "sha256": "be213908a1cac00bef2cbea8ed981b48bac9f0c13490affae9840aa525b4cd39",
+      "group": "text"
+    },
+    {
+      "name": "badger-quarantine.pdf",
+      "sha256": "1ab2f36b635cbe46489be865567cd5ceab43c84ed1c76b620f0276c62c363e2d",
+      "group": "text"
+    },
+    {
+      "name": "sequoia-atomic.docx",
+      "sha256": "0984e096256a32e12dff9c5ec741fa25946ba38cd52e854316d884ddfc22a27a",
+      "group": "text"
+    },
+    {
+      "name": "violet-parser.md",
+      "sha256": "508fbd54c9dec11481d774d84ee60dfba4fbe0aa18175565ab8dcd47bc943926",
+      "group": "text"
+    },
+    {
+      "name": "finch-cancel.txt",
+      "sha256": "80606b01cd208366d852e1122d70c8429d6fd1f441d363558d6c6cb9aabd7a8b",
+      "group": "text"
+    },
+    {
+      "name": "coral-escape.pdf",
+      "sha256": "ec51ff5569ac3190816416dae4493b3498530fac91e4492e88776f6c1d0491a8",
+      "group": "text"
+    },
+    {
+      "name": "otter-status.docx",
+      "sha256": "b5875d20f747513d8c6d3c57bdda2fb63ffb451353924cf9fbddd35df72af490",
+      "group": "text"
+    },
+    {
+      "name": "saffron-cache.md",
+      "sha256": "49df9508c19e4afec9ff3f6ce816f2902277fe0734d3c088efe6cae6dfd5d3e0",
+      "group": "text"
+    },
+    {
+      "name": "martin-limit.txt",
+      "sha256": "aa6d2dc11b30634dc0d842839aa29fb40d88214951219a78da74c558f0e0c8b0",
+      "group": "text"
+    },
+    {
+      "name": "basil-config.pdf",
+      "sha256": "fbb7df480cd84145a92c3661883f7f0eaa772234bc09bdf00ab545ad9c0a0bc1",
+      "group": "text"
+    },
+    {
+      "name": "nova-region.docx",
+      "sha256": "11573c95494790c266bf0f35d788664330c1b3dc8525b58630f3ce99a544cd41",
+      "group": "text"
+    },
+    {
+      "name": "mink-budget.md",
+      "sha256": "c9f638e86c62ab33f0d77a41728d0306230c8a71ef7d89391be33271630d70be",
+      "group": "text"
+    },
+    {
+      "name": "lotus-review.txt",
+      "sha256": "00b20ba870976e86cb33976f420e743f663c8beb4b5b7383096ccb416c7ec16d",
+      "group": "text"
+    },
+    {
+      "name": "gull-protocol.pdf",
+      "sha256": "fafcb56567460b328d755a9f8142a255d68dc173b0dd37322760083a45c21da7",
+      "group": "text"
+    },
+    {
+      "name": "pearl-deadline.docx",
+      "sha256": "ac951cd67f0dc6f071cd704ac370972c7f67e6eb89a51a91b1176603aa0bd533",
+      "group": "text"
+    },
+    {
+      "name": "fox-replicas.md",
+      "sha256": "429a1d84282afcaabcd8d09d9671daed1075062a5caa2b249cecdfa4d8b6318b",
+      "group": "text"
+    },
+    {
+      "name": "aqua-randomization.txt",
+      "sha256": "5aee2b0581286191c0e685c483ae229e719c593407a7a822316c4fa34353c5c7",
+      "group": "text"
+    },
+    {
+      "name": "cobalt-owner.pdf",
+      "sha256": "173085016857f93a9f009d2f8dbb11e21144661cfe95baf5eee3b4f5810fe10e",
+      "group": "text"
+    },
+    {
+      "name": "ibis-recovery.docx",
+      "sha256": "aca16b9b611e92ea29152d6444552b14a676b1eea29d0304ab205c82973c44c0",
+      "group": "text"
+    },
+    {
+      "name": "heather-source.md",
+      "sha256": "10c7e230094b4f8bb3bc970e0b66298a0cdaec71d59c980e6bffd5343bcb3637",
+      "group": "text"
+    },
+    {
+      "name": "oriole-gate.txt",
+      "sha256": "5bd2568c458fdcf34eb64f2b8dd33ea2629f9f1a82779469f1cce227df7f38a3",
+      "group": "text"
+    },
+    {
+      "name": "mica-ranking.pdf",
+      "sha256": "521edb7f2669ca41d6bf7fcf24b2a8ee7ecfdacdda66e2cd059466f589633abe",
+      "group": "text"
+    },
+    {
+      "name": "seal-identity.docx",
+      "sha256": "e393d6759b6e7af3a0ef63c2af1fc02f817f52485bc78a56364ef0c67c50f543",
+      "group": "text"
+    },
+    {
+      "name": "alder-revision.md",
+      "sha256": "90c5f04966dd087afe6671790bd3c682e625977060705599ba7ff0f4cfbe0c3a",
+      "group": "text"
+    },
+    {
+      "name": "prism-slit.png",
+      "sha256": "505fed88e9e7359cbf7b20f96ea9e2426844653d48bb894658bb07aefbe01ddb",
+      "group": "image"
+    },
+    {
+      "name": "dingo-relay.jpg",
+      "sha256": "09cb4a37406ff50ac7d5d336fa4fb5814fd22faee89a7a192201ba2563f0e9b6",
+      "group": "image"
+    },
+    {
+      "name": "ruby-circuit.png",
+      "sha256": "d272757e5aa6fcaeadd272562edd1cbf9b52e074eee970c114360cd0926b05c5",
+      "group": "image"
+    },
+    {
+      "name": "marsh-timer.jpg",
+      "sha256": "fcdba6240822295ed538fe08c843863285649e81e2a7a1677ca86503855dd599",
+      "group": "image"
+    },
+    {
+      "name": "pollen-calibration.png",
+      "sha256": "311c09842155d795abf6ac48466b6b3c19a96506d5d7f9fe22bd4b7f512880e1",
+      "group": "image"
+    },
+    {
+      "name": "crane-retention.jpg",
+      "sha256": "a39d195118cb98aa441441e6701ae7a09e24910ed3df7110db477d554424f1be",
+      "group": "image"
+    },
+    {
+      "name": "mint-entropy.png",
+      "sha256": "55d74b1b32b776ac6f79304e4c441dbc1a9c956899d78600e01c38be1d61259f",
+      "group": "image"
+    },
+    {
+      "name": "orca-shards.jpg",
+      "sha256": "ba428fa100bd5991707640f65c3698c3b4756db3962c69b895a71f2a233b39de",
+      "group": "image"
+    },
+    {
+      "name": "swan-grating.png",
+      "sha256": "010bd68e52b962c5ae9af01fd1c972fe65fd858d18301b15e742c6094ad34465",
+      "group": "image"
+    },
+    {
+      "name": "olive-gradient.jpg",
+      "sha256": "b0a2c23c6e5f7634abf5ca0d9df9eadfdd8e0fd89a1c78111bf6b3bfb7c4ba77",
+      "group": "image"
+    },
+    {
+      "name": "orbit-label.png",
+      "sha256": "a6478a31861f8a6843a6fa514faca07728ff1ac11331463c47fb7a9729b4a471",
+      "group": "image"
+    },
+    {
+      "name": "pike-board.jpg",
+      "sha256": "1be5908c11ca6b1a2cc40059c78d708d426bc40ec330143f3336c2eebf6206d7",
+      "group": "image"
+    },
+    {
+      "name": "vega-shapes.png",
+      "sha256": "05884535618e5e134cddcf66bdef4ecf663e992d81f69b2aad95cfc562ab1e2c",
+      "group": "image"
+    },
+    {
+      "name": "lyra-flow.jpg",
+      "sha256": "df8c4c1dae6b56038078836a490b7f96f3cc7ed7aeb44146dd085b7d3c10fb3a",
+      "group": "image"
+    },
+    {
+      "name": "nash-branch.png",
+      "sha256": "b370af786356d5c94ef62e47a9aa66ae915af4fdb78934db27f407540113e89d",
+      "group": "image"
+    },
+    {
+      "name": "rhea-nesting.jpg",
+      "sha256": "bf28e512ef8aa2c6a51ef0d51f1556c3002e6ed321c8b078ffc2ddc7ce7d13b5",
+      "group": "image"
+    },
+    {
+      "name": "tango-triangle.png",
+      "sha256": "d71fa8548ff0186c0752a40616f550c21d68a3aff838c35223b4402dfc1529f7",
+      "group": "image"
+    },
+    {
+      "name": "umbra-columns.jpg",
+      "sha256": "ffd94466e84147bf0ad0e9b5cf53bf86de7eb5a4af3e8bffbf28a9ca6c86a08d",
+      "group": "image"
+    },
+    {
+      "name": "aster-policy-old.txt",
+      "sha256": "c77ce51eb0b399b594f97d8b5465db0bae43a305d4f75c6b356a54f8ad5de3a6",
+      "group": "tricky"
+    },
+    {
+      "name": "aster-policy-update.md",
+      "sha256": "27d3764e431bd8d43a47c987177bcf00613ed832aa17ed303e0d0ebb845c6af4",
+      "group": "tricky"
+    },
+    {
+      "name": "bracken-lab-a.txt",
+      "sha256": "941f32df6c32f1b40017d61a51c6d65c13182e07fc4f2676b5708f2ef35ddb2e",
+      "group": "tricky"
+    },
+    {
+      "name": "bracken-lab-b.docx",
+      "sha256": "f0f3e03977ecc530112cbabf353c098b5c6415a57fdf24e41370cac5afb60cfd",
+      "group": "tricky"
+    },
+    {
+      "name": "cargo-injection.txt",
+      "sha256": "81f51b5b0ed14e815864032b5832134145172eff773f48d68cf0b6162b9872eb",
+      "group": "tricky"
+    },
+    {
+      "name": "silo-injection.docx",
+      "sha256": "0efd8931aee7e439ec5b6c02e77ded8ea5bda4f5cbca1baad31c7fcd72f2346b",
+      "group": "tricky"
+    },
+    {
+      "name": "mosaic-negative.md",
+      "sha256": "0d42ea49d70c5ab11a1ab52cfff06af3a41837dbe266cf563a3be8edfb35315f",
+      "group": "tricky"
+    },
+    {
+      "name": "delta-meaning-network.txt",
+      "sha256": "4ba949bbf70816aab07e6a1e141c7f965e4d7969d1c6c52fac11279aca744ad7",
+      "group": "tricky"
+    },
+    {
+      "name": "delta-meaning-study.txt",
+      "sha256": "a9a7dbf1691e578d7f0ba51d0e071d1d4d8375a4f788340a3fc655091f6e1c04",
+      "group": "tricky"
+    }
+  ]
+}

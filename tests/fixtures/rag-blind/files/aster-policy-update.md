@@ -1,0 +1,1 @@
+Aster transit-cache policy, edition 2028-03. This edition explicitly replaces the transit-cache retention clause in edition 2028-01: records now last 8 hours. Keep both documents when explaining the change.
