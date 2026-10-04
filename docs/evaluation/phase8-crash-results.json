@@ -1,5 +1,5 @@
 {
-  "checkedAt": "2026-10-03T12:35:20.152Z",
+  "checkedAt": "2026-10-04T03:01:49.355Z",
   "faultType": "real Windows process termination",
   "isolatedDatabase": true,
   "installationPath": "ASCII temporary directory",
@@ -35,7 +35,7 @@
     {
       "window": "index_build",
       "pass": true,
-      "operationId": "07ba0ca6-4ca4-4758-93b4-854459c10c44",
+      "operationId": "1e0b2a5a-b351-4420-acf9-aebda1178800",
       "oldVectorSources": 9,
       "oldSourcesAndCitationsPreserved": true,
       "rebuildStatus": "interrupted",
@@ -46,7 +46,7 @@
     {
       "window": "index_before_publish",
       "pass": true,
-      "operationId": "9de6861b-501e-4176-9610-b6b98e78e373",
+      "operationId": "446a3d73-a086-4d43-ad4d-c1da64935d0c",
       "oldVectorSources": 20,
       "oldSourcesAndCitationsPreserved": true,
       "rebuildStatus": "interrupted",
