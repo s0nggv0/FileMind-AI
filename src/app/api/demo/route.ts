@@ -1,3 +1,4 @@
+import { competitionMode } from "@/lib/competition";
 import { readFile } from "node:fs/promises";
 import { resolve, join } from "node:path";
 import { createHash } from "node:crypto";
@@ -10,7 +11,7 @@ import { apiError, sameOrigin, readJSON } from "@/lib/server/http";
 import { DemoWorkspaceService } from "@/lib/reliability/demo-workspace";
 import { WorkspaceError } from "@/lib/workspace/authorization";
 const headers={"cache-control":"private, no-store"};
-function enabled(){return process.env.DEMO_MODE==="true";}
+function enabled(){return process.env.DEMO_MODE==="true" || competitionMode();}
 function service(){if(!enabled()||!persistenceConfigured())throw new WorkspaceError("NOT_FOUND","Demo mode is not enabled.",404);return new DemoWorkspaceService(recoveryService());}
 export async function GET(request:Request) {
   try {

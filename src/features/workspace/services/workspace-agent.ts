@@ -11,6 +11,7 @@ export class WorkspaceAgentEngine implements AgentEngine {
   private llm = new LLMAgentEngine(this.persistence); private active: AgentEngine = this.mock;
   async initialize(id?: string) {
     const session = await this.persistence.initialize(id); this.active = this.persistence.intelligence ? this.llm : this.mock;
+    if (this.persistence.competition && session.snapshot?.run?.engine === "mock") throw new Error("Cloud AI provider unavailable. This saved laboratory run cannot execute in Competition Mode.");
     if (session.snapshot?.run) { this.active = session.snapshot.run.engine === "llm" ? this.llm : this.mock; if (this.active === this.llm) this.llm.restoreRun(session.snapshot.run); else this.mock.restoreRun(session.snapshot.run); }
     return session;
   }
@@ -69,6 +70,7 @@ export class WorkspaceAgentEngine implements AgentEngine {
   }
   saveProposal(plan: OrganizationPlan) { return this.persistence.saveProposal(plan); }
   async continueLocally(documents: ParsedDocument[], listener: RunListener) {
+    if (this.persistence.competition) throw new Error("Cloud AI provider unavailable. Competition Mode requires real AI.");
     this.active = this.mock; const run = this.mock.createRun(documents); run.fallback = "AI analysis unavailable — using basic local organization."; listener(run);
     await this.executeRun(run.id, value => listener({ ...value, fallback: run.fallback }));
   }

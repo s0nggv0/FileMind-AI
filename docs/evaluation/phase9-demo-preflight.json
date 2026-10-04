@@ -1,0 +1,90 @@
+{
+  "version": "demo-preflight-v1",
+  "checkedAt": "2026-10-04T06:59:45.756Z",
+  "ready": false,
+  "syntheticSmoke": true,
+  "checks": [
+    {
+      "name": "Database",
+      "ok": true,
+      "durationMs": 27.454000000000008,
+      "detail": {
+        "reachable": true
+      }
+    },
+    {
+      "name": "Storage",
+      "ok": true,
+      "durationMs": 9.376700000000028
+    },
+    {
+      "name": "Kimi Key",
+      "ok": false,
+      "durationMs": 0.04579999999998563
+    },
+    {
+      "name": "DashScope Key",
+      "ok": false,
+      "durationMs": 0.02159999999997808
+    },
+    {
+      "name": "Kimi Smoke",
+      "ok": false,
+      "durationMs": 0.15379999999998972
+    },
+    {
+      "name": "Embedding Smoke",
+      "ok": false,
+      "durationMs": 0.09199999999998454
+    },
+    {
+      "name": "Demo Data",
+      "ok": true,
+      "durationMs": 53.317499999999995,
+      "detail": {
+        "documents": 10,
+        "recommended": 8
+      }
+    },
+    {
+      "name": "Vision Smoke",
+      "ok": false,
+      "durationMs": 0.15379999999993288
+    },
+    {
+      "name": "OCR Worker",
+      "ok": true,
+      "durationMs": 983.5047,
+      "detail": {
+        "engine": "tesseract.js",
+        "confidence": 0.95
+      }
+    },
+    {
+      "name": "Disk Space",
+      "ok": true,
+      "durationMs": 0.2979000000000269,
+      "detail": {
+        "availableBytes": 309212147712
+      }
+    },
+    {
+      "name": "Port",
+      "ok": true,
+      "durationMs": 6.2672000000000025,
+      "detail": {
+        "port": 65468,
+        "available": true
+      }
+    },
+    {
+      "name": "Build Version",
+      "ok": true,
+      "durationMs": 1.0638000000001284,
+      "detail": {
+        "buildId": "queKaSdFUmA2LFvub3GuS"
+      }
+    }
+  ],
+  "scope": "Fresh no-credential Competition Mode, negative readiness acceptance; not an online Ready receipt."
+}

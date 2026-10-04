@@ -14,9 +14,10 @@ import type { WorkspaceSnapshot } from "../workspace/schemas";
 import type { RetrievalScope } from "../retrieval/types";
 import { WorkspaceError } from "../workspace/authorization";
 import { recoveryService } from "./reliability";
+import { realAIRequired } from "../competition";
 export const multimodalRepository = new MultimodalRepository(database);
 async function visionProvider() {
-  if (process.env.AI_ENGINE !== "llm") return null;
+  if (!realAIRequired()) return null;
   const gate = await readFile(resolve(".filemind/vision-verification.json"), "utf8").then(s => JSON.parse(s), () => null);
   if (!gate?.verified || gate.model !== "kimi-k2.6" || gate.baseURL !== (process.env.KIMI_BASE_URL || "https://api.moonshot.cn/v1")) return null;
   try { return new KimiVisionProvider({ apiKey: process.env.KIMI_API_KEY, baseURL: process.env.KIMI_BASE_URL }); } catch { return null; }

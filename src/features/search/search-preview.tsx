@@ -18,7 +18,7 @@ export function SearchPreview({ suggestions, documents }: { suggestions: string[
           <textarea id="ai-question" value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="比如：我的资料里，RAG 和知识管理有哪些联系？" rows={3} className="w-full resize-none bg-transparent text-base leading-7 outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring/50" />
           <div className="mt-3 flex items-center justify-between gap-3 border-t border-border pt-4"><span className="text-xs text-muted-foreground">自然语言问题 · 语义检索待接入</span><Button size="sm" type="submit" disabled><Search size={15} /> 搜索</Button></div>
         </form>
-        <p className="mt-3 text-xs text-muted-foreground">Phase 1 仅预览提问与引用结构。输入内容不会发送到服务端。</p>
+        <p className="mt-3 text-xs text-muted-foreground">示例提问与引用预览。输入内容不会发送到服务端。</p>
         <div className="mt-6"><p className="mb-3 text-xs text-muted-foreground">从一个问题开始</p><div className="flex flex-wrap gap-2">{suggestions.map((suggestion) => <button key={suggestion} onClick={() => setQuestion(suggestion)} className="flex min-h-11 items-center gap-2 rounded-lg border border-border px-3 py-2 text-left text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:min-h-8">{suggestion}<ArrowUpRight size={12} className="shrink-0" /></button>)}</div></div>
       </section>
 
