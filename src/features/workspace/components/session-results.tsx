@@ -6,13 +6,25 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/feedback/empty-state";
 import { LibraryBrowser } from "@/features/library/library-browser";
 import { GraphPreview } from "@/features/graph/graph-preview";
+import { CleanupReview } from "@/features/cleanup/cleanup-review";
 import { useWorkspaceStore } from "../store/workspace-store";
 import { sessionDocuments, sessionGraph } from "../services/session-presentation";
 import type { OrganizationPlan } from "@/types/workspace";
-import type { DemoDocument, DemoGraphNode, DemoGraphEdge } from "@/types";
+import type { DemoCleanupIssue, DemoDocument, DemoGraphNode, DemoGraphEdge } from "@/types";
 
 function SourceSwitch({ local, onChange, count, persistent }: { local: boolean; onChange: (local: boolean) => void; count: number; persistent?: boolean }) {
   return <div className="flex flex-wrap gap-2" role="group" aria-label="Data source"><Button size="sm" variant={local ? "secondary" : "ghost"} aria-pressed={local} onClick={() => onChange(true)}>{persistent ? "Your workspaces" : "This session"} · {count} files</Button><Button size="sm" variant={!local ? "secondary" : "ghost"} aria-pressed={!local} onClick={() => onChange(false)}>Example workspace</Button></div>;
+}
+export function SessionCleanup({ savedPlans, preferSession, examples }: { savedPlans: OrganizationPlan[]; preferSession: boolean; examples: DemoCleanupIssue[] }) {
+  const session = useWorkspaceStore(state => state.applied);
+  const applied = [...savedPlans.filter(p => !session.some(s => s.documents[0]?.id === p.documents[0]?.id)), ...session];
+  const [local, setLocal] = useState(preferSession || applied.length > 0);
+  const issues: DemoCleanupIssue[] = applied.flatMap(plan => plan.duplicates.flatMap(candidate => {
+    const files = [...new Set(candidate.documentIds)].map(id => plan.documents.find(d => d.id === id)?.name);
+    if (candidate.decision === "ignored" || files.length < 2 || files.some(name => !name)) return [];
+    return [{ id: `${plan.documents[0]?.id}:${candidate.id}`, type: "duplicate" as const, title: files.join(" ↔ "), description: candidate.reason, files: files as string[], recommendation: candidate.decision === "accepted" ? "审阅时已确认此候选；原文件仍全部保留。" : "此候选尚未确认，请对照资料核对内容。", preview: { label: "候选审阅状态", before: `${files.length} 份资料均保留`, after: candidate.decision === "accepted" ? "已确认重复候选" : "待确认重复候选" } }];
+  }));
+  return <div className="space-y-5"><SourceSwitch local={local} onChange={setLocal} count={sessionDocuments(applied).length} /><CleanupReview key={local ? `workspace:${issues.map(i => i.id).join(",")}` : "example"} issues={local ? issues : examples} dataset={local ? "workspace" : "example"} /></div>;
 }
 export function SessionLibrary({ documents, categories, initialSelectedId, preferSession, persistentDocuments = [], persistent = false }: { documents: DemoDocument[]; categories: string[]; initialSelectedId?: string; preferSession: boolean; persistentDocuments?: DemoDocument[]; persistent?: boolean }) {
   const applied = useWorkspaceStore((state) => state.applied);

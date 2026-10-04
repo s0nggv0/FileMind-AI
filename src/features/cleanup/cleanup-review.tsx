@@ -32,7 +32,7 @@ function SuggestionItem({ issue, active, onSelect }: { issue: DemoCleanupIssue; 
   );
 }
 
-function SuggestionDetail({ issue }: { issue: DemoCleanupIssue }) {
+function SuggestionDetail({ issue, dataset }: { issue: DemoCleanupIssue; dataset: "example" | "workspace" }) {
   return (
     <section className="rounded-xl border border-border bg-card p-5 sm:p-6" aria-live="polite">
       <div className="flex items-center justify-between">
@@ -56,7 +56,7 @@ function SuggestionDetail({ issue }: { issue: DemoCleanupIssue }) {
         <p className="mb-3 text-xs font-medium">差异预览 · {issue.preview.label}</p>
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="rounded-lg border border-border p-4">
-            <p className="text-[11px] text-muted-foreground">当前示例</p>
+            <p className="text-[11px] text-muted-foreground">{dataset === "workspace" ? "当前资料" : "当前示例"}</p>
             <p className="mt-2 text-xs leading-6">{issue.preview.before}</p>
           </div>
           <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
@@ -67,14 +67,14 @@ function SuggestionDetail({ issue }: { issue: DemoCleanupIssue }) {
       </div>
       <p className="mt-5 text-sm leading-7 text-muted-foreground">{issue.recommendation}</p>
       <div className="mt-6 flex flex-col items-start gap-3 border-t border-border pt-5">
-        <Button disabled size="sm">确认并应用</Button>
-        <p className="text-xs leading-6 text-muted-foreground">执行与恢复将在整理功能阶段接入。此处建议并非真实检测结果。</p>
+        {dataset === "example" && <Button disabled size="sm">确认并应用</Button>}
+        <p className="text-xs leading-6 text-muted-foreground">{dataset === "workspace" ? "候选来自已应用的整理方案。请对照原文件核对；所有文件均保留。" : "执行与恢复将在整理功能阶段接入。此处建议并非真实检测结果。"}</p>
       </div>
     </section>
   );
 }
 
-export function CleanupReview({ issues }: { issues: DemoCleanupIssue[] }) {
+export function CleanupReview({ issues, dataset = "example" }: { issues: DemoCleanupIssue[]; dataset?: "example" | "workspace" }) {
   const [selectedId, setSelectedId] = useState(issues[0]?.id);
   const selected = issues.find((issue) => issue.id === selectedId);
   return (
@@ -83,23 +83,23 @@ export function CleanupReview({ issues }: { issues: DemoCleanupIssue[] }) {
         <ShieldCheck size={19} className="mt-0.5 shrink-0 text-primary" />
         <div>
           <p className="text-sm font-medium">整理之前，先看清变化。</p>
-          <p className="mt-1.5 text-xs leading-6 text-muted-foreground">所有建议都需要你的确认。此阶段只展示审阅结构，不会删除、重命名或修改任何资料。</p>
+          <p className="mt-1.5 text-xs leading-6 text-muted-foreground">{dataset === "workspace" ? "查看整理方案记录的重复候选及审阅结果，对照原文件决定后续处理。" : "所有建议都需要你的确认。此阶段只展示审阅结构，不会删除、重命名或修改任何资料。"}</p>
         </div>
       </div>
       {!selected ? (
-        <EmptyState icon={ShieldCheck} title="暂时没有整理建议" description="新的整理建议将在分析资料后出现。" />
+        <EmptyState icon={ShieldCheck} title="暂时没有整理建议" description={dataset === "workspace" ? "已应用的工作区方案没有可展示的重复候选，所有资料均保留。" : "新的整理建议将在分析资料后出现。"} />
       ) : (
         <div className="grid gap-7 lg:grid-cols-[minmax(240px,.85fr)_minmax(0,1.5fr)]">
           <section>
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-sm font-semibold">待审阅的示例建议</h2>
+              <h2 className="text-sm font-semibold">{dataset === "workspace" ? "工作区重复候选" : "待审阅的示例建议"}</h2>
               <Badge variant="secondary">{issues.length}</Badge>
             </div>
             <div className="space-y-2">
               {issues.map((issue) => <SuggestionItem key={issue.id} issue={issue} active={selectedId === issue.id} onSelect={() => setSelectedId(issue.id)} />)}
             </div>
           </section>
-          <SuggestionDetail issue={selected} />
+          <SuggestionDetail issue={selected} dataset={dataset} />
         </div>
       )}
     </div>
