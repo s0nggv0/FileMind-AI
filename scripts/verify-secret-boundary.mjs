@@ -2,7 +2,9 @@ import nextEnv from "@next/env";
 import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 nextEnv.loadEnvConfig(process.cwd(), false, { info() {}, error() {} });
-const secrets = [process.env.KIMI_API_KEY, process.env.EMBEDDING_API_KEY, process.env.DASHSCOPE_API_KEY].filter(key => key?.length > 12);
+let databasePassword;
+try { databasePassword = decodeURIComponent(new URL(process.env.DATABASE_URL).password); } catch {}
+const secrets = [...new Set([process.env.KIMI_API_KEY, process.env.EMBEDDING_API_KEY, process.env.DASHSCOPE_API_KEY, process.env.WORKSPACE_SESSION_SECRET, databasePassword].filter(key => key?.length > 12))];
 let checkedFiles = 0;
 async function scan(directory) {
   for (const item of await readdir(directory, { withFileTypes: true })) {
