@@ -11,7 +11,8 @@ async function main() {
   loadEnvConfig(process.cwd(), false, { info() {}, error() {} });
   await mkdir("artifacts", { recursive: true });
   const budgetPath = "artifacts/release-provider-budget.json", limit = 24;
-  const previous = await readFile(budgetPath, "utf8").then(text => JSON.parse(text).used as number, () => 0);
+  const recorded = await readFile("docs/evaluation/release-provider.json", "utf8").then(text => JSON.parse(text).callsUsed as number, () => 0);
+  const previous = Math.max(recorded, await readFile(budgetPath, "utf8").then(text => JSON.parse(text).used as number, () => 0));
   if (!Number.isInteger(previous) || previous < 0 || previous >= limit) throw new Error("Release provider budget exhausted.");
   let used = previous;
   const retained = process.argv.includes("--conflict-only") ? JSON.parse(await readFile("docs/evaluation/release-provider.json", "utf8")) : null;
