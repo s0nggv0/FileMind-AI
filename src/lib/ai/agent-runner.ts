@@ -116,12 +116,13 @@ export class LLMAgentRunner {
         z.object({}).parse(input); if (analyses.size !== documents.length || !duplicateDone || !relationshipsDone) throw new AIError("STRUCTURED_OUTPUT", "Complete analysis, duplicate and relationship checks first.", true, provider.name);
         return step("generate_organization_plan", undefined, async () => {
           applyAnalyses(); let output: z.infer<typeof OrganizationOutputSchema> | undefined,planReason:PlannerMetrics["fallback_reason"][number]="plan_validation";
+          const expectedDocumentIds=documents.map(d=>d.id),allowedCategories=[...new Set([...categories,...base.documents.map(d=>d.category)])];
+          const planSchema=OrganizationOutputSchema.extend({documents:z.array(OrganizationOutputSchema.shape.documents.element.extend({id:z.enum(expectedDocumentIds as [string,...string[]]),category:z.enum(allowedCategories as [string,...string[]])})).length(documents.length)});
           for (let attempt = 0; attempt <= aiLimits.maxToolRetries; attempt++) {
             try {
-              const result = await provider.generateObject({ role: "main", system: organizationPlanPrompt, prompt: untrustedData({ documents: base.documents.map(d => ({ id: d.id, name: d.originalName, summary: d.summary, category: d.category, tags: d.tags })), duplicates: base.duplicates, existingCategories: categories }), schema: OrganizationOutputSchema, signal }); usage(result.usage);
+              const result = await provider.generateObject({ role: "main", system: organizationPlanPrompt, prompt: untrustedData({ expectedDocumentIds,allowedCategories,documents: base.documents.map(d => ({ id: d.id, name: d.originalName, summary: d.summary, category: d.category, tags: d.tags })), duplicates: base.duplicates, existingCategories: categories,...attempt?{correction:"The prior output failed validation. Return both root properties, exactly one row per expectedDocumentIds ID, and categories copied exactly from allowedCategories."}:{} }), schema: planSchema, signal }); usage(result.usage);
               output = OrganizationOutputSchema.parse(result.object); const ids = new Set(output.documents.map(d => d.id));
-              const allowedCategories = new Set([...categories, ...base.documents.map(d => d.category)]);
-              if (ids.size !== documents.length || output.documents.length !== documents.length || output.documents.some(d => !documents.some(own => own.id === d.id) || !allowedCategories.has(d.category))) throw new AIError("STRUCTURED_OUTPUT","Invalid proposal references",true,provider.name);
+              if (ids.size !== documents.length || output.documents.length !== documents.length || output.documents.some(d => !documents.some(own => own.id === d.id) || !allowedCategories.includes(d.category))) throw new AIError("STRUCTURED_OUTPUT","Invalid proposal references",true,provider.name);
               break;
             } catch(error) { output = undefined;const ai=normalizeAIError(error,provider.name);lastError=ai.code;planReason=ai.code==="STRUCTURED_OUTPUT"?"plan_validation":ai.code==="TIMEOUT"?"timeout":"plan_provider_failure";if(ai.code==="TIMEOUT")metrics.timeout++;signal.throwIfAborted(); }
           }

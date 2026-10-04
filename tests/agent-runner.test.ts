@@ -9,7 +9,7 @@ import { z } from "zod";
 const doc = { id: crypto.randomUUID(), name: "final2.txt", type: "txt" as const, mimeType: "text/plain", size: 30, parseStatus: "completed" as const, metadata: { addedAt: new Date().toISOString() } };
 const analysis = { summary: "Notes about transformers.", category: "Artificial Intelligence", isNewCategory: false, reason: "Contains transformer notes.", tags: ["Transformer", "NLP", "Attention"], confidence: 0.9, filenameSuggestion: { shouldRename: true, suggestedFilename: "Transformer-Notes.txt", reason: "Generic filename." } };
 const usage = { promptTokens: 10, completionTokens: 5, totalTokens: 15 };
-function fixture(options: { fail?: boolean; invalidPlan?: boolean; unknownTool?: boolean;invalidTool?:boolean;timeout?:boolean;planOutage?:boolean } = {}) {
+function fixture(options: { fail?: boolean; invalidPlan?: boolean; invalidCategory?: boolean; unknownTool?: boolean;invalidTool?:boolean;timeout?:boolean;planOutage?:boolean } = {}) {
   let turn = 0; let planCalls = 0; let analyses = 0;
   const provider: AIProvider = {
     name: "fixture", models: { main: "fixture-main", small: "fixture-small" },
@@ -17,7 +17,10 @@ function fixture(options: { fail?: boolean; invalidPlan?: boolean; unknownTool?:
     async generateObject(input) {
       if (input.role === "small") { analyses++; return { object: input.schema.parse(analysis), usage }; }
       if(options.planOutage)throw {statusCode:503};
-      planCalls++; return { object: input.schema.parse({ workspaceSummary: "AI notes", documents: [{ id: options.invalidPlan ? crypto.randomUUID() : doc.id, category: "Artificial Intelligence" }] }), usage };
+      const envelope=JSON.parse(input.prompt.slice(input.prompt.indexOf("\n")+1,input.prompt.lastIndexOf("\n")));
+      assert.ok(envelope.allowedCategories.includes("Artificial Intelligence"));assert.deepEqual(envelope.expectedDocumentIds,[doc.id]);
+      if(planCalls)assert.match(envelope.correction,/prior output failed validation/);
+      planCalls++; return { object: input.schema.parse({ workspaceSummary: "AI notes", documents: [{ id: options.invalidPlan ? crypto.randomUUID() : doc.id, category: options.invalidCategory?"Invented category":"Artificial Intelligence" }] }), usage };
     },
     async callTools(input) {
       if (options.fail) throw { statusCode: 503 };
@@ -38,9 +41,11 @@ test("real tool protocol reaches review, records batch logical steps and never a
   assert.deepEqual(result.plannerMetrics,{planner_runs:1,llm_success:1,fallback_count:0,fallback_reason:[],tool_validation_failure:0,timeout:0});
 });
 test("invalid plan retries once then uses analyzed deterministic proposal", async () => {
-  const f = fixture({ invalidPlan: true }); const result = await new LLMAgentRunner(f.provider).execute(f.snapshot, crypto.randomUUID(), async () => {}, new AbortController().signal);
+  for(const options of [{invalidPlan:true},{invalidCategory:true}]){
+  const f = fixture(options); const result = await new LLMAgentRunner(f.provider).execute(f.snapshot, crypto.randomUUID(), async () => {}, new AbortController().signal);
   assert.equal(f.planCalls(), 2); assert.equal(result.status, "waiting_for_review"); assert.match(result.fallback!, /deterministic/); assert.equal(result.result?.documents[0].category, "Artificial Intelligence");
   assert.deepEqual(result.plannerMetrics?.fallback_reason,["plan_validation"]);
+  }
 });
 test("provider failure and unknown tools produce explicit local fallback", async () => {
   for (const options of [{ fail: true }, { unknownTool: true },{invalidTool:true},{timeout:true}]) {
