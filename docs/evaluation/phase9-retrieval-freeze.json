@@ -1,0 +1,94 @@
+{
+  "version": "phase9-candidate-freeze-v1",
+  "frozenAt": "2026-10-04T07:36:04.598Z",
+  "commit": "45406cc1ad5d6672e3b994920e38a0deab1d8bb4",
+  "policy": "Retrieval and UI freeze; subsequent bug/copy/responsive/accessibility fixes require separate reviewed commits. NOT READY does not certify online quality.",
+  "models": {
+    "answer": "kimi-k2.6",
+    "judge": "kimi-k2.6",
+    "embedding": "qwen3.7-text-embedding-flash",
+    "dimensions": 1024
+  },
+  "unchangedRetrievalFiles": {
+    "src/lib/retrieval/config.ts": {
+      "sha256": "fbc3626f7b080e07a472dbfa0558acb2f795e1cb05826bd843fe60e297abc4a6",
+      "normalizedSha256": "fbc3626f7b080e07a472dbfa0558acb2f795e1cb05826bd843fe60e297abc4a6",
+      "phase8RecordedRawSha256": "fbc3626f7b080e07a472dbfa0558acb2f795e1cb05826bd843fe60e297abc4a6",
+      "unchangedIgnoringLineEndings": true
+    },
+    "src/lib/retrieval/chunker.ts": {
+      "sha256": "baa95e521c962f2c2dfd5e305b993674c8bfa1f6e57584597e136d4eed98c3f1",
+      "normalizedSha256": "baa95e521c962f2c2dfd5e305b993674c8bfa1f6e57584597e136d4eed98c3f1",
+      "phase8RecordedRawSha256": "baa95e521c962f2c2dfd5e305b993674c8bfa1f6e57584597e136d4eed98c3f1",
+      "unchangedIgnoringLineEndings": true
+    },
+    "src/lib/retrieval/retrieval-router.ts": {
+      "sha256": "3b71a7e23f0f088f806345ad68f74500a07007ab5c736449f3d14bcad61dcf71",
+      "normalizedSha256": "3b71a7e23f0f088f806345ad68f74500a07007ab5c736449f3d14bcad61dcf71",
+      "phase8RecordedRawSha256": "3b71a7e23f0f088f806345ad68f74500a07007ab5c736449f3d14bcad61dcf71",
+      "unchangedIgnoringLineEndings": true
+    },
+    "src/lib/retrieval/query-analyzer.ts": {
+      "sha256": "37587c050ef0b6e01713fbf5e3a227fd4f59d13dc2f8a6a95866cf414ebe7c63",
+      "normalizedSha256": "37587c050ef0b6e01713fbf5e3a227fd4f59d13dc2f8a6a95866cf414ebe7c63",
+      "phase8RecordedRawSha256": "37587c050ef0b6e01713fbf5e3a227fd4f59d13dc2f8a6a95866cf414ebe7c63",
+      "unchangedIgnoringLineEndings": true
+    },
+    "src/lib/retrieval/ranking.ts": {
+      "sha256": "9f6afb99b520d8ecbfafdcade865dcd78ff0aafc47d7b8218c91b362c795d1c9",
+      "normalizedSha256": "9f6afb99b520d8ecbfafdcade865dcd78ff0aafc47d7b8218c91b362c795d1c9",
+      "phase8RecordedRawSha256": "9f6afb99b520d8ecbfafdcade865dcd78ff0aafc47d7b8218c91b362c795d1c9",
+      "unchangedIgnoringLineEndings": true
+    },
+    "src/lib/retrieval/lexical-tokens.ts": {
+      "sha256": "786c8fc5ab06ef36962d697a914b83d6ba9a28555039df20da3072e30085080b",
+      "normalizedSha256": "786c8fc5ab06ef36962d697a914b83d6ba9a28555039df20da3072e30085080b",
+      "phase8RecordedRawSha256": "786c8fc5ab06ef36962d697a914b83d6ba9a28555039df20da3072e30085080b",
+      "unchangedIgnoringLineEndings": true
+    },
+    "src/lib/retrieval/engine.ts": {
+      "sha256": "13a3067bd15ada92ac2cce9159d98ec81694b77c6a851a873a7697a60983b14d",
+      "normalizedSha256": "5da7e5ccf5ef1f92823182f52a3ad1ed0a8618197da672c8d7991b7db538e473",
+      "phase8RecordedRawSha256": "5da7e5ccf5ef1f92823182f52a3ad1ed0a8618197da672c8d7991b7db538e473",
+      "unchangedIgnoringLineEndings": true
+    },
+    "src/lib/retrieval/portable-vector-store.ts": {
+      "sha256": "f224edd1e86a1295a29927c81064782dc380d51abd34ec880c0aaf77a19868c5",
+      "normalizedSha256": "f224edd1e86a1295a29927c81064782dc380d51abd34ec880c0aaf77a19868c5",
+      "phase8RecordedRawSha256": "f224edd1e86a1295a29927c81064782dc380d51abd34ec880c0aaf77a19868c5",
+      "unchangedIgnoringLineEndings": true
+    },
+    "src/lib/retrieval/vector-store.ts": {
+      "sha256": "f0a04b516ce0aebd77cd1c0757d92a48ddee5cf44879fa7c29b18b909d32f6b8",
+      "normalizedSha256": "f0a04b516ce0aebd77cd1c0757d92a48ddee5cf44879fa7c29b18b909d32f6b8",
+      "phase8RecordedRawSha256": "f0a04b516ce0aebd77cd1c0757d92a48ddee5cf44879fa7c29b18b909d32f6b8",
+      "unchangedIgnoringLineEndings": true
+    },
+    "src/lib/retrieval/evidence-sufficiency.ts": {
+      "sha256": "ebdf6573f4be7e233fbffa8096ca6dde4cc8f67d8751053531a20844c24d5bd4",
+      "normalizedSha256": "ebdf6573f4be7e233fbffa8096ca6dde4cc8f67d8751053531a20844c24d5bd4",
+      "phase8RecordedRawSha256": "ebdf6573f4be7e233fbffa8096ca6dde4cc8f67d8751053531a20844c24d5bd4",
+      "unchangedIgnoringLineEndings": true
+    },
+    "src/lib/retrieval/dashscope-provider.ts": {
+      "sha256": "b758b9794dc87768aa7a38d795ceac8d9920440801addc19b0fa86c77bd64f5d",
+      "normalizedSha256": "b758b9794dc87768aa7a38d795ceac8d9920440801addc19b0fa86c77bd64f5d",
+      "phase8RecordedRawSha256": "b758b9794dc87768aa7a38d795ceac8d9920440801addc19b0fa86c77bd64f5d",
+      "unchangedIgnoringLineEndings": true
+    },
+    "src/lib/retrieval/indexing.ts": {
+      "sha256": "a98448a6105a77d381df522cfe4b38fae28e9b85f713e254b00a4e9c4df9953c",
+      "normalizedSha256": "a98448a6105a77d381df522cfe4b38fae28e9b85f713e254b00a4e9c4df9953c",
+      "phase8RecordedRawSha256": "a98448a6105a77d381df522cfe4b38fae28e9b85f713e254b00a4e9c4df9953c",
+      "unchangedIgnoringLineEndings": true
+    }
+  },
+  "immutableRun1Files": {
+    "docs/evaluation/rag-blind-run1-results.json": "559a2d1a042f94000ef250d1a74f22ccc41abf46864d5dee9f4396774249f0ff",
+    "docs/evaluation/rag-blind-run1.jsonl": "7e1aac51a247994bfb42d550b42d4883fcf2ef2af7c1c10ba288b406d243ffad",
+    "docs/evaluation/rag-blind-run1-inputs.json": "72a7ab1d3556a97b89c3fdf943b45bb780f594357e6c75419622a83f41005806",
+    "docs/evaluation/blind-protocol.md": "5721865adc27ef534fb95cc93183742feefca56e3be2c9f8d66e81956a60bf7a"
+  },
+  "uiStyle": "Existing FileMind visual system retained",
+  "realProviderAcceptance": "Failed or unrun gates retained; no further Kimi calls authorized"
+}

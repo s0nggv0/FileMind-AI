@@ -3,3 +3,5 @@
 tests/fixtures/rag-holdout/files/* -text
 tests/fixtures/demo/** -text
 tests/fixtures/rag-blind/** -text
+# Competition PDFs are delivery documents; preserve binary offsets on Windows.
+docs/competition/*.pdf -text -diff
