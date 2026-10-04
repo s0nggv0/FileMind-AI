@@ -12,7 +12,7 @@ import { indexingConfig, retrievalConfig } from "@/lib/retrieval/config";
 import { getAIProvider } from "@/lib/ai/get-provider";
 import type { AIProvider } from "@/lib/ai/provider";
 import { VERIFIER_VERSION } from "@/lib/retrieval/answer-verifier";
-import { applicationLog,loggedProvider } from "@/lib/reliability/application-log";
+import { applicationLog,loggedProvider,ApplicationLogSchema } from "@/lib/reliability/application-log";
 export async function GET(request: Request) {
   try {
     const userId = await getUserId();
@@ -68,9 +68,12 @@ export async function POST(request: Request) {
           const result: SearchResult = { id: crypto.randomUUID(), query: input.query, rewrittenQuery, mode: input.mode, answer: grounded.answer, sources: grounded.sources, nearest: buildRAGContext(retrieved.nearest).sources, semanticUnavailable: retrieved.semanticUnavailable, answerUnavailable: grounded.unavailable, mock: retrieved.mock || process.env.AI_ENGINE === "mock", evidenceCount: grounded.sources.length, candidateCount: retrieved.fused.length };
           if(input.mode==="ask")result.verification={version:VERIFIER_VERSION,status:grounded.unavailable?"unavailable":"verification" in grounded && grounded.verification?.accepted?(grounded.verification.conflicts.length?"conflict":"verified"):"rejected"};
           const verified="verification" in grounded?grounded.verification:undefined;
+          const publicError=ApplicationLogSchema.shape.error_code.safeParse("errorCode" in grounded?grounded.errorCode:null);
+          const errorCode=publicError.success?publicError.data:grounded.unavailable?"UNAVAILABLE":null;
+          if(errorCode)result.answerErrorCode=errorCode;
           if (process.env.NODE_ENV !== "production" && process.env.DEMO_MODE!=="true") result.debug = { queryProfile: retrieved.profile, selectedStrategy: retrieved.route.strategy, reason: retrieved.route.reason, evidenceAssessment: "assessment" in grounded ? grounded.assessment : undefined, verification:verified?{version:verified.version,accepted:verified.accepted,reason:verified.reason,completeness:verified.completeness,faithfulness:verified.faithfulness}:undefined, semantic: retrieved.semantic.map(s => ({ id: s.id, score: s.score })), lexical: retrieved.lexical.map(s => ({ id: s.id, score: s.score })), fused: retrieved.fused.map(s => ({ id: s.id, score: s.score, fusedRank: s.fusedRank })), reranker: retrieved.reranker, latency };
           await database.query(userId, `insert into filemind.retrieval_runs(id,user_id,workspace_id,query,rewritten_query,mode,vector_model,vector_provider,top_k,retrieved_chunk_ids,evidence_ids,reranker_status,latency,result) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::uuid[],$11::uuid[],$12,$13,$14)`, [result.id, userId, input.workspaceId ?? null, input.query, rewrittenQuery, input.mode, embedding?.getModelInfo().model ?? null, embedding?.getModelInfo().provider ?? null, retrievalConfig.vectorTopK, retrieved.fused.map(s => s.id), grounded.sources.map(s => s.id), retrieved.reranker, latency, result]);
-          await applicationLog({level:grounded.unavailable?"warn":"info",event:"search_completed",request_id:result.id,workspace_id:input.workspaceId??null,operation_id:null,provider:provider?loggedProvider(provider.name):null,error_code:grounded.unavailable?"UNAVAILABLE":null,duration:latency.total});
+          await applicationLog({level:grounded.unavailable?"warn":"info",event:"search_completed",request_id:result.id,workspace_id:input.workspaceId??null,operation_id:null,provider:provider?loggedProvider(provider.name):null,error_code:errorCode??(grounded.unavailable?"UNAVAILABLE":null),duration:latency.total});
           request.signal.throwIfAborted(); send("result", result);
         } catch { send("error", "Search is temporarily unavailable. Your documents are preserved."); }
         finally { if (!closed) { closed = true; controller.close(); } }

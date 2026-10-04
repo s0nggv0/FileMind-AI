@@ -98,7 +98,7 @@ test('verified backup exports all owned knowledge and restores into empty DB wit
         assert.ok(lexical.length);
         const provider = { name: 'fixture', models: { main: 'fixture', small: 'fixture' }, generateObject: async (input: {
                 prompt: string;
-            }) => { const verification=verifierFixtureResponse(input.prompt);if(verification)return {object:verification,usage:{promptTokens:0,completionTokens:0,totalTokens:0}}; const s = JSON.parse(input.prompt).evidence.untrustedSources[0]; return { object: { answer: 'Fencing tokens reject stale writers [S1].', citations: [{ sourceId: s.sourceId, chunkId: s.chunkId, documentId: s.documentId }], confidence: 'high', insufficientEvidence: false }, usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 } }; } } as unknown as AIProvider;
+            }) => { const verification=verifierFixtureResponse(input.prompt);if(verification)return {object:verification,usage:{promptTokens:0,completionTokens:0,totalTokens:0}}; const s = JSON.parse(input.prompt).evidence.untrustedSources[0]; return { object: {statements:[{text:'Fencing tokens reject stale writers.',sourceIds:[s.sourceId]}],confidence:'high',insufficientEvidence:false,evidenceDecision:{supported:true,missingInformation:[]}}, usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 } }; } } as unknown as AIProvider;
         const answer = await generateGroundedAnswer('fencing tokens', lexical, { userId: user }, provider, b.knowledge.getSource.bind(b.knowledge), new AbortController().signal);
         assert.equal(answer.unavailable, false);
         assert.equal(answer.answer?.citations.length, 1);
