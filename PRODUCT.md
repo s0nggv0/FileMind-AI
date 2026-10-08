@@ -12,24 +12,24 @@ Next.js App Router, React, TypeScript strict, Tailwind CSS, shadcn/ui, Lucide, F
 
 ## Users
 
-Students and researchers organizing personal documents and learning materials, as established in the approved architecture.
+Students and researchers who need to organize documents and find information in their study materials.
 
 ## Product Purpose
 
-Turn scattered documents into searchable, connected personal knowledge. Import → visible Agent analysis → review → confirm → search with citations → explore relationships → cleanup.
+Import documents and images, review the Agent's organization suggestions, then search the saved library and check answers against their sources. Document relationships and duplicate suggestions help with later review.
 
 ## Capabilities and Constraints
 
-Phase 6 supports local PDF/DOCX/Markdown/TXT parsing, validated PNG/JPG/JPEG images, separate portable OCR and verified Kimi Vision, private original-file storage, reviewed organization, versioned knowledge indexing, personal hybrid retrieval, grounded answers and verified source previews. Ask generates answers; Find returns passages. Image sources open the original first and distinguish extracted text from AI interpretation. Search uses only the signed browser identity's saved library. Explicit Mock is labeled; missing services show recoverable errors or genuine lexical/OCR results. Automatic scanned-PDF page rendering, internet RAG, full account login and cross-device identity recovery are not included. Existing demo fixtures remain separate from personal knowledge.
+FileMind parses PDF/DOCX/Markdown/TXT locally and accepts validated PNG/JPG/JPEG images. Bundled OCR extracts visible text; Kimi Vision provides a separate interpretation. Originals stay in private storage. Reviewed documents enter a versioned index, and retrieval chooses a strategy for each query. Ask publishes answers after citation and factual checks; Find returns passages. Image citations open the original and distinguish extracted text from AI interpretation. Search is limited to the signed browser identity's saved library. Recovery keys restore that identity within the same database, and checked backups support export and import. Mock results are labelled; Competition Mode requires real services and reports outages. Automatic scanned-PDF page rendering, internet RAG and full account login are not implemented. Demo fixtures remain separate from personal knowledge.
 
 ## Brand Commitments
 
-FileMind AI / 知序 AI. User explicitly requested Linear + Raycast + Notion restraint, professional task-focused navigation, no abundant blue-purple gradients, no glass effects and no enterprise admin template.
+FileMind AI / 知序 AI. The interface follows the restraint of Linear, Raycast and Notion: navigation stays focused on document tasks, with limited colour and clear typography. Avoid blue-purple gradients, glass effects and enterprise admin layouts.
 
 ## Evidence on Hand
 
-Approved architecture: docs/superpowers/specs/2026-10-01-filemind-ai-design.md. No real user documents, performance measurements or production service credentials are available. Demo statistics must be labeled and derived from fixtures.
+Architecture: docs/superpowers/specs/2026-10-01-filemind-ai-design.md. Evaluation records use original synthetic documents and disclose their test scope. The 2026-10-04 release checks include the real-provider main Demo and 12/12 preflight; performance and failure records remain in docs/evaluation. Demo statistics must be labelled. User documents and service credentials stay outside Git.
 
 ## Product Principles
 
-Visible work. Traceable sources. User confirmation before changes. Honest states and capability labels. Private data isolation in later live integration.
+Show what the Agent is doing and where each answer came from. Ask for confirmation before applying organization changes. Label examples, service failures and AI interpretations, and isolate each identity's private data.
