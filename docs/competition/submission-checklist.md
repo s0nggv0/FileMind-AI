@@ -1,32 +1,33 @@
-# Competition Submission Checklist
+# 比赛提交检查表
 
-Status: **NOT READY for final competition submission**. This is a candidate delivery with transparent remaining gates, not a passed release. Phase 10 is not started.
+2026-10-04 的当前源码验收已通过真实主 Demo、Conflict/Ambiguity 样本、扁平 schema 和 12/12 preflight。正式比赛提交仍需完成视频、团队资料、当前版本 ZIP，并检查仓库可见性。
 
-| Item | Status | Evidence / remaining work |
+| 项目 | 状态 | 证据或待办 |
 | --- | --- | --- |
-| Public Git repository | Repository URL present | Public visibility must be confirmed at actual submission time |
-| Competition README | Complete | `docs/competition/README.md`; root user README deliberately preserved |
-| Git history | Preserved | Independent normal commits/pushes, no rewrite |
-| `.env.example` | Complete | Empty keys, explicit Competition Mode |
-| No API keys | History scan passed | Known configured values and credential patterns, all refs; semantic private-content detection is limited |
-| Build / TypeScript / lint | Passed locally | Final check receipt records current executable source and build metadata |
-| Unit / browser | Passed locally | 106 tests, 17 baseline browser tests, 3 competition tests including 32 viewport/route combinations |
-| Conflict / clarification quality | Partial | 10+10 local pipeline cases passed; fresh Kimi samples failed schema validation, later flat wire shape not reverified |
-| Demo video | Pending | 6:10 script complete; no recorded final video or public video URL |
-| Technical PDF | Complete, rendered and inspected | 24-page report, source retained alongside generated PDF |
-| Demo runtime | Fresh unpack/start acceptance passed | Windows bundle and SHA-256; compiled preflight and bundled OCR verified, online readiness blocked |
-| Demo identity / reset | Passed | Server-created dedicated Demo identity; five resets preserve ordinary owner and sibling |
-| Main Demo / backup queries | Pending fresh online acceptance | Prior Phase 8 mixed-provider Demo passed historically, not counted as a current candidate rehearsal |
-| Preflight | NOT READY | 7/12 in new no-credential environment; negative readiness works correctly, not a live smoke pass |
-| Screenshots | Available | Actual browser QA screenshots; Search state results were explicitly injected and labelled |
-| Architecture diagram | Complete | One-page SVG/PNG, detailed source boundaries in technical docs |
-| Testing report | Complete with failed/unrun gates | Phase 9 targeted, browser, clean, model-sample, audit and final receipts |
-| License | Complete | MIT source license, runtime licenses and 599 lockfile package licenses |
-| Team information | Pending human data | Formal team/school/members/roles not supplied |
-| Plan A / Plan B | Documented | Plan A remains gated by providers; Plan B uses saved/local functions with explicit cloud outage |
+| Git 仓库 | URL 已提供，当前为私有 | 提交时按比赛要求确认可见性 |
+| 项目说明 | 已整理 | `docs/competition/README.md` 与根 README |
+| Git 历史 | 已保留 | 独立提交并普通 push，未改写历史 |
+| `.env.example` | 已完成 | 密钥留空，说明 Competition Mode |
+| 密钥检查 | 通过 | 检查已配置凭据和常见凭据模式；语义隐私仍需人工检查 |
+| Build / TypeScript / lint | 通过 | 发布记录绑定应用源码与构建信息 |
+| 单元与浏览器检查 | 通过 | 106 个单元测试、17 个基础浏览器测试、3 个比赛模式测试，覆盖 32 组页面与视口 |
+| Conflict / clarification | 定向样本通过 | 本地 10+10 流程测试与真实样本分开统计；首次六次 schema 失败保留 |
+| 演示视频 | 待录制 | 已有 6:10 脚本，尚无成片和公开视频 URL |
+| 技术报告 | 已整理 | 24 页 PDF、Markdown 与生成脚本同步维护 |
+| 便携 ZIP | 待重新打包 | 已有 ZIP 属于旧构建，Windows bundle 和 SHA-256 有独立记录；当前源码的新目录启动验收另有记录 |
+| Demo 身份与重置 | 通过 | 服务端专用身份；历史五次重置保留普通身份和同级工作区，当前主流程也覆盖隔离重置 |
+| 主 Demo | 通过 | 八份资料完整链路；Planner 无回退，PDF 和图片引用可核对 |
+| 额外备用问题 | 部分复验 | QKV、图片和 Aurora 版本问题已覆盖，其余按演示脚本逐项检查 |
+| Preflight | 验收当天 12/12 READY | 无凭据新环境的 7/12 是独立的失败状态测试；上场前重新检查 |
+| 截图 | 已有 | 浏览器实际截图；Search 状态测试使用注入响应并已标明 |
+| 架构图 | 已有 | 单页 SVG/PNG，与技术文档对应 |
+| 测试报告 | 已有 | 保留首次评测、失败调用和后续验收，各自注明范围 |
+| 许可证 | 已有 | 源码 MIT、运行时许可证和 599 个 lockfile 包许可证记录 |
+| 团队资料 | 待填写 | 正式队名、学校、成员与分工 |
+| 故障备用流程 | 已整理 | 使用保存资料和本地功能，显示云服务不可用状态 |
 
-## Mandatory release gates still open
+## 提交前待办
 
-The budget of six Kimi requests is exhausted. Do not increase it, silently rerun, or use Mock as online evidence. Before final submission, obtain genuine current-build conflict/clarification samples, a complete online main rehearsal and validated backup queries, and a current 12/12 preflight. Record their actual results separately. Finish the real video and formal team information. Development High advisories remain disclosed rather than hidden by a major downgrade.
+重新打包并验证当前版本 ZIP，完成视频、字幕、公开链接和团队资料。复验准备现场展示的额外问题，在实际演示环境中再次取得 12/12 preflight。仓库当前为私有，若比赛要求公开，需先检查作者邮箱、文档和材料中的个人信息。
 
-The architecture and material package can be reviewed now. These remaining gates prevent a claim that the competition release standard has already been reached.
+最初六次 Kimi 失败调用和后续样本分开保留。后续定向验收累计使用 16/24 次，包含失败尝试；它没有重新测量整体准确率。开发依赖的 High 告警、未加密备份和合成评测限制继续列在交付说明中。

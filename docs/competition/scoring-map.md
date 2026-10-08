@@ -1,6 +1,6 @@
 # 比赛评分项与 FileMind 证据映射
 
-下列评分项来自用户提供的比赛准备要求；没有添加权重或自评分。评测结果、验收报告和演示分别提供不同证据，不能将演示成功外推为整体正确率。
+下表按比赛准备要求列出功能与证据，不设置权重或自评分。演示记录说明流程是否完成，问答正确率则由独立的评测结果说明。
 
 | 评分项 | FileMind 对应功能 | 证据 | Demo 场景 |
 | --- | --- | --- | --- |
@@ -16,4 +16,4 @@
 | UX | 有来源进度、人工确认、Retry、缺失原文件提示、Demo 二次确认 | [维护架构](../architecture/storage-maintenance.md)、[Demo 设计](../architecture/demo-workspace.md) | 保留来源后重试，取消 Reset |
 | Social / Commercial Value | 减少个人资料整理和原文核对成本，保留用户控制 | [产品说明](README.md)、[演示稿](demo-script.md) | 学习资料场景；无收费或市场规模承诺 |
 
-合成语料和同模型 judge 的局限、未加密备份、扫描 PDF、线性向量扫描均在交付说明中保留。没有付费用户、收入或社会影响实验，Social / Commercial Value 仅描述用途。
+交付说明列出了合成语料、同模型 judge、未加密备份、扫描 PDF 和线性向量扫描的限制。项目尚无付费用户、收入或社会影响实验，Social / Commercial Value 一项只说明用途。

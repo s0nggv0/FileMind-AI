@@ -1,14 +1,14 @@
 # v1.0.0-rc.1 runtime and freeze guide
 
-Current source build `f43575d` passed the newly authorized real-provider Conflict/Ambiguity samples, flat context schema, complete eight-file Demo without Planner fallback, and 12/12 readiness. See [the release freeze and verification scope](release-freeze.md). The exhausted six-request Phase 9 budget and its failed receipts remain unchanged; the current samples have their own cumulative budget and retained failure history.
+Build `f43575d` passed real-provider Conflict/Ambiguity samples, the flat context schema, the complete eight-file Demo without Planner fallback and 12/12 readiness on 2026-10-04. See [the release record and test scope](release-freeze.md). The initial six-request Phase 9 attempt failed and remains on record. Later targeted samples use a separate cumulative budget that includes failed attempts.
 
 ## Source checkout
 
-Use Windows x64 and an ASCII path. `npm ci`, copy `.env.example` to `.env.local`, configure a dedicated PostgreSQL database and a ≥32-byte session secret, migrate, build and start. Real mode requires the configured Kimi/DashScope keys and Vision verification marker. Keys, originals and runtime data stay private. The five pre-existing user document edits remain outside Phase 9 commits.
+Use Windows x64 and an ASCII path. Run `npm ci`, copy `.env.example` to `.env.local`, configure a dedicated PostgreSQL database and a ≥32-byte session secret, then migrate, build and start. Real mode requires Kimi/DashScope keys and the Vision verification marker. Keep keys, originals and runtime data private.
 
 ## Portable artifact
 
-The archive recorded in `phase9-release-artifact.json` retains its earlier build and historical validation. This freeze validates the current source build and its freshly copied portable runtime. Regenerate and validate an archive from this build before distributing a new ZIP.
+The archive in `phase9-release-artifact.json` contains an earlier build. The latest acceptance covers the current source build and a freshly copied portable runtime. Build and validate a new archive before distributing a ZIP.
 
 The archive includes `.next/standalone`, bundled Node, bundled PostgreSQL binaries and license, migrations, launch/recovery scripts, original Demo fixtures, public competition materials and `.env.example`. It excludes `.env.local`, administrator credentials, storage originals, existing PostgreSQL data, logs, recovery keys, source dependency caches and user documents.
 
@@ -20,13 +20,13 @@ The archive includes `.next/standalone`, bundled Node, bundled PostgreSQL binari
 6. Run `preflight.ps1` while the intended web port is free. The portable compiled preflight performs the same twelve checks as `npm run demo:check`. Kimi/Vision/Embedding checks make actual service calls; missing keys fail without substituting Mock.
 7. Require **12/12 READY** immediately before online Demo. Keep the new local preflight receipt private unless sharing its safe metadata intentionally.
 
-The current no-credential startup receipt proves fresh initialization, empty real Cleanup, workspace creation and persistence across restart without copying user data or calling cloud providers. Separate current live receipts prove 12/12 readiness, the complete main Demo, PDF/image citations and a scoped reset preserving the ordinary owner. Historical Recovery, Backup and five-reset receipts remain separate; the five backup questions were not all freshly verified.
+The no-credential startup test began with a fresh database and checked empty Cleanup, workspace creation and persistence across restart. It copied no user data and called no cloud providers. Separate live tests cover 12/12 readiness, the main Demo, PDF/image citations and a scoped reset that preserved the ordinary owner. Recovery, Backup and five-reset results have their own historical records. The five backup questions were not all freshly verified.
 
 ## Frozen retrieval and UI
 
 Retain `qwen3.7-text-embedding-flash` / 1024, `chunk-v1` (800 target / 1000 max / 100 overlap), vector/lexical top K 20, RRF K 60, candidate limit 15 and evidence limit 7. The deterministic Router, lexical tokenization, ranking, PortableVectorStore and EvidenceSufficiencyEvaluator are unchanged in Phase 9. The published snapshot includes file hashes; any intentional later fix requires a separate reviewed commit and evaluation record.
 
-UI uses the existing FileMind visual system. Subsequent work is restricted to bug, copy, responsive and accessibility fixes. `COMPETITION_MODE=true` wins over `AI_ENGINE=mock`, `FILEMIND_DEBUG_UI=true` and `--mock`; saved laboratory runs cannot execute as real AI. Plan B uses real saved/local functionality and visible provider-unavailable messaging.
+Keep the existing FileMind visual system; release fixes cover defects, copy, responsive layouts and accessibility. `COMPETITION_MODE=true` overrides `AI_ENGINE=mock`, `FILEMIND_DEBUG_UI=true` and `--mock`, and prevents saved laboratory runs from executing as real AI. During an outage, use saved and local functions and show the provider-unavailable message.
 
 ## Privacy and licenses
 

@@ -1,8 +1,8 @@
-# Plan A / Plan B
+# 在线演示与故障备用流程
 
-**Plan A**：真实在线 AI。2026-10-04 重新授权的真实验收已通过扁平 schema、Conflict、Ambiguity、主 Demo 全链路与最终构建 12/12 READY。Agent 无 Planner 回退；详见 [当前冻结记录](release-freeze.md)。Phase 9 原六次失败记录保留。
+正常演示使用在线 AI。2026-10-04 的验收通过了扁平 schema、Conflict、Ambiguity、主 Demo 全流程和 12/12 检查，Agent 没有 Planner 回退，详见 [验收记录](release-freeze.md)。Phase 9 最初六次失败调用另有记录。
 
-**Plan B**：使用已保存、已索引的真实资料展示本地能力，流程和材料已准备。明确说明 **Cloud AI provider unavailable.** 旧答案注明历史生成；Competition Mode 不提供 Mock 冒充路径。
+云服务故障时，继续展示已保存、已索引资料的本地功能，并说明 Cloud AI provider unavailable。展示旧答案时注明生成时间。Competition Mode 不切换到 Mock。
 
 | 故障 | 继续展示 | 说明 |
 | --- | --- | --- |
@@ -16,6 +16,6 @@
 | Agent 失败 | 实际诊断、此前保存 Workspace | fallback 不等于 LLM 计划成功。 |
 | 索引中断 | 仍有效的已发布索引与重试 | 新资料不冒用旧索引。 |
 
-备用顺序：Library -> Find QKV -> 原文／原图 -> Local OCR -> Graph -> Backup Validate -> Recovery 说明。真实 key 不露屏；ZIP 默认无加密。Reset 前确认专用身份并停止活动索引，取消不改变资料。
+备用顺序为 Library、Find QKV、原文或原图、Local OCR、Graph、Backup Validate，最后说明 Recovery。隐藏真实 key；备份 ZIP 没有加密。Reset 前确认专用身份并停止活动索引，取消操作会保留资料。
 
-已验证的本地基线为新环境数据库、OCR、Recovery、Backup 完整性和五次 scoped reset；云故障浏览器响应是注入验收，与第三方服务实际故障、真实问答质量属于不同证据。
+本地验收覆盖了新环境数据库、OCR、Recovery、Backup 完整性和五次 scoped reset。浏览器中的云故障测试使用注入响应，证明界面能处理指定错误；第三方实际故障和问答质量需分别验证。

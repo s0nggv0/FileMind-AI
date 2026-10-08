@@ -1,57 +1,57 @@
 # FileMind AI
 
-**Turn scattered files into connected knowledge.**
+Turn scattered files into connected knowledge.
 
-FileMind AI transforms scattered personal files into an intelligent, searchable and connected knowledge space using AI Agents, multimodal understanding and citation-grounded RAG.
+FileMind AI organizes personal documents and images. An Agent proposes categories, tags and filenames for review. Users can then search their saved library, ask questions and open the cited originals.
 
-FileMind AI 通过 AI Agent、多模态理解与可引用 RAG，将散乱的个人数字资料转化为可理解、可搜索、可关联的个人知识空间。
+FileMind AI 整理个人文档和图片，提供可审阅的分类建议，并支持搜索、提问和原文核对。
 
-This competition README is separate to preserve five existing uncommitted documents, including the root README. Candidate version: **v1.0.0-rc.1**. The newly authorized real-provider acceptance passed Conflict, Ambiguity, the flat context schema, and the complete eight-file Demo with `llm_success=1`, `fallback_count=0` and **12/12 READY**. See [the current release freeze](release-freeze.md). Earlier failed Phase 9 receipts remain historical evidence.
+Candidate version: v1.0.0-rc.1. On 2026-10-04, real-provider checks passed Conflict, Ambiguity, the flat context schema and the complete eight-file Demo, with `llm_success=1`, `fallback_count=0` and 12/12 READY. Results and test scope are in [the release record](release-freeze.md). Earlier failed attempts are retained separately. The older ZIP still needs to be rebuilt before distribution.
 
 ## Introduction
 
-A personal knowledge space for students and researchers. Import mixed materials, watch FileMind Agent propose organization, review its decisions, and ask questions with clickable sources. The application preserves originals and makes the user's approval part of the workflow.
+Students and researchers can import mixed materials into one saved library. FileMind preserves the originals and applies organization suggestions only after the user reviews them.
 
 ## Problem
 
-Useful knowledge is spread across lecture PDFs, project documents, Markdown notes and classroom images. A user may remember an idea while forgetting its filename. Filename search cannot connect the same concept across these formats, and unsupported AI answers make the result hard to trust.
+An idea may appear in a lecture PDF, a project note and a classroom image. Remembering the idea often does not help locate its filename. Answers also need a way to check the original passage or diagram.
 
 ## Solution
 
-FileMind connects document understanding, reviewed organization and source-grounded answers. It proposes categories, tags, names and relationships, then searches only the current user's saved knowledge. It distinguishes supported answers, absent evidence, source conflicts and questions needing clarification.
+FileMind extracts document text and image content, proposes organization changes and searches the current user's saved library. Answers include sources. Missing evidence, conflicting sources and ambiguous questions have separate result states.
 
-## Core Features
+## Features
 
-- FileMind Agent with visible tools and human Review → Apply.
+- FileMind Agent shows tool activity and sends suggestions to Review before Apply.
 - PDF, DOCX, Markdown and TXT parsing, plus PNG/JPG image understanding and local OCR.
-- Semantic and lexical retrieval, with an evaluation-driven adaptive Router.
+- Semantic and lexical retrieval use a Router that selects a strategy for each query.
 - Grounded answers, source locations, clickable citations and original-file previews.
 - Knowledge Graph from saved document relationships and concepts, plus reviewed cleanup suggestions.
 - Private PostgreSQL persistence, scoped recovery, integrity-checked backup and Windows portable runtime.
 
-## AI Architecture
+## Models and processing
 
 Kimi `kimi-k2.6` handles structured analysis, Agent planning, grounded generation and fact checking. Kimi Vision and bundled Tesseract provide separate image interpretation and visible-text extraction. DashScope `qwen3.7-text-embedding-flash` provides independent 1024-dimensional embeddings. Credentials remain server-side. See [one-page architecture](architecture.svg).
 
-## Agent Workflow
+## Agent workflow
 
-Upload → local parsing → allowlisted tools → structured proposal → human review → Apply → saved Library and index. Tool inputs and outputs are validated. The Agent has no arbitrary shell, browser or deletion tools. Failure preserves the workspace and exposes a retry path.
+After local parsing, the Agent calls registered tools and produces a structured proposal. The user reviews it before Apply saves the Library and index. Tool inputs and outputs are validated; the Agent has no arbitrary shell, browser or deletion tools. Failures preserve the workspace and offer a retry.
 
-## RAG Architecture
+## Answer pipeline
 
-Question → owner-scoped retrieval → source context → question-scope/source-difference verification → generation → citation identity/freshness validation → atomic-claim and factual support verification → bounded repair → final result. Unverified model drafts never reach the browser. Clarification returns choices; selecting one resolves server-stored document IDs and retrieves again.
+Retrieval first limits evidence to the current owner. The pipeline checks question scope and source differences, generates a draft, then validates citation identity, freshness and factual support. A failed check can use one repair attempt. Only a checked result reaches the browser. Clarification returns choices; selecting one resolves server-stored document IDs and retrieves again.
 
-## Multimodal AI
+## Images and OCR
 
 Image sources preserve the original image, OCR text and separately labelled AI interpretation. OCR can continue locally during a Vision outage. Failed extraction does not produce fabricated searchable content. Text-layer PDFs are supported; automatic scanned-PDF page rendering is outside the current scope.
 
-## Adaptive Retrieval
+## Retrieval strategy
 
-Phase 6 found that always combining rankings degraded Hit@1: Vector 0.942 versus Hybrid 0.733. FileMind therefore chooses a strategy from the question rather than always blending scores. Phase 7 independent holdout measured Adaptive Hit@1 0.9674, Hit@5 1.0 and MRR 0.9837. Phase 9 retains the frozen model, chunk settings, Router, VectorStore, RRF and evidence thresholds.
+In Phase 6, Vector Hit@1 was 0.942 and fixed Hybrid Hit@1 was 0.733. FileMind uses question features to choose a retrieval strategy. The Phase 7 holdout measured Adaptive Hit@1 0.9674, Hit@5 1.0 and MRR 0.9837. Phase 9 kept the model, chunk settings, Router, VectorStore, RRF and evidence thresholds frozen.
 
-## AI Safety
+## Safety checks
 
-Human approval, untrusted-content boundaries, allowlisted tools, source ownership, citation checks, numerical checks, factual verification, explicit no-answer, conflict disclosure and clarification. These reduce specific risks; none is a guarantee of universal correctness. Competition Mode requires real AI and disables development controls. Cloud failure remains visible.
+Organization changes require approval. Uploaded content is treated as untrusted data, tools are restricted, and answers pass ownership, citation, numerical and factual checks. The pipeline can report insufficient evidence, show source conflicts or ask for clarification. These checks cover specific failure cases and still need human source review. Competition Mode requires real AI, disables development controls and reports cloud failures.
 
 ## Evaluation
 
@@ -66,15 +66,16 @@ Human approval, untrusted-content boundaries, allowlisted tools, source ownershi
 | Post-publication completeness / faithfulness | 378/378 claims | Automated checks, conditional on 127 released answers |
 | Full conflict / ambiguity | 2/8 / 0/8 | Original Phase 8 weaknesses, never overwritten |
 | Phase 9 local targeted pipeline | 10/10 conflicts, 10/10 clarification cases | Scripted transport decisions, not real-model accuracy |
-| Phase 9 live samples | Not passed | Six calls exhausted; invalid structured output preserved |
+| Phase 9 initial live samples | Failed | Six calls exhausted; invalid structured output preserved |
+| Release live acceptance, 2026-10-04 | Passed | Separate Conflict/Ambiguity samples and eight-file main Demo; 12/12 preflight |
 
-See [Phase 5–8 evaluation](../evaluation/final-evaluation-summary.md) and [new targeted regression](../evaluation/phase9-targeted-regression.md). Do not merge local and live denominators.
+See [Phase 5-8 evaluation](../evaluation/final-evaluation-summary.md) and [targeted regression](../evaluation/phase9-targeted-regression.md). Local pipeline tests and real-model checks have separate denominators.
 
-## System Architecture
+## System architecture
 
 Next.js App Router + React + TypeScript; server Route Handlers; FileMind Agent and tool registry; local document pipeline; Kimi/Vision/OCR/Embedding layer; retrieval and verification; PostgreSQL with FORCE RLS; private originals and PortableVectorStore. Operation Journal and atomic writes support recovery. [Architecture diagram](architecture.svg) and [technical report](technical-report.pdf) describe the boundaries.
 
-## Quick Start
+## Quick start
 
 Use an ASCII installation directory on Windows x64, Node.js ≥22.13 and a dedicated PostgreSQL database. The bundled runtime is an alternative to global installations; PostgreSQL runtime binaries are distributed in the private release artifact, not Git.
 
@@ -91,16 +92,16 @@ For competition, set `AI_ENGINE=llm`, `COMPETITION_MODE=true`, `DEMO_MODE=true`,
 
 ## Demo
 
-Ten original fixtures, eight recommended, cover PDF/DOCX/Markdown/TXT/PNG/JPG. Open the dedicated Competition Demo Workspace in Settings and download its fixture ZIP. Follow the [single main script](demo-script.md), [video script](video-script.md), [12-slide pitch outline](pitch-deck-outline.md) and [outage Plan B](fallback-demo.md). Five backup queries are listed with their evidence and current acceptance status. Main Demo on the current candidate still needs online rehearsal; the prior Phase 8 success is historical.
+Ten original fixtures, with eight recommended for the main Demo, cover PDF/DOCX/Markdown/TXT/PNG/JPG. Open the dedicated Competition Demo Workspace in Settings and download its fixture ZIP. Use the [main script](demo-script.md), [video script](video-script.md), [12-slide pitch outline](pitch-deck-outline.md) and [outage plan](fallback-demo.md). The current-source main Demo passed on 2026-10-04. Five backup queries are listed separately with their evidence and acceptance status; they were not all freshly verified.
 
 ## Privacy
 
 Parsing and OCR run locally. Real AI mode sends extracted text to Kimi, image bytes to Kimi Vision and index/query text to DashScope. Private storage and PostgreSQL isolate browser identities; TLS and filesystem permissions remain deployment responsibilities. Recovery keys act as bearer credentials. Backups are integrity-checked ZIP archives and **not encrypted**.
 
-## Known Limitations
+## Limitations
 
-Fresh real-model verification is incomplete under the six-call budget. The context wire schema was subsequently flattened and locally checked, but not re-tested with Kimi. PortableVectorStore uses a linear scan, scanned PDFs need a text layer, OCR/Vision can misinterpret content, provider outages affect answers, and the synthetic shared-model evaluation does not establish general accuracy. No OAuth, multi-user collaboration, cloud sync, payments or mobile application. Unicode installation paths remain unsupported in this release scope.
+The flat context schema passed real Kimi checks on 2026-10-04, after the failed six-call attempt. The new targeted samples used 16 of their separate 24-call budget, including failures; they do not establish an overall accuracy rate. Extra backup queries and a new full regression were outside that acceptance. PortableVectorStore uses a linear scan, scanned PDFs need a text layer, and OCR/Vision can misinterpret content. Provider outages affect answers. The synthetic evaluation and shared model used for generation and judging limit how far its scores can be generalized. OAuth, multi-user collaboration, cloud sync, payments and a mobile application are not implemented. Unicode installation paths remain outside this release's supported scope.
 
 ## Team
 
-Repository maintainer: `s0nggv0`. Formal competition team name, school, members and role assignments have not been supplied. Confirm them before submission. [Repository](https://github.com/s0nggv0/FileMind-AI) · [MIT license](../../LICENSE).
+Repository maintainer: `s0nggv0`. Team name, school, members and roles remain to be filled in before submission. [Repository](https://github.com/s0nggv0/FileMind-AI) · [MIT license](../../LICENSE).

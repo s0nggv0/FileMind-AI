@@ -1,6 +1,6 @@
-# Release Freeze · v1.0.0-rc.1
+# 发布验收记录 · v1.0.0-rc.1
 
-验收时间：2026/10/4 18:55:48（Asia/Shanghai）。本轮 9 项冻结检查全部通过。生产构建源码：`f43575dc783a0bf90447cc645f82f04c120acc9d`。后续提交更新验收工具与证据，应用源码与构建一致。
+验收时间：2026/10/4 18:55:48（Asia/Shanghai）。9 项发布检查全部通过，生产构建对应源码 `f43575dc783a0bf90447cc645f82f04c120acc9d`。随后的提交更新了验收工具和记录，应用源码与该构建一致。Release Freeze 表示本次验收后固定应用版本，发布前只处理已确认的缺陷，后续变更另行验证。
 
 | 检查 | 结果 |
 | --- | --- |
@@ -44,11 +44,11 @@
 - `2608319` test(security): scan client assets for session and database secrets
 - `65511c9` fix(test): retain live acceptance budget after artifact cleanup
 
-最终冻结证据在以上提交后单独 Commit / Push。原有 README 与 4 份架构/配置文档保持原始字节，不纳入本轮提交。
+最终验收记录在以上提交后单独 Commit / Push。2026-10-04 验收时，原有 README 与 4 份架构/配置文档的本地改动保留，未纳入当轮提交。
 
 ## 范围与复现
 
-保留 12 个冻结检索实现文件及原始评测数据。本轮覆盖用户指定的当前源码验收；额外备用问题、补充 deadline 场景线上 UI、新的 20 问整体评测及旧 ZIP 重新打包没有计入本轮。发布现有 ZIP 时核对它自身的构建记录。
+12 个检索实现文件和原始评测数据保持冻结。本次验收覆盖当前源码；额外备用问题、补充 deadline 场景线上 UI、新的 20 问整体评测和旧 ZIP 重新打包不在此次范围内。分发 ZIP 前需核对其构建记录，并重新打包当前版本。
 
 基础检查使用 npm run build / typecheck / lint，npm test 和 npm run test:e2e。比赛模式浏览器配置为 playwright.phase9.config.ts。真实链路使用 node scripts/verify-demo.mjs --live，12 项 preflight 使用 node scripts/verify-demo-preflight.mjs；分别设置 FILEMIND_DEMO_REPORT 和 FILEMIND_PREFLIGHT_REPORT 为本轮 release 记录路径，以保留旧记录。
 
