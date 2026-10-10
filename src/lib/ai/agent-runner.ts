@@ -90,7 +90,7 @@ export class LLMAgentRunner {
         for (const id of documentIds.filter(id => doc(id).type === "image")) await analyzeImage(id);
         await analysisQueue([...new Set(documentIds)].filter(id => !analyses.has(id)), async id => step("analyze_document", id, async () => {
           const document = doc(id);
-          // Images and textless files have no LLM content analysis in Phase 4.
+          // 图片先走 analyzeImage；没有可读正文的文件保留基础元数据。
           if (!snapshot.texts[id]?.trim() || document.type === "image") {
             const fallback = base.documents.find(d => d.id === id)!;
             analyses.set(id, { summary: fallback.summary, category: fallback.category, tags: fallback.tags, isNewCategory: false, reason: "Metadata only; no readable text.", confidence: 0, filenameSuggestion: { shouldRename: false, suggestedFilename: null, reason: "No content analysis." } });

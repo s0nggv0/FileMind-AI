@@ -19,20 +19,45 @@ interface WorkspaceState {
 }
 export function createWorkspaceStore(engine: AgentEngine) {
   return create<WorkspaceState>((set, get) => {
-    let timer: ReturnType<typeof setTimeout> | undefined; let generation = 0;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let generation = 0;
     const autosave = () => {
       if (!get().persistent || !engine.saveProposal) return;
-      clearTimeout(timer); set({ saveStatus: "saving" }); const version = ++generation;
+      clearTimeout(timer);
+      set({ saveStatus: "saving" });
+      const version = ++generation;
       timer = setTimeout(async () => {
-        const proposal = get().proposal; if (!proposal) return;
-        try { await engine.saveProposal!(proposal); if (version === generation) set({ saveStatus: "saved" }); }
-        catch (error) { if (version === generation) set({ saveStatus: "error", errors: [error instanceof Error ? error.message : "工作区保存失败，请重试。"] }); }
+        const proposal = get().proposal;
+        if (!proposal) return;
+        try {
+          await engine.saveProposal!(proposal);
+          // 较早的请求完成时，不覆盖之后的编辑、应用或重置状态。
+          if (version === generation) set({ saveStatus: "saved" });
+        } catch (error) {
+          if (version === generation) {
+            set({ saveStatus: "error", errors: [error instanceof Error ? error.message : "工作区保存失败，请重试。"] });
+          }
+        }
       }, 500);
     };
     const locked = () => get().run !== null;
     const update = (run: AgentRun) => {
       if (get().run?.id !== run.id) return;
       set({ run, documents: run.documents, ...(run.status === "waiting_for_review" ? { proposal: run.result ?? null } : {}) });
+    };
+    const retryOrSkip = async (action: "retryStep" | "skipStep", stepId: string, fallback: string) => {
+      const run = get().run;
+      if (!run) return;
+      try {
+        await engine[action](run.id, stepId, update);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : fallback;
+        set({
+          run: { ...(get().run ?? run), status: "failed", error: message },
+          saveStatus: "error",
+          errors: [message],
+        });
+      }
     };
     return {
       initialized: !engine.initialize, persistent: false, engineLabel: "仅本地演示", saveStatus: "local",
@@ -72,8 +97,8 @@ export function createWorkspaceStore(engine: AgentEngine) {
         set({ run: null, proposal: null, fault: "none", documents: get().documents.map((document) => ({ ...document, parseStatus: "ready", parseError: undefined })) });
         await get().start();
       },
-      retry: async (id) => { const run = get().run; if (run) { try { await engine.retryStep(run.id, id, update); } catch (error) { const message = error instanceof Error ? error.message : "重试状态保存失败，请重试。"; set({ run: { ...(get().run ?? run), status: "failed", error: message }, saveStatus: "error", errors: [message] }); } } },
-      skip: async (id) => { const run = get().run; if (run) { try { await engine.skipStep(run.id, id, update); } catch (error) { const message = error instanceof Error ? error.message : "跳过状态保存失败，请重试。"; set({ run: { ...(get().run ?? run), status: "failed", error: message }, saveStatus: "error", errors: [message] }); } } },
+      retry: (id) => retryOrSkip("retryStep", id, "重试状态保存失败，请重试。"),
+      skip: (id) => retryOrSkip("skipStep", id, "跳过状态保存失败，请重试。"),
       editDocument: (id, patch) => {
         const proposal = get().proposal;
         if (!proposal || get().run?.status !== "waiting_for_review") return;

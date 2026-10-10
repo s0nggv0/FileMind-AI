@@ -5,7 +5,7 @@ import { PersistenceClient } from "./persistence-client";
 import { parseDocument } from "./file-parser";
 import { buildOrganizationPlan } from "./organization-rules";
 
-// Provider selection belongs to this service boundary; components use AgentEngine only.
+// 在这里选择真实或模拟引擎，页面统一通过 AgentEngine 调用。
 export class WorkspaceAgentEngine implements AgentEngine {
   private persistence = new PersistenceClient(); private mock = new MockAgentEngine();
   private llm = new LLMAgentEngine(this.persistence); private active: AgentEngine = this.mock;

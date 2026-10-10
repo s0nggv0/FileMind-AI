@@ -10,7 +10,7 @@ import {
 } from "@/mocks";
 import type { OverviewMetrics } from "@/types";
 
-/** Phase 1's local data adapter. Replace this boundary when persistence is added. */
+// 只提供明确标注的演示数据；已保存资料由服务端仓库读取。
 export function getDemoOverview(): OverviewMetrics {
   return {
     fileCount: demoDocuments.length,
