@@ -1,6 +1,6 @@
 # Phase 6 — Multimodal Knowledge Ingestion & Retrieval Evaluation
 
-Phase 6 implements owned image ingestion and a more demanding retrieval evaluation. It does not enter Phase 7. Only the dedicated FileMind portable PostgreSQL is used; Yunxiu is not connected or modified. Original files remain private and immutable, and organization still requires human Apply.
+Phase 6 implements owned image ingestion and a more demanding retrieval evaluation. It does not enter Phase 7. Only the dedicated FileMind portable PostgreSQL is used. Original files remain private and immutable, and organization still requires human Apply.
 
 ## Completed behavior
 
