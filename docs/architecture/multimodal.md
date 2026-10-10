@@ -34,4 +34,4 @@ PDF text extraction detects low-text pages and warns about a possible scanned do
 
 ## Verification commands
 
-`npm run test:vision` uses one self-created image and records HTTP status, latency, usage and schema-validated analysis without credentials. `npm run test:multimodal-live` targets the dedicated running server on 3082 and uses synthetic images. `npm run evaluate:hard` runs the isolated live benchmark. These commands make paid provider requests. `npm run test:portable:copy` tests real Vision/OCR/embedding and whole-folder relocation; stop the current FileMind launcher first. No command targets Yunxiu PostgreSQL.
+`npm run test:vision` uses one self-created image and records HTTP status, latency, usage and schema-validated analysis without credentials. `npm run test:multimodal-live` targets the dedicated running server on 3082 and uses synthetic images. `npm run evaluate:hard` runs the isolated live benchmark. These commands make paid provider requests. `npm run test:portable:copy` tests real Vision/OCR/embedding and whole-folder relocation; stop the current FileMind launcher first. All verification commands target the dedicated FileMind environment.

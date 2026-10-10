@@ -6,7 +6,7 @@
 
 ## 数据与索引
 
-`202610020002_knowledge_index.sql` 为文档增加状态、版本和索引代次，并建立 `document_chunks`、`chunk_embeddings`、`retrieval_runs`。三个新表启用 FORCE RLS；每次查询使用事务内的 `filemind.user_id`，应用身份来自服务端签名 Cookie。输入不能声明其他用户身份。数据库与原文件仍位于项目自己的 `.filemind`，不操作 Yunxiu。
+`202610020002_knowledge_index.sql` 为文档增加状态、版本和索引代次，并建立 `document_chunks`、`chunk_embeddings`、`retrieval_runs`。三个新表启用 FORCE RLS；每次查询使用事务内的 `filemind.user_id`，应用身份来自服务端签名 Cookie。输入不能声明其他用户身份。数据库与原文件位于 FileMind 专用的 `.filemind` 目录。
 
 Chunk 保留原始提取文本、SHA-256、字符起止位置、页/行/段落范围、标题路径及 `chunk-v1`。目标约 800 tokens，上限 1000，长段约 100 tokens 重叠；这是中英文近似估计，并非模型 tokenizer。PDF 按实际页映射分段，不跨页；DOCX 保留段落并在同一标题下合并；Markdown 按标题、段落和句子拆分，跳过围栏内的假标题；TXT 保留行号。
 

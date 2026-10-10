@@ -118,6 +118,14 @@ npm run test:live
 
 基础架构：[AI Provider](docs/architecture/ai-provider.md)、[Persistence](docs/architecture/persistence.md)。历史验收：[Phase 1](docs/phase-checklists/phase-1.md)、[Phase 2](docs/phase-checklists/phase2.md)、[Phase 3](docs/phase-checklists/phase3.md)、[Phase 4](docs/phase-checklists/phase4.md)。阶段文档记录当时的功能和限制，当前状态以发布验收记录为准。
 
+## AI 辅助开发说明
+
+本项目使用 OpenAI Codex 辅助方案讨论、代码实现与修复、测试脚本，以及文档整理和改写。部分实现和修改由 AI 执行；Git 提交记录反映实际变更，不代表全部代码由项目负责人独立手写。
+
+项目负责人提出需求并确定开发范围。自动化测试、真实模型验收和人工检查按各自记录说明，不能将自动化检查等同于逐行人工审阅。后续个人发现的问题、亲自完成的修改和独立验证，应按实际完成情况记录，不补造开发过程。
+
+应用运行时的 Kimi、Kimi Vision 和 DashScope Embedding 与开发辅助工具分别说明。评测中的合成语料、同一 Agent 编制语料和共享模型判定限制保留在评测文档中。
+
 ## Git 提交约定
 
 按 [AGENTS.md](AGENTS.md) 保留可独立审阅的提交，验证后普通 Push；不 amend/squash/rebase，不提交凭据、依赖或临时验收文件。网络不可达时记录本地与远端的同步差异。
