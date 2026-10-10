@@ -1,26 +1,26 @@
-# FileMind AI Competition Technical Report
+# FileMind AI 技术报告
 
-> 24 页；2026-10-04；v1.0.0-rc.1；NOT READY。
+> 24 页；文案修订 2026-10-08；v1.0.0-rc.1；源码验收通过，提交材料待补齐。
 
 
 ## 第 1 页：FileMind AI
 
 *Competition Delivery / v1.0.0-rc.1*
 
-从分散的个人文件到可核对、可恢复的知识工作区。FileMind 将人工审阅的整理 Agent、文档与图像知识提取、Adaptive RAG 和逐句事实门连接在一个可搬运的 Windows 应用中。
+FileMind AI 整理个人文档和图片。Agent 提出分类与命名建议，用户审阅后保存；搜索和问答提供引用，便于打开原文或原图核对。应用可随 Windows 便携文件夹搬运。
 
-本报告记录截至 2026-10-04 的代码、实验与交付边界。版本是候选包编号，当前结论为 NOT READY：新的真实模型抽验未通过，线上主 Demo 与完整 preflight 尚未完成。
+报告依据 2026-10-04 的代码、实验和发布验收，文案修订于 2026-10-08。当前源码已通过真实 Conflict/Ambiguity、扁平 schema、完整主 Demo 和 12/12 preflight。旧 ZIP、视频和正式团队资料仍待更新。
 
-作者信息：仓库维护者 s0nggv0。正式队名、学校、成员姓名与分工未提供，提交前需要补齐。全文不把历史验收、脚本化模型响应或错误注入当作当前线上成功。
+仓库维护者为 s0nggv0。队名、学校、成员和分工留待填写。文中分别注明历史测试、脚本化响应和当前真实验收的范围。
 
 | 材料 | 范围 |
 | --- | --- |
-| 技术报告 | 24 页；保留可编辑 Markdown 和生成脚本 |
+| 技术报告 | 24 页；Markdown 与生成脚本一并保留 |
 | 比赛演示 | 6:10 视频稿、12 页答辩提纲、36 项 Q&A |
-| 真实模型预算 | 最多 6 次；已用满；停止新增调用 |
+| 真实模型预算 | 初次 6 次失败保留；后续定向验收 16/24 次 |
 
 
-证据与边界：仓库：github.com/s0nggv0/FileMind-AI；完整实验数据保存在 docs/evaluation。
+仓库：github.com/s0nggv0/FileMind-AI；完整实验数据保存在 docs/evaluation。
 
 
 ## 第 2 页：项目概览
@@ -29,9 +29,9 @@
 
 用户上传 PDF、DOCX、TXT、Markdown 和图片，在 Workspace 中启动整理。系统读取资料并给出分类、摘要、标签及命名建议；用户在 Review 修改或拒绝后，Apply 才写入工作区。Library 显示实际索引状态，Search 提供 Find 与 Ask，引用能够回到原文或原图。
 
-项目将“检索到了资料”和“能够发布答案”分开。Ask 在证据检查、生成、引用有效性与 claim 支持检查后才发布；不足时明确拒答，网络或 schema 失败时报告 unavailable。冲突保留双方来源，歧义先提出选择。
+Ask 检索资料后检查证据，再生成草稿并核对引用和 claim 支持。证据不足时拒答，网络或 schema 失败时返回 unavailable。来源冲突会列出双方，问题缺少限定时先请用户选择。
 
-Phase 9 以交付和缺陷修复为范围：没有更换模型、数据库、Embedding、chunk 参数、Router 或视觉系统。改动针对 Phase 8 暴露的冲突状态、澄清流程、数字验证边界以及比赛模式诚实性。
+Phase 9 修复了 Phase 8 暴露的冲突状态、澄清流程和数字校验问题，并整理交付材料。模型、数据库、Embedding、chunk 参数、Router 和视觉系统保持不变。
 
 | 核心任务 | 可审阅结果 |
 | --- | --- |
@@ -40,7 +40,7 @@ Phase 9 以交付和缺陷修复为范围：没有更换模型、数据库、Emb
 | 交付 | 候选运行包、恢复与备份、材料可核对 |
 
 
-证据与边界：最终标准由全部 release gates 决定，版本号本身不能证明验收通过。
+最终标准由全部 release gates 决定，版本号本身不能证明验收通过。
 
 
 ## 第 3 页：问题与用户需求
@@ -49,9 +49,9 @@ Phase 9 以交付和缺陷修复为范围：没有更换模型、数据库、Emb
 
 个人资料同时存在于文档、课堂板书、截图和临时笔记中。文件夹命名只能描述位置，不能告诉用户某个结论出现在哪里；图像中的文字和图示也难以直接搜索。用户需要保留原件并在回答时确认出处。
 
-第二个问题是自动化的控制权。模型可以提出整理方案，但错误命名、分类或清理会影响资料可发现性。项目因此把 Review 作为明确的执行边界；对于版本冲突，系统不根据文件新旧自行推定正确版本。
+错误命名、分类或清理会影响查找资料。模型因此先给出方案，用户在 Review 审阅，再决定是否执行。版本冲突也需要来源依据，文件较新本身不能证明内容正确。
 
-第三个问题是本地产品的可靠性：身份依赖浏览器状态，原件在文件系统、知识在数据库，搬运与崩溃都可能破坏一致性。恢复密钥、校验备份、操作 journal 和专用 Demo 身份组成已实现的保护措施。它们各有边界，并非完整账号系统或加密云盘。
+原件在文件系统，知识和身份在数据库，搬运与崩溃可能破坏两者的一致性。恢复密钥、校验备份和操作 journal 用于恢复，专用 Demo 身份用于隔离演示数据。当前没有完整账号系统，备份也没有加密。
 
 | 需求 | 验收关注 |
 | --- | --- |
@@ -61,28 +61,28 @@ Phase 9 以交付和缺陷修复为范围：没有更换模型、数据库、Emb
 | 能恢复 | 备份校验、身份恢复、启动修复 |
 
 
-证据与边界：目标用户场景是个人知识工作区；大型企业知识库性能与多人协同尚未验证。
+目标用户场景是个人知识工作区；大型企业知识库性能与多人协同尚未验证。
 
 
-## 第 4 页：范围与验收契约
+## 第 4 页：交付范围与验收
 
 *03 / Requirements*
 
-本阶段的产品约束是保留已有架构，修复可复现缺陷并提供可审阅的交付材料。五份用户原有未提交文档必须保留，根 README 不被覆盖；比赛说明单独维护在 docs/competition/README.md。
+本次交付沿用已有架构，处理可复现缺陷，并提供项目说明、演示脚本和技术报告。比赛材料集中在 docs/competition，原始评测与历史验收记录分别保存。
 
-比赛模式必须要求真实 AI，并禁用开发错误注入、状态预览以及本地 Mock 替代路径。缺少 Kimi 或 Embedding 时保留真实故障，不将降级结果标作线上 AI。普通用户数据与专用 Demo Reset 隔离。
+比赛模式要求真实 AI，关闭开发错误注入、状态预览和本地 Mock 替代路径。缺少 Kimi 或 Embedding 时显示故障。专用 Demo Reset 只处理登记的工作区，保留普通用户数据。
 
-Release gate 包含 build、TypeScript、lint、单元、浏览器、Demo、Recovery、Backup、Security 与 preflight。当前局部验收通过不能覆盖未完成的云端验收。每个失败或未执行项都保留证据类型和原因，Phase 8 盲测原始结果不回写。
+检查包括 build、TypeScript、lint、单元、浏览器、Demo、Recovery、Backup、Security 和 preflight。2026-10-04 的九项发布检查通过；Recovery 和 Backup 等历史结果另有记录。失败和未执行项保留原因，Phase 8 首次结果不回写。
 
-| 证据类型 | 能够证明 / 不能证明 |
+| 证据类型 | 验证范围 |
 | --- | --- |
-| 本地脚本化响应 | 状态管线与防护 / 真实语义准确率 |
-| 浏览器响应注入 | 交互与布局 / 云端生成成功 |
-| 真实历史 receipt | 当时的验收 / 当前候选包复验 |
-| 无密钥新环境 | 初始化与诚实失败 / READY |
+| 本地脚本化响应 | 指定状态与防护流程 |
+| 浏览器响应注入 | 交互与布局 |
+| 真实历史 receipt | 记录当时版本与运行结果 |
+| 无密钥新环境 | 初始化和服务缺失时的错误状态 |
 
 
-证据与边界：Phase 9 不自动进入 Phase 10；后续线上验收需要新的用户授权预算。
+真实模型准确率需单独评测，新增调用按各自预算记录。
 
 
 ## 第 5 页：产品与核心流程
@@ -93,7 +93,7 @@ Landing、Dashboard、Workspace、Library、Search、Graph、Cleanup 与 Setting
 
 答案状态由服务端结构化数据产生。answered 显示通过门控的答案，no_answer 显示不足说明，needs_clarification 显示问题和选项，conflicting 展示不同来源和值，error 对应服务不可用。界面保留等待、取消、重试和来源查看。
 
-澄清时不先显示一个未经选择的 AI Answer。用户点击选项后，服务端从当前身份可访问的已存 Search Run 解析文档范围，再检索和生成；客户端无法提交任意文档 ID 来扩大权限。保存后的选择状态可重新加载。
+澄清状态先显示选项。用户选择后，服务端从当前身份可访问的已存 Search Run 读取文档范围，再检索和生成。客户端只提交选项编号，不能借文档 ID 扩大权限。保存的选择可以重新加载。
 
 | 流程 | 控制点 |
 | --- | --- |
@@ -103,7 +103,7 @@ Landing、Dashboard、Workspace、Library、Search、Graph、Cleanup 与 Setting
 | Conflict -> Sources | 并列展示，不自动定夺 |
 
 
-证据与边界：五个状态是新运行时结果；旧保存结果通过可选字段兼容读取。
+五个状态是新运行时结果；旧保存结果通过可选字段兼容读取。
 
 
 ## 第 6 页：系统总体架构
@@ -114,22 +114,22 @@ Next.js、React 与 TypeScript 提供界面和服务路由。FileMind Agent 通�
 
 AI 层分别接入 Kimi 文本模型、Kimi Vision、Tesseract 本地 OCR 和 DashScope Embedding。PostgreSQL 持久化租户工作区与知识，PrivateFileStorage 保留原件，PortableVectorStore 使用本地持久化与扫描检索。安全边界贯穿人工确认、隔离、事实门和恢复。
 
-架构图描述已实现模块，不把预留 Provider 或未来可选后端画成在用能力。图中层间箭头是职责流向；实际操作仍需通过服务端鉴权、revision 与操作锁。
+架构图列出已实现模块，箭头表示模块间的处理关系。实际操作经过服务端鉴权、revision 检查和操作锁。
 
 ![系统架构](architecture.png)
 
-证据与边界：独立的一页 SVG / PNG 为同一架构，可用于 PPT 和提交材料。
+独立的一页 SVG / PNG 为同一架构，可用于 PPT 和提交材料。
 
 
 ## 第 7 页：FileMind Agent
 
 *06 / Agent Workflow*
 
-Agent 由规划、有限工具执行和 Review 构成。工具调用通过注册表和参数 schema 约束，执行具有进度、超时与恢复状态；方案校验失败会显示实际诊断，不能描述为成功的 LLM 规划。
+Agent 先规划，再调用有限工具，最后提交 Review。工具注册表和参数 schema 限制调用范围，界面显示进度、超时和恢复状态。方案校验失败时保留诊断信息。
 
-Review 是用户控制实际改动的边界。模型输出只形成建议；Apply 根据用户确认的结果更新 workspace，并与持久化 revision 校验结合。文件清理不在生成回答时自动发生，图谱与分类也不授予模型任意文件系统访问。
+模型输出形成建议，Apply 按用户确认的方案更新 workspace，并检查持久化 revision。生成回答不会触发文件清理，模型也没有任意文件系统访问权限。
 
-Competition Mode 禁止执行已保存的实验 Mock run，也禁止 continueLocally 将 Mock 组织冒充真实 AI。网络故障时界面报告 Cloud AI provider unavailable；用户仍能查看此前保存和本地可用的真实资料。
+Competition Mode 拒绝执行已保存的实验 Mock run，并禁用 continueLocally 的 Mock 组织路径。网络故障时显示 Cloud AI provider unavailable，此前保存的资料和本地功能仍可查看。
 
 | 阶段 | 结果与约束 |
 | --- | --- |
@@ -139,7 +139,7 @@ Competition Mode 禁止执行已保存的实验 Mock run，也禁止 continueLoc
 | Apply | 确认后执行、revision 与持久化 |
 
 
-证据与边界：工具执行与人审边界是控制风险的设计，不保证模型方案总是正确。
+工具执行与人审边界是控制风险的设计，不保证模型方案总是正确。
 
 
 ## 第 8 页：Document Pipeline
@@ -160,7 +160,7 @@ chunk-v1 的目标长度为 800 tokens，最大 1000，重叠 100。Embedding �
 | Index build | 准备与发布分开、版本核对 |
 
 
-证据与边界：复杂扫描 PDF、手写识别及大规模容量仍是产品限制，不能仅凭简短 fixtures 宣称通用能力。
+复杂扫描 PDF、手写识别及大规模容量仍是产品限制，不能仅凭简短 fixtures 宣称通用能力。
 
 
 ## 第 9 页：RAG 与事实发布门
@@ -171,7 +171,7 @@ Ask 先获取当前租户证据，EvidenceSufficiencyEvaluator 判断是否具�
 
 AnswerVerifier 提取 claims，检查每个 claim 的 citation、证据支持、数字一致性及冲突披露。发布后的文本才进入界面，不流式展示尚未通过验证的草稿；必要修正有界，失败结果不会记作正确答案。
 
-Phase 9 在多文档、非 Mock 回答前新增结构化上下文检查，识别来源差异和实体歧义。它增加一个真实模型调用，依赖 schema 兼容性。六次线上尝试均无有效结构化对象，随后采用扁平 wire schema，但这项兼容修复尚未做线上复验。
+多文档、非 Mock 回答前还会调用模型检查来源差异和实体歧义。首次六次尝试未返回有效结构化对象；改为扁平 wire schema 后，真实 Conflict/Ambiguity 样本和完整主 Demo 均通过。原失败记录与后续验收分别保留。
 
 | 顺序 | 检查 |
 | --- | --- |
@@ -181,7 +181,7 @@ Phase 9 在多文档、非 Mock 回答前新增结构化上下文检查，识别
 | Publish | 已核对答案或明确未发布状态 |
 
 
-证据与边界：同一 Kimi 家族参与生成与自动判定可能产生相关误差，需要人工与独立评估补充。
+同一 Kimi 家族参与生成与自动判定可能产生相关误差，需要人工与独立评估补充。
 
 
 ## 第 10 页：Multimodal Knowledge
@@ -190,9 +190,9 @@ Phase 9 在多文档、非 Mock 回答前新增结构化上下文检查，识别
 
 图片进入两个互补路径：Tesseract 从本地打包语言数据提取可见文字；Kimi Vision 给出图示理解。OCR 转录和 AI interpretation 在 schema 与界面中区分，图像 citation 回到原图以便核对。
 
-OCR 不需要在线下载语言数据，Worker、WASM 与 eng / chi_sim 随可搬运包携带。Vision 仍要求真实云凭据与已有验证 marker。若只有 OCR 成功，界面不能宣称理解了图形；若只有 Vision 成功，不能宣称得到准确转录。
+Worker、WASM 与 eng / chi_sim 随便携包携带，OCR 无需在线下载语言数据。Vision 需要云凭据和验证 marker。只有 OCR 成功时提供提取文字；只有 Vision 成功时提供模型解释，两者的来源标签不同。
 
-Phase 8 首次盲测包含 18 张图像、37 道图像相关题，首次 OCR 与 Vision 状态均 ready，图像 Hit@5 为 100%。这只描述该原创合成数据集。Phase 9 新环境真实本地 OCR 通过，未在六次预算之外增加 Vision 调用。
+Phase 8 首次盲测包含 18 张图像、37 道图像相关题，OCR 与 Vision 状态均 ready，图像 Hit@5 为 100%。这些结果来自原创合成数据。新环境本地 OCR 和后续真实主 Demo 的图片引用分别有验收记录。
 
 | 路径 | 证据边界 |
 | --- | --- |
@@ -202,14 +202,14 @@ Phase 8 首次盲测包含 18 张图像、37 道图像相关题，首次 OCR 与
 | Unavailable | 保留原件，不造图像知识 |
 
 
-证据与边界：手写、密集图表、照片反光及解释可靠性仍需在真实用户资料上验证。
+手写、密集图表、照片反光及解释可靠性仍需在真实用户资料上验证。
 
 
 ## 第 11 页：Adaptive Retrieval
 
 *10 / Deterministic Routing*
 
-Router 根据查询结构决定 VECTOR_ONLY、VECTOR_WITH_LEXICAL_BOOST 或 FILENAME_SEARCH。标识符、代码、文件名和关键词具有不同检索需求，使用确定性规则便于追踪，而不是让模型自由改写排名策略。
+Router 根据查询结构选择 VECTOR_ONLY、VECTOR_WITH_LEXICAL_BOOST 或 FILENAME_SEARCH。标识符、代码、文件名和关键词使用不同规则，日志记录实际选择，方便复核排名来源。
 
 Vector 与 lexical top K 均为 20，RRF K 为 60，候选最多 15、证据最多 7。自然语言查询优先保留向量排序；Phase 6 的实验发现始终混合与标题重排会损害部分自然语言题，因此 Phase 7 默认关闭 reranker。
 
@@ -223,7 +223,7 @@ Phase 9 保持 chunker、Router、query analyzer、tokenization、ranking、vect
 | 日志 | 记录实际 route，不宣称策略万能 |
 
 
-证据与边界：选择后证据限制在原保存选项内，但仍受现有 top K 覆盖限制。
+选择后证据限制在原保存选项内，但仍受现有 top K 覆盖限制。
 
 
 ## 第 12 页：Phase 6 实验与选择
@@ -232,9 +232,9 @@ Phase 9 保持 chunker、Router、query analyzer、tokenization、ranking、vect
 
 Phase 6 使用 72 份资料、144 个问题，其中 120 题有来源、24 题无答案。实际查询 Embedding 与不同检索策略比较保留原始失败案例，图片与引用结果仅覆盖有限生成子集。
 
-Vector Hit@1 为 0.9417，Always Hybrid RRF 为 0.7333，加 reranker 为 0.7000。这说明某些词法匹配与标题权重干扰了语义排序，不能假设更多步骤总是更好。系统保留向量优先，并为明确结构性查询提供词法增益。
+Vector Hit@1 为 0.9417，Always Hybrid RRF 为 0.7333，加 reranker 为 0.7000。该样本中，部分词法匹配和标题权重干扰了语义排序，因此后续保留向量优先，只对明确的结构性查询增加词法匹配。
 
-该阶段无答案正确为 22/24，两个错误 none-20 与 none-23 未删除。它是开发数据，不可当独立验收；后续阶段单独保留两题拒答回归，而非修改原 Phase 6 成绩。
+无答案正确数为 22/24，错误 none-20 与 none-23 保留在开发结果中。后续阶段对这两题单独做拒答回归，原 Phase 6 成绩保持不变。
 
 | 策略 | Hit@1 / Hit@5 / MRR |
 | --- | --- |
@@ -244,7 +244,7 @@ Vector Hit@1 为 0.9417，Always Hybrid RRF 为 0.7333，加 reranker 为 0.7000
 | 无答案 | 22 / 24；两项失败保留 |
 
 
-证据与边界：来源：docs/evaluation/rag-hard-results.json。不同阶段数据不可视为同一测试集上的进步曲线。
+来源：docs/evaluation/rag-hard-results.json。不同阶段数据不可视为同一测试集上的进步曲线。
 
 
 ## 第 13 页：Phase 7 独立 Holdout
@@ -253,7 +253,7 @@ Vector Hit@1 为 0.9417，Always Hybrid RRF 为 0.7333，加 reranker 为 0.7000
 
 Phase 7 新建 50 份资料、100 个问题，不重复 Phase 6 内容，包含 92 道有来源题与 8 道无答案题。Adaptive 检索对 query 特征采取确定性路由，并与 Always Hybrid 比较。
 
-Adaptive Hit@1 / Hit@5 / MRR 为 .9674 / 1 / .9837，Always Hybrid 为 .9674 / 1 / .9819。数值差异较小，没有统计显著性或大规模真实资料证明；该结果支持保留简单可解释路径，不支持宣称普遍优于所有混合检索。
+Adaptive Hit@1 / Hit@5 / MRR 为 .9674 / 1 / .9837，Always Hybrid 为 .9674 / 1 / .9819。差异较小，未做统计显著性检验，也缺少大规模真实资料验证；当前保留较简单的路由实现。
 
 每种策略的生成只覆盖 8 张图片与 8 道无答案题，不能推广到所有 100 题的生成质量。无答案 8/8，Phase 6 两题单独回归也保留。新内容降低开发记忆风险，但合成短文仍可能比真实复杂文件更容易。
 
@@ -265,7 +265,7 @@ Adaptive Hit@1 / Hit@5 / MRR 为 .9674 / 1 / .9837，Always Hybrid 为 .9674 / 1
 | 生成范围 | 每策略：8 图片 + 8 无答案 |
 
 
-证据与边界：来源：rag-holdout-results.json 与 phase6-refusal-regression.json。
+来源：rag-holdout-results.json 与 phase6-refusal-regression.json。
 
 
 ## 第 14 页：Phase 8 首轮盲测
@@ -287,7 +287,7 @@ Adaptive 检索 Hit@1 / Hit@5 / MRR 为 1 / 1 / 1，Recall@10 与 nDCG@10 均 1�
 | Unavailable | 10 / 180 |
 
 
-证据与边界：来源：rag-blind-run1-results.json、rag-blind-run1.jsonl 与 phase8-blind-analysis.json。
+来源：rag-blind-run1-results.json、rag-blind-run1.jsonl 与 phase8-blind-analysis.json。
 
 
 ## 第 15 页：Phase 9 专项修复
@@ -298,17 +298,17 @@ B129、B131、B132、B135 的文字、gold facts 和双方 citation 通过，但
 
 B130 数字验证将日期后的英文单词首字母误认为单位；Latin 单位增加边界，保留中文单位邻接。B133 有相关检索却没有引用与 verifier attempts，确认发生生成拒答，但原 trace 无原始草稿，无法断言更细原因。已知差异允许一次有界重生成。
 
-本地新增 10 个冲突、10 个歧义及其选择后回答场景，并包含 stale / foreign ID、短但明确问题和数字负例。它们使用脚本化语义响应验证管线。六次真实请求均 HTTP 200 但 schema 无效；后续扁平 wire schema 未复验，不发布新的准确率。
+本地新增 10 个冲突、10 个歧义及选择后回答场景，覆盖 stale / foreign ID、短而明确的问题和数字负例。脚本化响应验证了指定流程。初次六次真实请求均 HTTP 200 但 schema 无效；后续扁平格式的真实样本通过，定向预算累计 16/24 次，包含失败。整体准确率未重测。
 
-| 验收 | 结果 / 解释 |
+| 验收 | 结果 / 范围 |
 | --- | --- |
-| 冲突 10 / 歧义 10 | 本地通过，非真实语义准确率 |
+| 冲突 10 / 歧义 10 | 脚本化响应，本地流程通过 |
 | 浏览器选择 / citation | 390 / 1440 宽交互通过 |
-| 真实 Kimi | 6 次，无有效样本；预算停止 |
-| False refusal | 局部缺陷改善；总率未重测 |
+| 真实 Kimi | 初次 6 次失败；后续定向样本通过 |
+| False refusal | 局部修复，整体比例未重测 |
 
 
-证据与边界：来源：phase9-targeted-regression.md、phase9-kimi-attempt1.json、phase9-kimi-samples.json。
+来源：phase9-targeted-regression.md、phase9-kimi-attempt1.json、phase9-kimi-samples.json、release-provider.json。
 
 
 ## 第 16 页：AI Safety 与攻击边界
@@ -319,7 +319,7 @@ B130 数字验证将日期后的英文单词首字母误认为单位；Latin 单
 
 引用验证重新读取当前数据库，检查文档、chunk、revision 与引用位置；逐句 claim 检查减少无来源断言，数字 guard 阻止未获支持的数量。若检查失败，答案不发布或经过唯一的有界修正。对 conflicting 内容必须保留双方来源和差异。
 
-模型判定本身有相关误差，特别是同一模型家族同时参与生成和验证。系统把结构化校验、租户来源核对与人工可查看原文结合，但并不能将自动 judge 变成客观真值。对于高风险内容仍需要人工阅读原件。
+同一模型家族参与生成和验证时，错误可能相关。结构校验和租户来源核对之外，界面保留原文入口，便于人工检查。高风险内容仍需要阅读原件，自动 judge 不能替代独立评价。
 
 | 威胁 | 现有防护 |
 | --- | --- |
@@ -329,7 +329,7 @@ B130 数字验证将日期后的英文单词首字母误认为单位；Latin 单
 | 错误文件操作 | Review 与确认、受限工具 |
 
 
-证据与边界：安全设计减少风险；最终答案门不能替代独立人工质量评估。
+安全设计减少风险；最终答案门不能替代独立人工质量评估。
 
 
 ## 第 17 页：Frontend Polish 与无障碍
@@ -340,7 +340,7 @@ B130 数字验证将日期后的英文单词首字母误认为单位；Latin 单
 
 Competition 浏览器矩阵覆盖 8 个页面，在 390、1280、1440、1920 四种宽度检查横向溢出、开发文案和 About 信息。另两项测试覆盖 390 / 1440 的澄清、选择、冲突来源抽屉及保存回载。响应是明确注入的交互 fixtures，不作为真实生成证据。
 
-已有浏览器回归 17/17，新 Competition 测试 3/3，矩阵包含 32 个页面和视口组合。关键页面截图与本地 detector 一次检查通过。后续 UI freeze 只允许缺陷、文案、响应式及无障碍修正。
+基础浏览器回归 17/17，Competition 测试 3/3，矩阵覆盖 32 个页面与视口组合。关键页面截图和本地 detector 检查通过。发布期保留现有界面，只处理缺陷、文案、响应式和无障碍问题。
 
 | 范围 | 验证 |
 | --- | --- |
@@ -350,7 +350,7 @@ Competition 浏览器矩阵覆盖 8 个页面，在 390、1280、1440、1920 四
 | About | Version / Commit / Build Date |
 
 
-证据与边界：屏幕阅读器的全面人工审核尚未完成；浏览器可见性检查不等同全部 WCAG 合规。
+屏幕阅读器的全面人工审核尚未完成；浏览器可见性检查不等同全部 WCAG 合规。
 
 
 ## 第 18 页：数据、身份与备份
@@ -371,7 +371,7 @@ PostgreSQL 存储工作区、文档、索引与运行记录。应用使用受限
 | Demo Reset | 服务端登记与范围确认 |
 
 
-证据与边界：Recovery 是身份恢复，Backup 是资料可迁移性；两者不能混同，也不能公开真实密钥。
+Recovery 是身份恢复，Backup 是资料可迁移性；两者不能混同，也不能公开真实密钥。
 
 
 ## 第 19 页：可靠性与本地搬运
@@ -392,18 +392,18 @@ PostgreSQL 存储工作区、文档、索引与运行记录。应用使用受限
 | OCR / Preflight | 本地 OCR 真运行；7 / 12 NOT READY |
 
 
-证据与边界：实际解压包的启动验收另有独立 receipt；无凭据环境不能证明所有现场条件。
+实际解压包的启动验收另有独立 receipt；无凭据环境不能证明所有现场条件。
 
 
 ## 第 20 页：隐私、密钥与依赖
 
 *19 / Security Audit*
 
-Git history scan 遍历所有本地 refs 的对象，按真实已配置密钥值与 credential patterns 检查 blob，只输出路径、对象与 fingerprint，不输出密钥。首轮 940 blobs / 1736 objects 零命中；新增交付提交后重新扫描。该工具不能理解所有语义私人内容。
+历史扫描按已配置凭据和常见 credential patterns 检查所有本地 refs 的 blob，输出路径、对象与 fingerprint，隐藏密钥原文。Phase 9 首次扫描为 940 blobs / 1736 objects，零命中；最终提交又有独立扫描记录。语义私人内容仍需人工检查。
 
-公开包使用允许列表，排除 .env.local、现有数据库、存储、recovery keys、日志与下载缓存。原件只来自原创 synthetic fixtures，交付材料不包含私人用户截图。保留原五份用户未提交文档，避免误推入比赛提交。
+便携包按允许列表收集文件，排除 .env.local、现有数据库、用户存储、recovery keys、日志和下载缓存。演示原件均为原创 synthetic fixtures，截图使用测试资料。
 
-npm audit 的 production 依赖为零 advisories。完整 audit 有 5 个 High，来自 ESLint 开发链到 braces 的同一安全问题，当前 registry braces 最新 3.0.3 尚无修复版。没有为了隐藏告警降级 Next ESLint 大版本，也未在冻结期广泛升级依赖。
+保存的 npm audit 结果中，production 依赖为零 advisories，完整依赖有 5 个 High，来自 ESLint 开发链到 braces 的同一问题。验收时 registry 的 braces 版本为 3.0.3，尚无修复版。冻结期未降级 Next ESLint 大版本或广泛升级依赖。
 
 | 审计 | 结果 / 边界 |
 | --- | --- |
@@ -413,18 +413,18 @@ npm audit 的 production 依赖为零 advisories。完整 audit 有 5 个 High�
 | 许可证 | 599 包有记录；源代码 MIT |
 
 
-证据与边界：来源：phase9-secret-scan.json、phase9-dependency-licenses.json、phase9-dependency-audit.md。
+来源：phase9-secret-scan.json、phase9-dependency-licenses.json、phase9-dependency-audit.md。
 
 
 ## 第 21 页：四项设计贡献
 
 *20 / Contribution*
 
-第一，受人审控制的 FileMind Agent 把建议和执行分离，并将工具校验、revision 与恢复连接到具体文件组织流程。贡献是产品级控制流程，不声称发明了 Agent 或模型工具调用。
+FileMind Agent 将建议和执行分开，工具校验、revision 与恢复都用于具体的文件整理过程。设计重点是用户能够审阅和确认实际改动。
 
-第二，Multimodal Knowledge 同时保留 OCR 转录、Vision interpretation 与原图来源。第三，Adaptive Retrieval 根据开发与 holdout 的失败证据选择可解释路由，保留向量排序，并在明确结构性查询时增加词法路径。
+多模态索引保留 OCR 转录、Vision interpretation 和原图。检索路由依据开发与 holdout 的实验结果保留向量排序，并在明确的结构性查询中加入词法匹配。
 
-第四，逐句事实发布门结合真实来源校验、支持检查、数值 guard 与冲突披露。Phase 8 保留高检索与低冲突/澄清之间的差距，Phase 9 将它转化为明确状态修复和透明未完成验收。贡献是可核对的工程组合，不能用条件性 100% 取代整体正确率。
+答案发布前结合来源、事实支持、数值和冲突检查。Phase 8 暴露了检索成绩与冲突、澄清表现之间的差距，Phase 9 据此修复状态处理并做定向验收。已发布答案的条件指标仍与整体正确率分开统计。
 
 | 贡献 | 可展示证据 |
 | --- | --- |
@@ -434,7 +434,7 @@ npm audit 的 production 依赖为零 advisories。完整 audit 有 5 个 High�
 | 事实门 | 拒绝报告、claim 和冲突来源 |
 
 
-证据与边界：项目创新陈述限定在已实现组合与实验认识；没有未经核查的竞品领先结论。
+项目创新陈述限定在已实现组合与实验认识；没有未经核查的竞品领先结论。
 
 
 ## 第 22 页：部署与比赛 Demo
@@ -445,38 +445,38 @@ npm audit 的 production 依赖为零 advisories。完整 audit 有 5 个 High�
 
 主资料保持 Phase 8 原有 10 份 fixture 中的推荐 8 份；重复笔记是另 2 份可选资料。主线为上传、Agent、Review、Apply、Library、QKV Ask、引用、图片、Graph 与清理。原资料没有 BERT，追问必须如实不足；不能凭常识伪造引用。
 
-Plan A 是真实云端 Demo，当前还未取得新构建全程通过证据。Plan B 展示已保存资料、Find、原文、Local OCR、Graph、Backup 和 Recovery，同时清楚告知 Cloud AI provider unavailable。视频稿目标 6:10，实际录制待完成。
+2026-10-04 的真实主 Demo 完成八份资料的全链路，约 84 秒，Planner 无回退。故障时使用 Plan B 展示保存资料、Find、原文、Local OCR、Graph、Backup 和 Recovery，并说明 Cloud AI provider unavailable。视频稿目标 6:10，尚待录制；现有 ZIP 也需重新打包。
 
 | 材料 | 状态 |
 | --- | --- |
-| 主 fixture | 10 总数 / 8 推荐，未改原数据 |
-| Preflight | 目标 12 / 12；当前新环境 7 / 12 |
+| 主 fixture | 10 总数 / 8 推荐，保留原数据 |
+| Preflight | 在线 12/12；无凭据新环境 7/12 |
 | 视频 / PPT | 6:10 脚本；12 页提纲 |
-| 备用计划 | 流程具备；当前在线能力未验收 |
+| 备用流程 | 使用保存资料和本地功能 |
 
 
-证据与边界：预存答案须说明历史生成时间，Mock 不可用作 Plan B 的真实 AI 演示。
+展示预存答案时注明生成时间，Mock 结果单独标记。
 
 
 ## 第 23 页：限制与后续验证
 
 *22 / Limitations*
 
-最直接的交付限制是上下文结构化调用尚未得到有效线上对象。六次响应均 HTTP 200，但 schema 校验失败；扁平 wire 兼容调整在预算耗尽后只做本地检查。需要新授权后少量真实冲突与歧义验收，不能以本地 fixtures 报告模型正确率。
+初次六次上下文调用均 HTTP 200，但未通过 schema。扁平格式在后续真实样本和主 Demo 中通过；该定向验收使用 16/24 次独立预算，包含失败尝试。备用 deadline 场景的完整线上 UI 和新的 20 问整体回归不在此次验收范围内。
 
 评测主体为短原创合成数据，真实用户长文、多人权限、大规模向量扫描、复杂手写和密集图表尚未验证。生成与验证共享模型家族，自动 judge 会有相关误差；全局 false-refusal 改善没有新测量。
 
-正式视频、团队资料、公开仓库提交时可见性、当前完整在线 main Demo 与 backup queries，以及 12/12 preflight 仍是提交前事项。开发依赖 High 告警持续披露，备份无加密与恢复密钥风险需要用户保管意识。后续工作需阶段授权，本报告不启动 Phase 10。
+提交前需完成视频、团队资料和当前版本 ZIP，并复验拟演示的备用问题。仓库当前为私有，需按比赛要求确认可见性。现场重新运行 12/12 preflight；开发依赖 High 告警、未加密备份和恢复密钥的保管要求继续保留。
 
-| 未完成 gate | 所需真实证据 |
+| 待办 | 检查内容 |
 | --- | --- |
-| Context wire | 当前版本真实结构化样本 |
-| Main Demo / backup Ask | 完整彩排与原始 receipt |
-| Preflight | 现场 12 / 12 READY |
-| 提交内容 | 正式视频、团队信息与链接 |
+| 便携 ZIP | 重新打包当前构建并验证 |
+| 备用 Ask | 逐项复验，保留实际结果 |
+| Preflight | 现场 12/12 READY |
+| 提交材料 | 视频、团队信息和链接 |
 
 
-证据与边界：这些限制保留在 README、Q&A 和 submission checklist，避免材料之间互相矛盾。
+README、Q&A 和提交检查表列出同一组剩余事项。
 
 
 ## 第 24 页：验收结果与索引
@@ -485,16 +485,16 @@ Plan A 是真实云端 Demo，当前还未取得新构建全程通过证据。Pl
 
 单元 106/106、已有浏览器 17/17、新 Competition 测试 3/3 均通过。生产 build、TypeScript 和 lint 通过；最终 receipt 绑定执行代码与构建 metadata。新环境 reset 5/5、Recovery、Backup integrity 和真实 local OCR 通过。
 
-新真实 Kimi 验收没有通过：六次预算用满、有效样本为零；扁平 wire 调整未线上复验。主 Demo 仅保留 Phase 8 历史通过，不计当前 candidate 通过。新无密钥 preflight 7/12，明确 NOT READY。综上尚未达到全部 Competition Release Candidate 标准。
+最初六次 Kimi 调用失败，记录保持不变。后续真实 Conflict/Ambiguity、扁平 wire、八份资料主 Demo 和在线 12/12 检查通过，构建对应 f43575d。无凭据新环境的 7/12 NOT READY 验证了缺少服务时的提示，是另一项测试。源码验收完成，比赛提交材料尚待补齐。
 
-复核入口：phase9-targeted-regression.md 解释修复；kimi 两份 JSON 保留失败；clean-environment 与 portable-release 保存新环境证据；dependency、secret-scan、freeze 和 final-checks 保存交付边界。Git 保留分段提交与普通 push，不重写历史。
+专项修复见 phase9-targeted-regression.md，首次失败见 kimi 两份 JSON；当前真实样本、主 Demo 和九项检查分别见 release-provider.json、release-main-demo.json、release-freeze.json。新环境、恢复、依赖和密钥另有记录。Git 使用分段提交和普通 push，保留历史。
 
 | 检查组 | 结论 |
 | --- | --- |
-| 代码与本地交互 | 通过，范围有明确标签 |
-| 资料恢复与无凭据运行 | 通过，未声称在线就绪 |
-| 真实模型 / 完整 Demo | 未通过或未复验 |
-| 最终 Competition RC | NOT READY；Phase 9 停止于当前预算 |
+| 代码与本地交互 | 通过，各项注明范围 |
+| 资料恢复与无凭据运行 | 通过，对应独立记录 |
+| 真实模型 / 完整 Demo | 定向样本与完整主链路通过 |
+| 比赛提交 | 待视频、团队资料与新 ZIP |
 
 
-证据与边界：报告数据只引用保存证据；未运行项不使用通过标记。
+未执行项保留待办状态，旧失败记录与当前验收分别引用。
