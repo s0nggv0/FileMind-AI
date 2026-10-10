@@ -1,10 +1,12 @@
 # FileMind AI
 
-FileMind AI 用来整理学习和研究资料。导入 PDF、Word、笔记和图片后，Agent 提出分类、标签与命名建议，用户审阅后再保存。查资料时可以搜索正文、提问，并通过引用打开原文或原图。
+FileMind AI 用来整理学习和研究资料。导入 PDF、Word、笔记和图片后，AI 整理助手提出分类、标签与命名建议，用户审阅后再保存。查资料时可以搜索正文、直接提问，并点击引用打开原文或原图。
 
 项目使用 Next.js 16.3.8、React 19.3.0、TypeScript strict、Tailwind、shadcn/ui、Framer Motion 和 Zustand。服务端通过 AI SDK 7、Kimi 适配器和 Zod 处理模型调用；PostgreSQL 保存工作区和索引，私有文件目录保存原件。图片由 Kimi Vision 和本地 OCR 分别处理，DashScope 提供独立 Embedding。
 
 2026-10-04 的真实验收通过了 Conflict、Ambiguity、扁平 schema 和八份资料的完整 Demo，`demo:check` 为 12/12。构建、类型检查、lint、106 个单元测试及浏览器检查也已通过。完整结果见 [发布验收记录](docs/competition/release-freeze.md)，项目介绍和演示材料见 [比赛说明](docs/competition/README.md)。这些记录反映验收当天的结果，演示前仍需检查服务状态；旧 ZIP 尚未重新打包。
+
+2026-10-10 完成主要界面中文化，并整理工作区保存和重试代码。后续检查通过 108 项单元测试和 17 项浏览器回归，未重新调用真实模型。改动与验证范围见[开发整理记录](docs/competition/development-notes.md)。
 
 ## 已准备好的本地文件夹：直接运行
 
@@ -23,7 +25,7 @@ npm ci
 npm run dev
 ```
 
-没有 `.env.local` 时直接运行 Local-only Demo：不上传文件，规则分析与人工审核可用，刷新清空 Session。默认 AI_ENGINE=mock。配置 PostgreSQL 并执行迁移后，Mock Engine 也支持原文件、正文、Run、Proposal 持久化与恢复。
+没有 `.env.local` 时，文件仅保留在浏览器中，可使用本地规则整理并审阅方案，刷新后清空当前会话。默认 AI_ENGINE=mock。配置 PostgreSQL 并执行迁移后，模拟引擎也能保存和恢复原文件、正文、执行记录及整理方案。
 
 ## 环境配置
 
@@ -57,7 +59,7 @@ npm run dev
 4. 配置固定 WORKSPACE_SESSION_SECRET，重启服务。每个浏览器使用服务器签发的独立身份；清 Cookie 或换浏览器后，需要恢复密钥才能找回原身份。当前没有 OAuth。
 5. 先用 AI_ENGINE=mock 检查上传、保存和刷新，确认持久化后再启用 LLM。
 
-原文件由同源安全上传 API 写入服务端私有目录。路径是 userId/workspaceId/documentId/original.ext，禁止覆盖既有原文件。PDF/DOCX 仍在浏览器解析；正文进入 PostgreSQL，真实 AI 将有界提取文本发送给 Kimi。UI 区分 Local-only Demo 和 Persistent workspace。
+原文件通过同源上传接口写入服务端私有目录，路径是 userId/workspaceId/documentId/original.ext，禁止覆盖已有原件。PDF/DOCX 在浏览器解析，正文保存到 PostgreSQL；真实 AI 模式向 Kimi 发送长度受限的提取文本。页面分别标明仅本地演示和可保存工作区。
 
 完整操作说明：[PostgreSQL + Kimi 配置](docs/setup/postgresql-kimi.md)。部署需要可持久写入的磁盘 / Volume，并同时备份数据库和文件目录；临时文件系统的部署需另行接入对象存储。
 
@@ -65,7 +67,7 @@ npm run dev
 
 填入 KIMI_API_KEY、AI_ENGINE=llm、AI_PROVIDER=kimi、AI_MODEL=kimi-k2.6，重启 `npm run dev`。AI_SMALL_MODEL 留空复用主模型。当前适配只支持 kimi-k2.6 的非思考模式；其他型号需要匹配各自的参数，未经适配会明确报配置错误。至少需要已迁移的 PostgreSQL 数据库。
 
-上传后，系统先在本地解析并保存原件，再通过 Planner 和限定工具分析资料，生成组织方案。Review 支持修改、拒绝建议和自动保存，确认 Apply 后写入工作区。普通模式下，模型故障可退回 basic local organization；比赛模式显示服务不可用。两种情况下都保留原件，模型不能自行 Apply 或删除资料。
+上传后，系统先解析并保存原件，再由规划器调用限定工具分析资料，生成整理方案。审阅时可以修改或拒绝建议，改动会自动保存；确认应用后才写入工作区。普通模式遇到模型故障时，可选择本地规则继续整理；比赛模式显示服务不可用。原件始终保留，模型不能自行应用方案或删除资料。
 
 ## 检查与验收
 
@@ -77,7 +79,7 @@ npm run build
 npm run test:e2e
 ```
 
-领域测试包含普通 PostgreSQL WASM 迁移、真实仓库与 FORCE RLS、事务与跨用户拒绝、私有文件落盘、Kimi 请求格式 / 流式输出 fixture，以及 Schema / Injection Boundary / 重试 / 降级。生产浏览器测试使用独立 3074 端口，每次启动当前构建，不复用旧服务器；测试接口 fixture 不请求收费 Provider。
+单元测试覆盖 PostgreSQL WASM 迁移、仓库与 FORCE RLS、事务和跨用户拒绝、私有文件写入、Kimi 请求格式及流式响应，以及结构校验、不可信资料边界、重试和降级。浏览器测试在独立的 3074 端口启动当前生产构建，使用预设接口响应，不请求收费模型。
 
 准备好本地便携运行环境后，还可运行不收费的实际数据库验收：
 
@@ -86,7 +88,7 @@ npm run test:portable
 npm run test:portable:copy
 ```
 
-前者使用真实本机 PostgreSQL 和四种文件检查审核、保存、刷新、Apply、Library、原文件哈希与跨用户隔离；后者在项目 artifacts 内复制到中文/空格目录，验证重定位、数据恢复、两份同时运行及数据库隔离。两者使用合成资料与 Mock，完成后清理自己的测试记录并停止服务。运行前先停止当前 FileMind。
+前者使用真实本机 PostgreSQL 和四种文件，检查审阅、保存、刷新、应用方案、资料库、原件哈希与跨用户隔离；后者在项目 artifacts 内复制到中文和空格目录，检查路径重定位、数据恢复、两份副本同时运行及数据库隔离。两项均使用合成资料和模拟引擎，结束后清理自己的测试记录并停止服务。运行前先停止当前 FileMind。
 
 配置 Kimi Key 后，可运行收费模型验收：
 
@@ -94,7 +96,7 @@ npm run test:portable:copy
 npm run test:live
 ```
 
-此命令在 3075 启动开发服务，上传四份合成 Fixtures：Transformer Notes.pdf、NLP Lecture.md、final2.docx、research.txt，执行真实 Kimi、修改审核、刷新、Apply、Library 与无权限访问检查。它会调用收费模型并留下测试 Workspace。运行前先启动数据库，并在开发服务配置 AI_ENGINE=llm；便携启动自动选引擎的逻辑不适用于 npm run dev。当前八份资料主 Demo 的验收另见发布记录。Windows 默认使用已安装 Edge；其他系统安装 Playwright Chromium，或配置 PLAYWRIGHT_BROWSER_EXECUTABLE。
+此命令在 3075 启动开发服务，上传四份合成资料：Transformer Notes.pdf、NLP Lecture.md、final2.docx、research.txt，调用真实 Kimi，并检查方案修改、刷新、应用、资料库与无权限访问。它会产生模型费用并留下测试工作区。运行前先启动数据库，在开发服务中配置 AI_ENGINE=llm；便携启动自动选择引擎的逻辑不适用于 npm run dev。八份资料主 Demo 的验收见发布记录。Windows 默认使用已安装的 Edge；其他系统安装 Playwright Chromium，或配置 PLAYWRIGHT_BROWSER_EXECUTABLE。
 
 `predev` / `prebuild` 准备同源 PDF Worker/CMaps/字体/Wasm，避免第三方 CDN。`npm run build` 输出 standalone，postbuild 复制 public/static 并将依赖符号链接转换成真实文件，支持搬移目录。当前本地生产运行用便携启动程序；外部部署使用 `.next/standalone/server.js` 并设置运行时环境。已有 lockfile 的开发环境用 npm ci。
 
@@ -103,18 +105,18 @@ npm run test:live
 | 路由 | 当前行为 |
 | --- | --- |
 | / | 产品介绍与交互演示 |
-| /dashboard | 真实保存统计、Recent Workspaces、公开活动；空数据展示 Empty State；示例和 Demo Insights 显式展开 |
-| /workspace | 新 Workspace 或现有本地演示 |
-| /workspace?workspace=UUID | 按当前 Demo 用户从服务器恢复；Interrupted 明确提示 Resume |
-| /library | 已保存基础详情与当前 Session，预置示例可切换 |
+| /dashboard | 已保存资料的统计、最近工作区和活动；无数据时显示空状态，示例需主动展开 |
+| /workspace | 新建工作区或本地演示 |
+| /workspace?workspace=UUID | 按当前浏览器身份恢复工作区，执行中断时提示继续分析 |
+| /library | 已保存资料与当前会话的详情，可切换到预置示例 |
 | /graph | 已保存文档关系与共享概念 |
-| /search | Find 检索资料；Ask 生成经过来源与事实校验的回答 |
+| /search | 查找资料，或生成经过来源与事实校验的回答 |
 | /cleanup | 已应用工作区的重复候选，或明确标注的示例 |
 | /settings | 主题、存储维护、身份恢复、备份与专用 Demo 管理 |
 
-最大 30 文件，每个 20 MB；PDF 200 页 / 250,000 字符。长文 AI 抽样最多 18,000 字符，最多并发 3 次分析，Agent 最多 15 次工具调用、240 秒。不显示隐藏 reasoning。Review 500 ms 自动保存；Apply 原子保存元数据与有效关系，原文件不修改、不删除。
+每次最多 30 份文件，每份 20 MB；PDF 最多 200 页或 250,000 字符。长文 AI 抽样最多 18,000 字符，并发分析最多 3 次，整理助手最多调用 15 次工具、运行 240 秒。页面不显示模型的隐藏推理。审阅修改在 500 ms 后自动保存，应用方案时原子保存元数据与有效关系，原件不修改、不删除。
 
-生产持久化要求稳定 Secret 和浏览器 Cookie。当前没有完整账号系统或后台任务；恢复密钥可以在同一数据库中找回身份。刷新正在执行的 Run 会显示 Interrupted，Resume 重跑 Planner 并复用缓存。未保存的客户端解析数据无法恢复。引用可打开授权原件，维护工具可检查存储问题；大规模分页界面仍未实现。
+保存和恢复数据需要固定会话密钥及浏览器 Cookie。当前没有完整账号系统或后台任务，恢复密钥可以在同一数据库中找回身份。刷新正在执行的任务后，页面提示整理已中断；继续分析会重新运行规划器并复用缓存。未保存的浏览器解析数据无法恢复。引用可打开授权原件，维护工具可检查存储问题；大规模分页界面尚未实现。
 
 基础架构：[AI Provider](docs/architecture/ai-provider.md)、[Persistence](docs/architecture/persistence.md)。历史验收：[Phase 1](docs/phase-checklists/phase-1.md)、[Phase 2](docs/phase-checklists/phase2.md)、[Phase 3](docs/phase-checklists/phase3.md)、[Phase 4](docs/phase-checklists/phase4.md)。阶段文档记录当时的功能和限制，当前状态以发布验收记录为准。
 
@@ -132,7 +134,7 @@ npm run test:live
 
 ## 检索与引用
 
-资料经分段、Embedding 和索引后，支持中英文语义检索与词法查找。Ask 回答问题，Find 返回资料片段；Library 可以查看索引状态并重试，Search 支持更新索引、追问和恢复历史。Phase 5 实现了 Hybrid 检索，后续改为根据查询选择策略的 Adaptive Retrieval。当前回答完成引用与事实检查后再发布。
+资料分段并生成向量、建立索引后，可以按中英文含义或关键词检索。“问答”根据资料回答问题，“查找资料”返回片段。资料库可查看索引状态并重试，智能搜索支持更新索引、追问和恢复历史。Phase 5 使用混合检索，后续改为根据问题选择策略的自适应检索。回答完成引用与事实检查后再发布。
 
 - [检索配置](docs/setup/knowledge-retrieval.md)：Kimi 与 Embedding 分开配置，本机模型为 qwen3.7-text-embedding-flash / 1024 维。
 - [检索架构](docs/architecture/retrieval.md)：Chunk、RLS、缓存、RRF、RAG、引用验证、退回与限制。
@@ -142,7 +144,7 @@ npm run test:live
 
 ## 图片资料与评测
 
-PNG/JPG/JPEG、学习截图、板书和扫描图片现可通过真实 Kimi Vision 与独立中英文离线 OCR 进入整理、人工审核、知识索引、跨模态检索和 Citation RAG。原图、OCR 提取文字、AI 解释与引用证据分别展示。图片引用打开私有原图，不编造页码或行号；故障可重试。扫描 PDF 当前只检测低文本并提示，尚未自动渲染页面做 OCR。
+PNG/JPG/JPEG、学习截图、板书和扫描图片可通过 Kimi Vision 与独立中英文离线 OCR 分析，随后进入审阅、知识索引和带引用的问答。原图、OCR 文字、AI 解读与引用证据分别展示。图片引用打开私有原图，不生成不存在的页码或行号；处理故障可重试。扫描 PDF 当前只检测低文本并提示，尚未自动渲染页面做 OCR。
 
 - [多模态架构](docs/architecture/multimodal.md)：验证、队列、独立缓存、来源与故障行为。
 - [困难评测](docs/evaluation/rag-hard-evaluation.md)：72 份合成资料（含 12 张图）、144 个查询，真实 Kimi / DashScope 的结果与失败案例。

@@ -1,83 +1,64 @@
 # FileMind AI
 
-Turn scattered files into connected knowledge.
+FileMind AI 用来整理学习和研究资料。把 PDF、Word、笔记和图片导入同一个资料库后，AI 整理助手提出分类、标签与文件名建议，用户审阅后再保存。查资料时可以直接提问，点击回答中的引用打开原文或原图。
 
-FileMind AI organizes personal documents and images. An Agent proposes categories, tags and filenames for review. Users can then search their saved library, ask questions and open the cited originals.
+目前为 v1.0.0-rc.1 候选版。2026-10-04 的真实服务验收通过了冲突、歧义澄清、扁平上下文 schema 和八份资料的完整演示，记录为 `llm_success=1`、`fallback_count=0`，演示前检查为 12/12 READY。测试范围见[发布验收记录](release-freeze.md)，此前失败记录仍保留。已有 ZIP 使用旧构建，分发前需要重新打包。
 
-FileMind AI 整理个人文档和图片，提供可审阅的分类建议，并支持搜索、提问和原文核对。
+## 为什么做这个项目
 
-Candidate version: v1.0.0-rc.1. On 2026-10-04, real-provider checks passed Conflict, Ambiguity, the flat context schema and the complete eight-file Demo, with `llm_success=1`, `fallback_count=0` and 12/12 READY. Results and test scope are in [the release record](release-freeze.md). Earlier failed attempts are retained separately. The older ZIP still needs to be rebuilt before distribution.
+学习和研究资料常常分散在课件、笔记和截图中。记得某个概念，未必记得它出现在哪个文件；找到一份资料后，还需要核对回答对应的段落或图示。FileMind 将这些材料放进可保存的资料库，保留原件，并提供整理建议、内容搜索和带来源的问答。
 
-## Introduction
+## 使用流程
 
-Students and researchers can import mixed materials into one saved library. FileMind preserves the originals and applies organization suggestions only after the user reviews them.
+导入文件后，文档先在本地解析，图片分别提取文字和生成视觉解释。整理助手调用已注册的工具，生成待审阅方案。用户可以修改分类、标签和命名建议，确认应用后才保存资料库及索引。工具的输入和输出均需校验，助手没有任意命令、浏览器或删除工具；处理失败时保留工作区并提供重试。
 
-## Problem
+资料保存后，系统按当前身份检索证据，检查问题范围和来源差异，生成回答草稿，再核对引用身份、版本和事实支持。校验失败可修复一次，通过后才向浏览器发布。资料不足、来源冲突和需要澄清分别显示；用户选择澄清选项后，服务器读取已保存的文档范围并重新检索。
 
-An idea may appear in a lecture PDF, a project note and a classroom image. Remembering the idea often does not help locate its filename. Answers also need a way to check the original passage or diagram.
+## 当前功能
 
-## Solution
+- 解析 PDF、DOCX、Markdown 和 TXT；支持 PNG/JPG 图片理解和本地 OCR。
+- 显示整理工具的执行状态，建议先经审阅，再应用到工作区。
+- 根据问题选择语义或词法检索策略，回答带可点击的来源和原件预览。
+- 根据已保存的文档关系和概念生成知识图谱，清理建议由用户审阅。
+- PostgreSQL 保存数据，原件存放在私有目录；支持身份恢复、带完整性校验的备份和 Windows 便携运行。
 
-FileMind extracts document text and image content, proposes organization changes and searches the current user's saved library. Answers include sources. Missing evidence, conflicting sources and ambiguous questions have separate result states.
+## 模型与图片处理
 
-## Features
+Kimi `kimi-k2.6` 负责结构化分析、整理规划、依据资料生成回答及事实检查。Kimi Vision 提供图片解释，随包分发的 Tesseract 提取可见文字，两者分别展示。DashScope `qwen3.7-text-embedding-flash` 提供独立的 1024 维向量。密钥只在服务端使用，模块关系见[一页架构图](architecture.svg)。
 
-- FileMind Agent shows tool activity and sends suggestions to Review before Apply.
-- PDF, DOCX, Markdown and TXT parsing, plus PNG/JPG image understanding and local OCR.
-- Semantic and lexical retrieval use a Router that selects a strategy for each query.
-- Grounded answers, source locations, clickable citations and original-file previews.
-- Knowledge Graph from saved document relationships and concepts, plus reviewed cleanup suggestions.
-- Private PostgreSQL persistence, scoped recovery, integrity-checked backup and Windows portable runtime.
+图片来源保留原图、OCR 文字和标注为 AI 解读的内容。Vision 故障时，本地 OCR 可以继续；提取失败会显示状态，不生成缺失的可检索内容。当前支持有文本层的 PDF，扫描 PDF 的自动页面渲染尚未实现。
 
-## Models and processing
+## 检索设计与安全检查
 
-Kimi `kimi-k2.6` handles structured analysis, Agent planning, grounded generation and fact checking. Kimi Vision and bundled Tesseract provide separate image interpretation and visible-text extraction. DashScope `qwen3.7-text-embedding-flash` provides independent 1024-dimensional embeddings. Credentials remain server-side. See [one-page architecture](architecture.svg).
+Phase 6 的 Vector Hit@1 为 0.942，固定 Hybrid 为 0.733。因此后续根据问题特征选择策略。Phase 7 新语料测试中，Adaptive Hit@1 为 0.9674、Hit@5 为 1.0、MRR 为 0.9837。Phase 9 保留了模型、分段参数、Router、VectorStore、RRF 和证据阈值。
 
-## Agent workflow
+上传内容视为不可信数据，工具只能在限定范围内执行。回答发布前检查所有权、引用、数值和事实支持，整理改动需要用户确认。这些检查覆盖已记录的失败情形，用户仍需打开来源核对。比赛模式要求真实 AI 服务，隐藏开发控制，云服务故障会显示不可用状态。
 
-After local parsing, the Agent calls registered tools and produces a structured proposal. The user reviews it before Apply saves the Library and index. Tool inputs and outputs are validated; the Agent has no arbitrary shell, browser or deletion tools. Failures preserve the workspace and offer a retry.
+## 评测结果与范围
 
-## Answer pipeline
-
-Retrieval first limits evidence to the current owner. The pipeline checks question scope and source differences, generates a draft, then validates citation identity, freshness and factual support. A failed check can use one repair attempt. Only a checked result reaches the browser. Clarification returns choices; selecting one resolves server-stored document IDs and retrieves again.
-
-## Images and OCR
-
-Image sources preserve the original image, OCR text and separately labelled AI interpretation. OCR can continue locally during a Vision outage. Failed extraction does not produce fabricated searchable content. Text-layer PDFs are supported; automatic scanned-PDF page rendering is outside the current scope.
-
-## Retrieval strategy
-
-In Phase 6, Vector Hit@1 was 0.942 and fixed Hybrid Hit@1 was 0.733. FileMind uses question features to choose a retrieval strategy. The Phase 7 holdout measured Adaptive Hit@1 0.9674, Hit@5 1.0 and MRR 0.9837. Phase 9 kept the model, chunk settings, Router, VectorStore, RRF and evidence thresholds frozen.
-
-## Safety checks
-
-Organization changes require approval. Uploaded content is treated as untrusted data, tools are restricted, and answers pass ownership, citation, numerical and factual checks. The pipeline can report insufficient evidence, show source conflicts or ask for clarification. These checks cover specific failure cases and still need human source review. Competition Mode requires real AI, disables development controls and reports cloud failures.
-
-## Evaluation
-
-| Dataset / measurement | Result | Scope |
+| 数据集或指标 | 结果 | 统计范围 |
 | --- | --- | --- |
-| Phase 8 Blind Run #1 | 90 documents / 180 queries | New synthetic corpus after algorithm freeze, same-agent authorship disclosed |
-| Adaptive Hit@1 / Hit@5 / MRR | 1.0000 / 1.0000 / 1.0000 | 136 relevant-document questions |
-| No-answer | 36/36 | Gold no-answer questions |
-| False refusal / answer recall | 8/136 (5.88%) / 114/136 (83.82%) | Both remain part of the published result |
-| Multimodal Hit@5 | 37/37 | Image-only question subset |
-| Citation validity | 169/169 | Returned citations |
-| Post-publication completeness / faithfulness | 378/378 claims | Automated checks, conditional on 127 released answers |
-| Full conflict / ambiguity | 2/8 / 0/8 | Original Phase 8 weaknesses, never overwritten |
-| Phase 9 local targeted pipeline | 10/10 conflicts, 10/10 clarification cases | Scripted transport decisions, not real-model accuracy |
-| Phase 9 initial live samples | Failed | Six calls exhausted; invalid structured output preserved |
-| Release live acceptance, 2026-10-04 | Passed | Separate Conflict/Ambiguity samples and eight-file main Demo; 12/12 preflight |
+| Phase 8 首次新语料测试 | 90 份资料 / 180 个问题 | 算法冻结后生成的合成语料，由同一 Agent 编制 |
+| Adaptive Hit@1 / Hit@5 / MRR | 1.0000 / 1.0000 / 1.0000 | 136 个有相关文档的问题 |
+| 无答案判断 | 36/36 | 标注为无答案的问题 |
+| 误拒答 / 回答召回率 | 8/136 (5.88%) / 114/136 (83.82%) | 两项均保留在公开结果中 |
+| 多模态 Hit@5 | 37/37 | 仅图片问题子集 |
+| 引用有效性 | 169/169 | 实际返回的引用 |
+| 发布后完整性 / 忠实度 | 378/378 claims | 自动检查，仅统计 127 个已发布答案 |
+| 完整冲突检测 / 歧义澄清 | 2/8 / 0/8 | Phase 8 首次结果，未覆盖或改写 |
+| Phase 9 本地专项流程 | 10/10 冲突、10/10 澄清 | 使用脚本注入响应，不表示真实模型准确率 |
+| Phase 9 首次真实抽验 | 失败 | 六次调用耗尽，结构化输出失败记录保留 |
+| 2026-10-04 真实发布验收 | 通过 | 单独冲突、澄清样本及八份资料主演示；12/12 检查 |
 
-See [Phase 5-8 evaluation](../evaluation/final-evaluation-summary.md) and [targeted regression](../evaluation/phase9-targeted-regression.md). Local pipeline tests and real-model checks have separate denominators.
+详细结果见[Phase 5-8 评测](../evaluation/final-evaluation-summary.md)和[专项回归](../evaluation/phase9-targeted-regression.md)。本地流程测试与真实模型检查分别统计，分母不能混用。
 
-## System architecture
+## 系统实现
 
-Next.js App Router + React + TypeScript; server Route Handlers; FileMind Agent and tool registry; local document pipeline; Kimi/Vision/OCR/Embedding layer; retrieval and verification; PostgreSQL with FORCE RLS; private originals and PortableVectorStore. Operation Journal and atomic writes support recovery. [Architecture diagram](architecture.svg) and [technical report](technical-report.pdf) describe the boundaries.
+页面使用 Next.js App Router、React 和 TypeScript，服务端通过 Route Handlers 接收请求。整理助手和工具注册表连接文档处理、模型及检索模块。PostgreSQL 使用 FORCE RLS 隔离身份，私有目录保存原件，PortableVectorStore 保存和检索向量。操作日志和原子写入用于故障恢复。边界和实现说明见[架构图](architecture.svg)及[技术报告](technical-report.pdf)。
 
-## Quick start
+## 启动方法
 
-Use an ASCII installation directory on Windows x64, Node.js ≥22.13 and a dedicated PostgreSQL database. The bundled runtime is an alternative to global installations; PostgreSQL runtime binaries are distributed in the private release artifact, not Git.
+当前安装验收范围为 Windows x64 的 ASCII 路径，需要 Node.js ≥22.13 和专用 PostgreSQL 数据库。便携运行包可代替全局安装；PostgreSQL 程序放在私有发布包中，不进入 Git。
 
 ```powershell
 npm ci
@@ -88,20 +69,22 @@ npm run build
 npm start
 ```
 
-For competition, set `AI_ENGINE=llm`, `COMPETITION_MODE=true`, `DEMO_MODE=true`, real Kimi/DashScope credentials, and the existing verified Vision marker. `npm run portable:start -- --port 3000` starts the bundled Windows runtime after the private artifact is prepared. It initializes a new dedicated local instance when needed. Keep the `.env.local`, recovery key, database and originals outside the public repository. Follow [deployment and runtime guide](release-guide.md) for the actual package structure and negative offline acceptance.
+比赛环境配置 `AI_ENGINE=llm`、`COMPETITION_MODE=true`、`DEMO_MODE=true`、真实 Kimi/DashScope 密钥和已有的 Vision 验证标记。准备好私有运行包后，`npm run portable:start -- --port 3000` 可启动随包的 Windows 程序，必要时初始化新的专用实例。`.env.local`、恢复密钥、数据库和原件均留在公开仓库之外。包结构和无凭据失败状态检查见[部署与运行说明](release-guide.md)。
 
-## Demo
+## 演示材料
 
-Ten original fixtures, with eight recommended for the main Demo, cover PDF/DOCX/Markdown/TXT/PNG/JPG. Open the dedicated Competition Demo Workspace in Settings and download its fixture ZIP. Use the [main script](demo-script.md), [video script](video-script.md), [12-slide pitch outline](pitch-deck-outline.md) and [outage plan](fallback-demo.md). The current-source main Demo passed on 2026-10-04. Five backup queries are listed separately with their evidence and acceptance status; they were not all freshly verified.
+原创演示集有十份资料，主流程推荐其中八份，覆盖 PDF/DOCX/Markdown/TXT/PNG/JPG。在设置中打开专用比赛演示工作区，可下载资料 ZIP。演示准备使用[主流程脚本](demo-script.md)、[视频脚本](video-script.md)、[12 页答辩提纲](pitch-deck-outline.md)和[故障备用流程](fallback-demo.md)。2026-10-04 的源码主流程已通过，五个备用问题分别列出证据及验收状态，尚未全部重新验证。中文界面检查见[2026-10-10 记录](chinese-interface-check.md)，后续文案与代码整理见[开发记录](development-notes.md)。
 
-## Privacy
+## 隐私与限制
 
-Parsing and OCR run locally. Real AI mode sends extracted text to Kimi, image bytes to Kimi Vision and index/query text to DashScope. Private storage and PostgreSQL isolate browser identities; TLS and filesystem permissions remain deployment responsibilities. Recovery keys act as bearer credentials. Backups are integrity-checked ZIP archives and **not encrypted**.
+文档解析和 OCR 在本地运行。真实 AI 模式会把提取文本发送给 Kimi、图片发送给 Kimi Vision、索引及问题文本发送给 DashScope。私有存储和 PostgreSQL 按浏览器身份隔离，TLS 和文件权限仍由部署方配置。恢复密钥属于持有即可使用的凭据；备份 ZIP 有完整性校验，没有加密。
 
-## Limitations
+扁平上下文 schema 在最初六次失败后，于 2026-10-04 通过真实 Kimi 检查。后续专项样本累计使用独立预算中的 16/24 次调用，包含失败尝试，不能据此计算整体准确率；额外备用问题和新的完整回归不在该次验收范围内。PortableVectorStore 采用线性扫描，扫描 PDF 需要文本层，OCR 和视觉解释也可能出错。云服务故障会影响问答。合成语料及生成、判定共享模型限制了评测结果的适用范围。
 
-The flat context schema passed real Kimi checks on 2026-10-04, after the failed six-call attempt. The new targeted samples used 16 of their separate 24-call budget, including failures; they do not establish an overall accuracy rate. Extra backup queries and a new full regression were outside that acceptance. PortableVectorStore uses a linear scan, scanned PDFs need a text layer, and OCR/Vision can misinterpret content. Provider outages affect answers. The synthetic evaluation and shared model used for generation and judging limit how far its scores can be generalized. OAuth, multi-user collaboration, cloud sync, payments and a mobile application are not implemented. Unicode installation paths remain outside this release's supported scope.
+当前没有 OAuth、多用户协作、云同步、支付或移动应用。Unicode 安装路径不在本候选版支持范围内。
 
-## Team
+## AI 辅助开发与团队信息
 
-Repository maintainer: `s0nggv0`. Team name, school, members and roles remain to be filled in before submission. [Repository](https://github.com/s0nggv0/FileMind-AI) · [MIT license](../../LICENSE).
+项目使用 OpenAI Codex 辅助讨论、实现、修复、测试和文档编辑，部分代码及修改由 AI 执行。项目负责人提出需求并确定范围，人工修改和独立验证应按实际情况记录，不能把 AI 生成的补丁称为个人独立实现。开发辅助范围另见[根目录声明](../../README.md#ai-辅助开发说明)；运行时使用的模型与开发辅助工具分别说明。
+
+仓库维护者为 `s0nggv0`。提交前还需填写队名、学校、成员和实际分工。[GitHub 仓库](https://github.com/s0nggv0/FileMind-AI) · [MIT 许可证](../../LICENSE)。
