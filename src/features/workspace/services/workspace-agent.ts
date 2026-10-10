@@ -11,7 +11,7 @@ export class WorkspaceAgentEngine implements AgentEngine {
   private llm = new LLMAgentEngine(this.persistence); private active: AgentEngine = this.mock;
   async initialize(id?: string) {
     const session = await this.persistence.initialize(id); this.active = this.persistence.intelligence ? this.llm : this.mock;
-    if (this.persistence.competition && session.snapshot?.run?.engine === "mock") throw new Error("Cloud AI provider unavailable. This saved laboratory run cannot execute in Competition Mode.");
+    if (this.persistence.competition && session.snapshot?.run?.engine === "mock") throw new Error("云端 AI 服务不可用，比赛模式无法执行已保存的模拟记录。");
     if (session.snapshot?.run) { this.active = session.snapshot.run.engine === "llm" ? this.llm : this.mock; if (this.active === this.llm) this.llm.restoreRun(session.snapshot.run); else this.mock.restoreRun(session.snapshot.run); }
     return session;
   }
@@ -27,7 +27,7 @@ export class WorkspaceAgentEngine implements AgentEngine {
       }
       await this.persistence.prepare(documents);
       for (const document of initial.documents) document.storagePath = documents.find(d => d.id === document.id)?.storagePath;
-    } catch (error) { initial.status = "failed"; initial.error = error instanceof Error ? error.message : "Workspace could not be saved."; listener(structuredClone(initial)); return; }
+    } catch (error) { initial.status = "failed"; initial.error = error instanceof Error ? error.message : "工作区保存失败，请重试。"; listener(structuredClone(initial)); return; }
     let pending: Promise<void> = Promise.resolve(); let latest: AgentRun | undefined; let saveError: unknown;
     await this.mock.executeRun(id, run => {
       latest = run; if (run.status !== "waiting_for_review") listener(run);
@@ -39,7 +39,7 @@ export class WorkspaceAgentEngine implements AgentEngine {
     if (!saveError && latest?.status === "waiting_for_review" && latest.documents.some(d => d.type === "image")) {
       try {
         const processing = structuredClone(latest); processing.status = "running";
-        processing.activity.push({ id: crypto.randomUUID(), at: Date.now(), message: "Extracting visible text · local OCR" }); listener(processing);
+        processing.activity.push({ id: crypto.randomUUID(), at: Date.now(), message: "正在提取可见文字 · 本地 OCR" }); listener(processing);
         const messages = await this.persistence.analyzeImages();
         latest.documents = this.persistence.snapshot!.documents;
         latest.result = buildOrganizationPlan(latest.documents, d => this.persistence.snapshot!.texts[d.id] ?? "");
@@ -47,7 +47,7 @@ export class WorkspaceAgentEngine implements AgentEngine {
         await this.persistence.saveRun(latest); this.mock.restoreRun(latest);
       } catch (error) { saveError = error; }
     }
-    if (saveError && latest) { latest.error = saveError instanceof Error ? saveError.message : "Workspace could not be saved."; latest.status = "failed"; listener(latest); }
+    if (saveError && latest) { latest.error = saveError instanceof Error ? saveError.message : "工作区保存失败，请重试。"; latest.status = "failed"; listener(latest); }
     else if (latest?.status === "waiting_for_review") listener(latest);
   }
   cancelRun(id: string) { this.active.cancelRun(id); }
@@ -70,8 +70,8 @@ export class WorkspaceAgentEngine implements AgentEngine {
   }
   saveProposal(plan: OrganizationPlan) { return this.persistence.saveProposal(plan); }
   async continueLocally(documents: ParsedDocument[], listener: RunListener) {
-    if (this.persistence.competition) throw new Error("Cloud AI provider unavailable. Competition Mode requires real AI.");
-    this.active = this.mock; const run = this.mock.createRun(documents); run.fallback = "AI analysis unavailable — using basic local organization."; listener(run);
+    if (this.persistence.competition) throw new Error("云端 AI 服务不可用，比赛模式需要真实 AI 服务。");
+    this.active = this.mock; const run = this.mock.createRun(documents); run.fallback = "AI 分析不可用，当前使用本地规则整理。"; listener(run);
     await this.executeRun(run.id, value => listener({ ...value, fallback: run.fallback }));
   }
   disposeRun(id: string) { this.active.disposeRun(id); }

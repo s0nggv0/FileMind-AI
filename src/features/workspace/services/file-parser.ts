@@ -9,10 +9,10 @@ export function validateFiles(incoming: File[], currentCount: number) {
   for (const file of incoming) {
     const extension = file.name.split(".").pop()?.toLowerCase() ?? "";
     if (!uploadConfig.extensions.includes(extension) || (file.type && file.type !== "application/octet-stream" && !uploadConfig.mimeTypes[extension]?.includes(file.type))) {
-      errors.push(`${file.name}: Unsupported file format`); continue;
+      errors.push(`${file.name}：不支持此文件格式`); continue;
     }
-    if (file.size > uploadConfig.maxFileBytes) { errors.push(`${file.name}: File exceeds ${uploadConfig.maxFileBytes / 1024 / 1024} MB`); continue; }
-    if (accepted.length + currentCount >= uploadConfig.maxFiles) { errors.push(`Maximum ${uploadConfig.maxFiles} files per workspace`); break; }
+    if (file.size > uploadConfig.maxFileBytes) { errors.push(`${file.name}：文件超过 ${uploadConfig.maxFileBytes / 1024 / 1024} MB`); continue; }
+    if (accepted.length + currentCount >= uploadConfig.maxFiles) { errors.push(`每个工作区最多 ${uploadConfig.maxFiles} 份文件`); break; }
     accepted.push(file);
   }
   return { accepted, errors };
@@ -36,7 +36,7 @@ export async function parseDocument(document: ParsedDocument, signal: AbortSigna
   const file = files.get(document.id);
   if (!file) {
     if (contents.has(document.id)) return { ...document, contentRef: document.id, parseStatus: "completed", parseError: undefined };
-    throw new Error("Original file is no longer available. Select it again.");
+    throw new Error("原文件已不可用，请重新选择。");
   }
   let text = ""; let pageCount: number | undefined; let width: number | undefined; let height: number | undefined;
   let truncated = false; let warnings: string[] = [];
@@ -83,7 +83,7 @@ export async function parseDocument(document: ParsedDocument, signal: AbortSigna
       }
       truncated ||= pdf.numPages > uploadConfig.maxPdfPages;
       const lowTextPages = structure.pages.filter(p => text.slice(p.charStart, p.charEnd).trim().length < 80).length;
-      if (lowTextPages) warnings.push(`Low extracted text on ${lowTextPages} page(s). Possible scanned document; OCR / Vision PDF fallback is not available yet.`);
+      if (lowTextPages) warnings.push(`以下页数提取到的文字较少： ${lowTextPages} 页，可能是扫描资料；当前尚未提供扫描 PDF 的 OCR 或图像分析。`);
     } finally { signal.removeEventListener("abort", abort); await task.destroy(); }
   } else {
     const bitmap = await createImageBitmap(file);

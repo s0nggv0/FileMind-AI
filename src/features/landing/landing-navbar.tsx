@@ -26,11 +26,11 @@ export function LandingNavbar({ links }: { links: { label: string; href: string 
         </nav>
         <div className="flex items-center gap-2 sm:gap-4">
           <a href="https://github.com/s0nggv0/FileMind-AI" target="_blank" rel="noopener noreferrer" className="hidden items-center gap-1.5 py-3 text-sm text-muted-foreground hover:text-foreground sm:flex"><Code2 size={16} /> GitHub <ArrowUpRight size={12} /></a>
-          <Button asChild size="sm"><Link href="/workspace">Open App <ArrowUpRight /></Link></Button>
+          <Button asChild size="sm"><Link href="/workspace">打开应用 <ArrowUpRight /></Link></Button>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild><Button variant="ghost" size="icon" className="md:hidden" aria-label="打开产品导航"><Menu /></Button></DialogTrigger>
             <DialogContent>
-              <DialogTitle>Explore FileMind</DialogTitle>
+              <DialogTitle>了解 FileMind</DialogTitle>
               <DialogDescription>了解产品，或进入示例工作台。</DialogDescription>
               <nav aria-label="移动产品导航" className="grid gap-2">
                 {links.map((link) => <a key={link.href} href={link.href} onClick={() => setOpen(false)} className="surface-interactive p-3 text-sm">{link.label}</a>)}

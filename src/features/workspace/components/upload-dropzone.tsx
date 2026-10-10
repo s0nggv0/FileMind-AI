@@ -17,12 +17,12 @@ export function UploadDropzone() {
       onDrop={(event) => { event.preventDefault(); depth.current = 0; setDragging(false); addFiles(Array.from(event.dataTransfer.files)); }}
       className={cn("flex min-h-80 flex-col items-center justify-center rounded-2xl border border-dashed bg-card px-5 py-10 text-center transition-colors sm:min-h-96", dragging ? "border-primary bg-accent" : "border-border")}>
       <Upload size={30} strokeWidth={1.4} className="mb-6 text-primary" aria-hidden="true" />
-      <h2 className="text-2xl font-medium sm:text-3xl">Drop your files here</h2>
-      <p className="mt-3 text-sm text-muted-foreground">Give your research, notes and ideas a place to belong.</p>
-      <div className="mt-6 flex items-center gap-4"><span className="text-sm text-muted-foreground">or</span><Button onClick={() => input.current?.click()}><Plus size={16} />Choose files</Button></div>
-      <input ref={input} type="file" className="sr-only" tabIndex={-1} aria-label="Choose local files" multiple accept={uploadAccept} onChange={(event) => { addFiles(Array.from(event.target.files ?? [])); event.target.value = ""; }} />
-      <p className="mt-6 text-xs leading-6 text-muted-foreground">PDF · DOCX · Markdown · TXT · Images<br />Max {uploadConfig.maxFileBytes / 1024 / 1024} MB per file · {uploadConfig.maxFiles} files per workspace</p>
+      <h2 className="text-2xl font-medium sm:text-3xl">在这里导入文件</h2>
+      <p className="mt-3 text-sm text-muted-foreground">导入论文、笔记和项目资料，开始整理。</p>
+      <div className="mt-6 flex items-center gap-4"><span className="text-sm text-muted-foreground">或</span><Button onClick={() => input.current?.click()}><Plus size={16} />选择文件</Button></div>
+      <input ref={input} type="file" className="sr-only" tabIndex={-1} aria-label="选择本地文件" multiple accept={uploadAccept} onChange={(event) => { addFiles(Array.from(event.target.files ?? [])); event.target.value = ""; }} />
+      <p className="mt-6 text-xs leading-6 text-muted-foreground">PDF · DOCX · Markdown · TXT · 图片<br />每份文件最多 {uploadConfig.maxFileBytes / 1024 / 1024}  MB · {uploadConfig.maxFiles} 份文件，每个工作区</p>
     </div>
-    <div className="mt-6 flex flex-wrap justify-center gap-x-6 gap-y-3 text-xs text-muted-foreground">{[[FileText, "Research papers"], [GraduationCap, "Course notes"], [FolderOpen, "Project documents"], [Image, "Screenshots"]].map(([Icon, label]) => { const Component = Icon as typeof FileText; return <span key={label as string} className="flex items-center gap-2"><Component size={15} aria-hidden="true" />{label as string}</span>; })}</div>
+    <div className="mt-6 flex flex-wrap justify-center gap-x-6 gap-y-3 text-xs text-muted-foreground">{[[FileText, "研究论文"], [GraduationCap, "课程笔记"], [FolderOpen, "项目资料"], [Image, "截图"]].map(([Icon, label]) => { const Component = Icon as typeof FileText; return <span key={label as string} className="flex items-center gap-2"><Component size={15} aria-hidden="true" />{label as string}</span>; })}</div>
   </section>;
 }

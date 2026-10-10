@@ -17,7 +17,7 @@ export async function POST(request: Request) {
   try {
     sameOrigin(request);
     const userId = await getUserId();
-    if (!userId || !persistenceConfigured()) throw new WorkspaceError("NOT_FOUND", "Import and save documents first.", 404);
+    if (!userId || !persistenceConfigured()) throw new WorkspaceError("NOT_FOUND", "请先导入并保存资料。", 404);
     const body = z.object({ workspaceId: z.uuid().optional(), documentId: z.uuid().optional() }).strict().parse(await readJSON(request, 4096));
     return Response.json({ results: await indexKnowledge({ userId, workspaceId: body.workspaceId }, body.documentId) });
   } catch (error) { return apiError(error); }

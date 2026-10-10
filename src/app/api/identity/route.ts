@@ -16,14 +16,14 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     sameOrigin(request);
-    if (!persistenceConfigured()) throw new WorkspaceError("UNAVAILABLE", "Identity recovery requires FileMind database storage.", 503);
+    if (!persistenceConfigured()) throw new WorkspaceError("UNAVAILABLE", "身份恢复需要配置 FileMind 数据库存储。", 503);
     const input = z.discriminatedUnion("action", [z.object({ action: z.literal("create") }).strict(), z.object({ action: z.literal("rotate") }).strict(), z.object({ action: z.literal("recover"), key: z.unknown().optional() }).strict()]).parse(await readJSON(request, 1024));
     if (input.action === "recover") {
       await issueIdentityCookie(await service.recover(typeof input.key === "string" ? input.key : ""));
       return Response.json({ recovered: true }, { headers });
     }
     const userId = await getUserId(input.action === "create");
-    if (!userId) throw new WorkspaceError("NOT_FOUND", "A current identity is required.", 401);
+    if (!userId) throw new WorkspaceError("NOT_FOUND", "请先创建当前浏览器身份。", 401);
     const key = await service.create(userId, input.action === "rotate");
     return Response.json({ key, configured: true }, { headers });
   } catch (error) {

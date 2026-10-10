@@ -9,8 +9,8 @@ import { FinalCTA } from "@/features/landing/final-cta";
 import { getLandingPresentation } from "@/services/presentation-repository";
 
 export const metadata: Metadata = {
-  title: "FileMind AI · Turn files into connected knowledge",
-  description: "知序 AI：让散乱的文件，成为可以理解、搜索和关联的个人知识空间。体验 Agent 整理、语义搜索与知识图谱的前端演示。",
+  title: "FileMind AI · 将资料连接成知识",
+  description: "知序 AI：导入资料，体验 AI 整理、语义搜索和知识图谱演示。",
 };
 
 export default function LandingPage() {

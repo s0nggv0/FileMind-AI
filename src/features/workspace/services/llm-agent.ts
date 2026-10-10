@@ -20,18 +20,18 @@ export class LLMAgentEngine implements AgentEngine {
       context.run.status = "running"; emit();
       for (const document of context.run.documents) {
         if (["completed", "skipped"].includes(document.parseStatus)) continue;
-        const step = { id: crypto.randomUUID(), tool: "read_document" as const, title: "Parse document", description: `Parsing locally · ${document.name}`, status: "running" as "running" | "completed" | "failed", progress: 10, startedAt: Date.now(), input: { documentId: document.id }, error: undefined as string | undefined };
+        const step = { id: crypto.randomUUID(), tool: "read_document" as const, title: "解析资料", description: `正在本地解析 ·  ${document.name}`, status: "running" as "running" | "completed" | "failed", progress: 10, startedAt: Date.now(), input: { documentId: document.id }, error: undefined as string | undefined };
         context.run.steps.push(step); document.parseStatus = "processing"; emit();
         try { Object.assign(document, await parseDocument(document, signal)); signal.throwIfAborted(); step.status = "completed"; step.progress = 100; }
-        catch { signal.throwIfAborted(); document.parseStatus = "failed"; document.parseError = "Unable to parse this document. Retry or skip it."; step.status = "failed"; step.error = document.parseError; emit(); return; }
+        catch { signal.throwIfAborted(); document.parseStatus = "failed"; document.parseError = "无法解析这份资料，请重试或跳过。"; step.status = "failed"; step.error = document.parseError; emit(); return; }
         emit();
       }
-      if (!this.persistence.persistent) throw new Error("Set up persistent storage to use FileMind Intelligence, or continue with local organization.");
+      if (!this.persistence.persistent) throw new Error("配置持久化存储后可使用 AI 整理，或继续使用本地规则。");
       await this.persistence.prepare(context.run.documents); signal.throwIfAborted();
       const snapshot = this.persistence.snapshot!;
       const response = await fetch("/api/ai/agent", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ workspaceId: snapshot.id, revision: snapshot.revision, runId: id }), signal });
-      if (!response.ok) { const body = z.object({ error: z.string() }).safeParse(await response.json()); throw new Error(body.data?.error ?? "AI service is temporarily unavailable."); }
-      const reader = response.body?.getReader(); if (!reader) throw new Error("AI service did not start.");
+      if (!response.ok) { const body = z.object({ error: z.string() }).safeParse(await response.json()); throw new Error(body.data?.error ?? "AI 服务暂时不可用，请稍后重试。"); }
+      const reader = response.body?.getReader(); if (!reader) throw new Error("AI 服务未能启动，请重试。");
       const decoder = new TextDecoder(); let buffer = "";
       while (true) {
         const { done, value } = await reader.read(); if (done) break; signal.throwIfAborted(); buffer += decoder.decode(value, { stream: true });
@@ -40,11 +40,11 @@ export class LLMAgentEngine implements AgentEngine {
           const line = buffer.slice(0, lineEnd); buffer = buffer.slice(lineEnd + 1); if (!line.trim()) continue;
           const event = z.object({ run: RunSchema.optional(), revision: z.number().int().optional(), error: z.string().optional() }).parse(JSON.parse(line));
           if (event.error) throw new Error(event.error);
-          if (event.run) { if (event.run.id !== id) throw new Error("Unexpected Agent response."); context.run = event.run; if (this.persistence.snapshot) Object.assign(this.persistence.snapshot, { run: event.run, revision: event.revision, documents: event.run.documents, proposal: event.run.result ?? null }); emit(); }
+          if (event.run) { if (event.run.id !== id) throw new Error("整理助手返回了无法识别的响应，请重试。"); context.run = event.run; if (this.persistence.snapshot) Object.assign(this.persistence.snapshot, { run: event.run, revision: event.revision, documents: event.run.documents, proposal: event.run.result ?? null }); emit(); }
         }
       }
-      if (!["waiting_for_review", "completed", "cancelled"].includes(context.run.status)) throw new Error("Run interrupted. Resume analysis to continue.");
-    } catch (error) { if (!signal.aborted) { context.run.status = "failed"; context.run.error = error instanceof Error ? error.message : "AI service is temporarily unavailable."; emit(); } }
+      if (!["waiting_for_review", "completed", "cancelled"].includes(context.run.status)) throw new Error("整理已中断，点击继续分析后恢复。");
+    } catch (error) { if (!signal.aborted) { context.run.status = "failed"; context.run.error = error instanceof Error ? error.message : "AI 服务暂时不可用，请稍后重试。"; emit(); } }
     finally { context.busy = false; }
   }
   cancelRun(id: string) { const c = this.contexts.get(id); if (!c) return; c.signal.abort(); c.run.status = "cancelled"; c.listener?.(structuredClone(c.run)); }

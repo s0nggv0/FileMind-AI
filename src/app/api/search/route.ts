@@ -19,19 +19,19 @@ export async function GET(request: Request) {
     const userId = await getUserId();
     const url = new URL(request.url);
     if (!userId || !persistenceConfigured()) {
-      if (url.searchParams.has("chunkId") || url.searchParams.has("runId")) throw new WorkspaceError("NOT_FOUND", "Source not found.", 404);
+      if (url.searchParams.has("chunkId") || url.searchParams.has("runId")) throw new WorkspaceError("NOT_FOUND", "来源不存在或无法访问。", 404);
       return Response.json({ recent: [] });
     }
     if (url.searchParams.has("chunkId")) {
       const id = z.uuid().parse(url.searchParams.get("chunkId"));
       const source = await knowledgeRepository.getSource({ userId }, id);
-      if (!source) throw new WorkspaceError("NOT_FOUND", "Source no longer available. Search again.", 404);
+      if (!source) throw new WorkspaceError("NOT_FOUND", "来源已不可用，请重新搜索。", 404);
       return Response.json(source, { headers: { "cache-control": "no-store" } });
     }
     if (url.searchParams.has("runId")) {
       const id = z.uuid().parse(url.searchParams.get("runId"));
       const result = await database.query(userId, "select result from filemind.retrieval_runs where user_id=$1 and id=$2", [userId, id]);
-      if (!result.rows.length) throw new WorkspaceError("NOT_FOUND", "Search no longer available.", 404);
+      if (!result.rows.length) throw new WorkspaceError("NOT_FOUND", "搜索记录已不可用。", 404);
       const saved = (result.rows[0] as { result: SearchResult }).result;
       if (!developmentControls()) delete saved.debug;
       return Response.json(saved, { headers: { "cache-control": "no-store" } });
@@ -44,18 +44,18 @@ export async function POST(request: Request) {
   try {
     sameOrigin(request); const input = SearchRequestSchema.parse(await readJSON(request, 8192));
     const userId = await getUserId();
-    if (!userId || !persistenceConfigured()) throw new WorkspaceError("NOT_FOUND", "Import and save your documents in Workspace first.", 404);
+    if (!userId || !persistenceConfigured()) throw new WorkspaceError("NOT_FOUND", "请先在工作区导入并保存资料。", 404);
     const scope = { userId, workspaceId: input.workspaceId };
     await refreshIndexVersions(scope);
     let rewrittenQuery = input.query;
     let selectedDocumentIds: string[] | undefined;
-    if (input.clarificationOption !== undefined && !input.previousRunId) throw new WorkspaceError("NOT_FOUND", "Clarification no longer available. Search again.", 404);
+    if (input.clarificationOption !== undefined && !input.previousRunId) throw new WorkspaceError("NOT_FOUND", "澄清记录已不可用，请重新搜索。", 404);
     if (input.previousRunId) {
       const previous = await database.query(userId, "select coalesce(rewritten_query,query) as query,result from filemind.retrieval_runs where user_id=$1 and id=$2 and ($3::uuid is null or workspace_id=$3)", [userId, input.previousRunId, input.workspaceId ?? null]);
       const prior = (previous.rows[0] as { query: string; result: SearchResult } | undefined);
       if (input.clarificationOption !== undefined) {
         const option = prior?.result.answer?.clarification?.options?.[input.clarificationOption];
-        if (!option || prior?.result.answerState !== "needs_clarification") throw new WorkspaceError("NOT_FOUND", "Clarification no longer available. Search again.", 404);
+        if (!option || prior?.result.answerState !== "needs_clarification") throw new WorkspaceError("NOT_FOUND", "澄清记录已不可用，请重新搜索。", 404);
         selectedDocumentIds = option.documentIds;
         rewrittenQuery = `${prior.query.slice(-3000)}\nSelected subject: ${option.label}`;
       } else if (prior && /\b(it|that|those|these|there)\b|它|这|那/i.test(input.query)) { rewrittenQuery = `${prior.query.slice(-3000)}\nFollow-up: ${input.query}`; selectedDocumentIds = prior.result.selectedDocumentIds; }
@@ -73,7 +73,7 @@ export async function POST(request: Request) {
           if (!realAIRequired()) provider = offlineRAGProvider();
           else { try { provider = getAIProvider(); } catch {} }
           const llmStarted = performance.now();
-          if (input.mode === "ask" && retrieved.evidence.length) send("stage", "Generating answer");
+          if (input.mode === "ask" && retrieved.evidence.length) send("stage", "正在生成回答");
           const grounded = input.mode === "ask" ? await generateGroundedAnswer(rewrittenQuery, retrieved.evidence, scope, provider, knowledgeRepository.getSource.bind(knowledgeRepository), request.signal, stage => send("stage", stage)) : { answer: null, sources: buildRAGContext(retrieved.evidence).sources, unavailable: false };
           request.signal.throwIfAborted();
           const latency = { ...retrieved.latency, llm: input.mode === "ask" ? performance.now() - llmStarted : 0, total: performance.now() - started };
@@ -89,7 +89,7 @@ export async function POST(request: Request) {
           await database.query(userId, `insert into filemind.retrieval_runs(id,user_id,workspace_id,query,rewritten_query,mode,vector_model,vector_provider,top_k,retrieved_chunk_ids,evidence_ids,reranker_status,latency,result) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::uuid[],$11::uuid[],$12,$13,$14)`, [result.id, userId, input.workspaceId ?? null, input.query, rewrittenQuery, input.mode, embedding?.getModelInfo().model ?? null, embedding?.getModelInfo().provider ?? null, retrievalConfig.vectorTopK, retrieved.fused.map(s => s.id), grounded.sources.map(s => s.id), retrieved.reranker, latency, result]);
           await applicationLog({level:grounded.unavailable?"warn":"info",event:"search_completed",request_id:result.id,workspace_id:input.workspaceId??null,operation_id:null,provider:provider?loggedProvider(provider.name):null,error_code:errorCode??(grounded.unavailable?"UNAVAILABLE":null),duration:latency.total});
           request.signal.throwIfAborted(); send("result", result);
-        } catch { send("error", "Search is temporarily unavailable. Your documents are preserved."); }
+        } catch { send("error", "搜索暂时不可用，资料仍然保留。"); }
         finally { if (!closed) { closed = true; controller.close(); } }
       },
     });

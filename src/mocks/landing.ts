@@ -1,21 +1,21 @@
 import type { AgentStage, CleanupComparison, LandingFile, RelationshipEdge, RelationshipNode } from "@/types/presentation";
 
 export const landingNavigation = [
-  { label: "Product", href: "#product" },
-  { label: "How it works", href: "#how-it-works" },
-  { label: "Features", href: "#features" },
+  { label: "产品介绍", href: "#product" },
+  { label: "使用流程", href: "#how-it-works" },
+  { label: "功能", href: "#features" },
 ];
 
-export const landingFormats = ["PDF", "DOCX", "Markdown", "TXT", "Images"];
+export const landingFormats = ["PDF", "DOCX", "Markdown", "TXT", "图片"];
 
 export const agentStages: AgentStage[] = [
-  { label: "Drop your files", activity: "Waiting for your documents", detail: "从一叠散落的资料开始。" },
-  { label: "12 files added", activity: "Reading research-paper.pdf", detail: "读取资料，保留每个文件的来源。" },
-  { label: "Understanding documents", activity: "Analyzing machine-learning-notes.docx", detail: "理解内容，而不只是文件名。" },
-  { label: "Detecting topics", activity: "Classifying notes into 4 topics", detail: "把课程、研究与项目分门别类。" },
-  { label: "Finding relationships", activity: "Connecting Transformer ↔ Attention", detail: "让相近的知识彼此连接。" },
-  { label: "Building knowledge space", activity: "Found 2 similar documents", detail: "整理建议等待你的确认。" },
-  { label: "Organized", activity: "Your knowledge space is ready", detail: "文件有了秩序，知识有了联系。" },
+  { label: "导入文件", activity: "等待导入资料", detail: "从一叠散落的资料开始。" },
+  { label: "已添加 12 份文件", activity: "正在读取 research-paper.pdf", detail: "读取资料，保留每个文件的来源。" },
+  { label: "正在分析资料", activity: "正在分析 machine-learning-notes.docx", detail: "理解内容，而不只是文件名。" },
+  { label: "正在识别主题", activity: "正在将笔记分为 4 个主题", detail: "把课程、研究与项目分门别类。" },
+  { label: "正在查找关联", activity: "正在关联 Transformer 与注意力机制", detail: "让相近的知识彼此连接。" },
+  { label: "正在建立知识空间", activity: "发现 2 份相似资料", detail: "整理建议等待你的确认。" },
+  { label: "整理完成", activity: "知识空间已就绪", detail: "文件有了秩序，知识有了联系。" },
 ];
 
 export const landingFiles: LandingFile[] = [
@@ -40,21 +40,21 @@ export const organizeExamples = [
 ];
 
 export const semanticExample = {
-  query: "Where did I learn about attention mechanisms?",
+  query: "哪些资料讲过注意力机制？",
   results: [
-    { name: "Transformer Notes", excerpt: "Self-attention connects every token to its context.", type: "pdf" as const },
-    { name: "Attention Is All You Need", excerpt: "An architecture built around attention mechanisms.", type: "pdf" as const },
-    { name: "NLP Lecture", excerpt: "From recurrent networks to multi-head attention.", type: "md" as const },
+    { name: "Transformer 笔记", excerpt: "自注意力机制将每个词元与上下文联系起来。", type: "pdf" as const },
+    { name: "Attention Is All You Need", excerpt: "以注意力机制为核心的模型架构。", type: "pdf" as const },
+    { name: "自然语言处理课程", excerpt: "从循环神经网络到多头注意力机制。", type: "md" as const },
   ],
 };
 
 export const landingGraphNodes: RelationshipNode[] = [
   { id: "transformer", label: "Transformer", x: 45, y: 43, mobile: true },
-  { id: "attention", label: "Attention", x: 75, y: 25, mobile: true },
+  { id: "attention", label: "注意力机制", x: 75, y: 25, mobile: true },
   { id: "bert", label: "BERT", x: 77, y: 65, mobile: true },
-  { id: "nlp", label: "NLP Notes", x: 45, y: 13, mobile: true },
-  { id: "ml", label: "Machine Learning", x: 20, y: 71 },
-  { id: "dl", label: "Deep Learning", x: 45, y: 89 },
+  { id: "nlp", label: "自然语言处理笔记", x: 45, y: 13, mobile: true },
+  { id: "ml", label: "机器学习", x: 20, y: 71 },
+  { id: "dl", label: "深度学习", x: 45, y: 89 },
 ];
 
 export const landingGraphEdges: RelationshipEdge[] = [
@@ -77,9 +77,9 @@ export const cleanupComparison: CleanupComparison = {
 };
 
 export const workflowSteps = [
-  { label: "Drop", description: "放入散落的文档", detail: "PDF、笔记、截图与项目资料" },
-  { label: "Understand", description: "理解文件的内容", detail: "读取正文，识别概念与主题" },
-  { label: "Organize", description: "Agent 提出整理建议", detail: "分类、标签、命名与重复检测" },
-  { label: "Connect", description: "建立语义联系", detail: "RAG 与 Embeddings 连接知识" },
-  { label: "Explore", description: "探索你的知识空间", detail: "自然语言搜索与关联阅读" },
+  { label: "导入", description: "放入散落的文档", detail: "PDF、笔记、截图与项目资料" },
+  { label: "分析", description: "理解文件的内容", detail: "读取正文，识别概念与主题" },
+  { label: "整理", description: "AI 整理助手提出建议", detail: "分类、标签、命名与重复检测" },
+  { label: "关联", description: "建立语义联系", detail: "检索增强生成与向量索引连接知识" },
+  { label: "探索", description: "探索你的知识空间", detail: "自然语言搜索与关联阅读" },
 ];

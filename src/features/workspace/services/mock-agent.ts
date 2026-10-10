@@ -3,12 +3,12 @@ import { parseDocument } from "./file-parser";
 import { buildOrganizationPlan } from "./organization-rules";
 
 const tools: [AgentTool, string, string][] = [
-  ["summarize_document", "Understand content", "Preparing excerpts from extracted text"],
-  ["classify_document", "Detect topics", "Grouping documents with filename and text rules"],
-  ["generate_tags", "Generate tags", "Suggesting tags from recognizable keywords"],
-  ["detect_duplicates", "Identify similarities", "Comparing normalized filenames only"],
-  ["build_relationships", "Build relationships", "Connecting shared categories and tags"],
-  ["generate_organization_plan", "Create organization plan", "Preparing a proposal for your review"],
+  ["summarize_document", "理解内容", "正在准备正文摘录"],
+  ["classify_document", "识别主题", "根据文件名和正文规则分类"],
+  ["generate_tags", "生成标签", "根据可识别的关键词推荐标签"],
+  ["detect_duplicates", "查找相似文件", "仅比较规范化后的文件名"],
+  ["build_relationships", "建立关联", "关联共同分类与标签"],
+  ["generate_organization_plan", "生成整理方案", "正在准备待审阅方案"],
 ];
 type Context = { run: AgentRun; controller: AbortController; fault: DemoFault; faultUsed: boolean; busy: boolean; listener?: RunListener };
 function delay(ms: number, signal: AbortSignal) {
@@ -41,18 +41,18 @@ export class MockAgentEngine implements AgentEngine {
     const { run, controller } = context; const signal = controller.signal;
     try {
       if (run.status === "planning") {
-        this.log(context, "Workspace analysis started · Agent Demo"); this.publish(context);
+        this.log(context, "工作区分析已开始 · 模拟助手演示"); this.publish(context);
         await delay(this.pace, signal);
         for (const document of run.documents) {
-          run.steps.push(this.makeStep("read_document", "Read document", `Reading “${document.name}”`, document.id));
+          run.steps.push(this.makeStep("read_document", "读取资料", `正在读取“${document.name}”`, document.id));
         }
         this.publish(context);
         for (const [tool, title, description] of tools) {
           await delay(this.pace / 3, signal); run.steps.push(this.makeStep(tool, title, description)); this.publish(context);
         }
-        run.status = "running"; this.log(context, `Reading ${run.documents.length} documents`);
+        run.status = "running"; this.log(context, `正在读取 ${run.documents.length} 份资料`);
       }
-      if (context.fault === "agent" && !context.faultUsed) { context.faultUsed = true; throw new Error("Simulated Agent Error. Restart to run again without the injected failure."); }
+      if (context.fault === "agent" && !context.faultUsed) { context.faultUsed = true; throw new Error("模拟助手故障。重新启动后，将不再注入此故障。"); }
       for (const step of run.steps) {
         if (step.status === "failed") return;
         if (step.status !== "pending") continue;
@@ -63,44 +63,44 @@ export class MockAgentEngine implements AgentEngine {
         try {
           await delay(this.pace, signal);
           if (!context.faultUsed && ((context.fault === "parse" && doc) || (context.fault === "tool" && step.tool === "generate_tags"))) {
-            context.faultUsed = true; throw new Error(doc ? "Simulated Parse Error: Unable to parse document" : "Simulated Tool Error: tag generation interrupted");
+            context.faultUsed = true; throw new Error(doc ? "模拟解析故障：无法解析资料" : "模拟工具故障：标签生成已中断");
           }
           if (doc) {
             const parsed = await this.parser(doc, signal); signal.throwIfAborted(); Object.assign(doc, parsed);
-            step.output = doc.type === "image" ? `Metadata captured · ${doc.metadata.width} × ${doc.metadata.height}` : `${doc.metadata.characters ?? 0} characters extracted${doc.pageCount ? ` · ${doc.pageCount} pages` : ""}`;
+            step.output = doc.type === "image" ? `已读取文件信息 ·  ${doc.metadata.width} × ${doc.metadata.height}` : `${doc.metadata.characters ?? 0} 个字符已提取${doc.pageCount ? ` · ${doc.pageCount} 页` : ""}`;
           } else {
             const draft = buildOrganizationPlan(run.documents);
             const outputs: Partial<Record<AgentTool, string>> = {
-              summarize_document: `${draft.documents.length} excerpts prepared`, classify_document: `Found ${new Set(draft.documents.map((document) => document.category)).size} primary topics`,
-              generate_tags: `${new Set(draft.documents.flatMap((document) => document.tags)).size} distinct tags suggested`,
-              detect_duplicates: `${draft.duplicates.length} possible duplicate groups · name similarity`, build_relationships: `${draft.relationships.length} rule-based relationships discovered`,
-              generate_organization_plan: "Organization proposal ready",
+              summarize_document: `${draft.documents.length} 份摘录已准备`, classify_document: `发现  ${new Set(draft.documents.map((document) => document.category)).size} 个主要主题`,
+              generate_tags: `${new Set(draft.documents.flatMap((document) => document.tags)).size} 个标签建议`,
+              detect_duplicates: `${draft.duplicates.length} 组重复候选 · 名称相似`, build_relationships: `${draft.relationships.length} 条按规则建立的关联`,
+              generate_organization_plan: "整理建议已就绪",
             };
             step.output = outputs[step.tool];
             if (step.tool === "generate_organization_plan") run.result = draft;
           }
           signal.throwIfAborted(); step.status = "completed"; step.progress = 100; step.completedAt = Date.now();
-          this.log(context, step.output ?? `${step.title} completed`);
+          this.log(context, step.output ?? `${step.title}已完成`);
         } catch (error) {
           if (signal.aborted) throw error;
-          step.status = "failed"; step.completedAt = Date.now(); step.error = error instanceof Error ? error.message : "Unable to execute tool";
+          step.status = "failed"; step.completedAt = Date.now(); step.error = error instanceof Error ? error.message : "无法执行工具";
           if (doc) { doc.parseStatus = "failed"; doc.parseError = step.error; }
-          this.log(context, `${step.title} failed · retry or skip to continue`); this.publish(context); return;
+          this.log(context, `${step.title} 失败 · 请重试或跳过后继续`); this.publish(context); return;
         }
         run.progress = Math.round(run.steps.filter((item) => ["completed", "skipped"].includes(item.status)).length / run.steps.length * 100);
         this.publish(context);
       }
-      if (!run.result?.documents.length) throw new Error("No documents could be processed. Restart with a readable file.");
-      run.status = "waiting_for_review"; run.progress = 100; this.log(context, "Organization proposal ready · waiting for your review"); this.publish(context);
+      if (!run.result?.documents.length) throw new Error("没有可处理的资料，请选择可读取的文件后重新开始。");
+      run.status = "waiting_for_review"; run.progress = 100; this.log(context, "整理建议已就绪 · 等待你审阅"); this.publish(context);
     } catch (error) {
-      if (!signal.aborted) { run.status = "failed"; run.error = error instanceof Error ? error.message : "Agent Error"; this.log(context, run.error); this.publish(context); }
+      if (!signal.aborted) { run.status = "failed"; run.error = error instanceof Error ? error.message : "整理助手故障"; this.log(context, run.error); this.publish(context); }
     } finally { context.busy = false; }
   }
   cancelRun(runId: string) {
     const context = this.contexts.get(runId);
     if (!context || !["planning", "running", "applying"].includes(context.run.status)) return;
     context.controller.abort(); context.run.status = "cancelled";
-    this.log(context, "Organization stopped. Your files were not changed."); this.publish(context);
+    this.log(context, "整理已停止，文件未被修改。"); this.publish(context);
   }
   async retryStep(runId: string, stepId: string, onUpdate: RunListener) {
     const context = this.contexts.get(runId); const step = context?.run.steps.find((item) => item.id === stepId);
@@ -114,7 +114,7 @@ export class MockAgentEngine implements AgentEngine {
     step.status = "skipped"; step.progress = 100;
     const document = context.run.documents.find((item) => item.id === step.input.documentId);
     if (document) document.parseStatus = "skipped";
-    this.log(context, `Skipped “${document?.name}”`);
+    this.log(context, `已跳过“${document?.name}”`);
     await this.executeRun(runId, onUpdate);
   }
   async applyPlan(runId: string, plan: OrganizationPlan, onUpdate: RunListener) {
@@ -124,9 +124,9 @@ export class MockAgentEngine implements AgentEngine {
     try {
       await delay(this.pace * 2, context.controller.signal);
       context.run.result = structuredClone({ ...plan, relationships: plan.relationships.filter(r => r.decision !== "ignored") }); context.run.status = "completed"; context.run.completedAt = Date.now();
-      this.log(context, "Plan applied to this browser session only"); this.publish(context);
+      this.log(context, "方案已应用，仅保存在当前浏览器会话"); this.publish(context);
     } catch (error) {
-      if (!context.controller.signal.aborted) { context.run.status = "failed"; context.run.error = error instanceof Error ? error.message : "Unable to apply plan"; this.publish(context); }
+      if (!context.controller.signal.aborted) { context.run.status = "failed"; context.run.error = error instanceof Error ? error.message : "无法应用方案"; this.publish(context); }
     } finally { context.busy = false; }
   }
   disposeRun(runId: string) { const context = this.contexts.get(runId); context?.controller.abort(); this.contexts.delete(runId); }

@@ -7,10 +7,10 @@ import { WorkspaceError } from "@/lib/workspace/authorization";
 export const runtime = "nodejs";
 export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
-    const userId = await getUserId(); if (!userId) throw new WorkspaceError("NOT_FOUND", "Image not found.", 404);
+    const userId = await getUserId(); if (!userId) throw new WorkspaceError("NOT_FOUND", "图片不存在或无法访问。", 404);
     const id = z.uuid().parse((await context.params).id); const doc = await imageSource({ userId }, id);
     if (new URL(request.url).searchParams.get("original") === "1") {
-      if(doc.storage_status!=="available")throw new WorkspaceError("NOT_FOUND","Original image unavailable. Saved analysis is still accessible.",404);
+      if(doc.storage_status!=="available")throw new WorkspaceError("NOT_FOUND","原图不可用，仍可查看已保存的分析结果。",404);
       const bytes = await getFileStorage().readOriginal({ userId, workspaceId: doc.workspace_id, documentId: id, extension: doc.original_name.split(".").at(-1)!.toLowerCase() });
       return new Response(new Uint8Array(bytes), { headers: { "content-type": doc.mime_type, "cache-control": "private, no-store", "x-content-type-options": "nosniff", "content-security-policy": "default-src 'none'; sandbox" } });
     }
