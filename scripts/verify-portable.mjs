@@ -118,7 +118,7 @@ try {
     assert.equal(databasePathMatches(parsePostmasterPid(pidBytes).directory, resolve(source, ".filemind/postgresql/data")), true);
     const role = (await client.query("select rolsuper,rolcreatedb,rolcreaterole,rolbypassrls from pg_roles where rolname='filemind_user'")).rows[0];
     assert.deepEqual(role, { rolsuper: false, rolcreatedb: false, rolcreaterole: false, rolbypassrls: false });
-    assert.equal((await client.query("select count(*)::int as n from pg_database where datname='yunxiu'")).rows[0].n, 0);
+    assert.deepEqual((await client.query("select datname from pg_database where not datistemplate and datname <> 'postgres' order by datname")).rows.map(row => row.datname), ['filemind_ai']);
     assert.equal((await client.query("select count(*)::int as n from information_schema.tables where table_schema='filemind'")).rows[0].n, 15);
   });
   await db(source, async client => {
