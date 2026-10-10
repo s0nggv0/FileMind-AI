@@ -95,12 +95,14 @@ test("store locks mutations, edits proposal, applies once, retains Library snaps
   assert.equal(store.getState().applied[0].duplicates[0].decision, "accepted");
   store.getState().reset(); assert.equal(store.getState().documents.length, 0); assert.equal(store.getState().applied[0].documents.length, 2);
 });
-test("retry transport failure becomes a recoverable failed state instead of an unhandled rejection", async () => {
+for (const action of ["retry", "skip"] as const) test(`${action} transport failure leaves the run recoverable and preserves files`, async () => {
   const engine = new MockAgentEngine(1); const store = createWorkspaceStore(engine);
-  store.getState().addFiles([file()]); store.getState().setFault("tool"); await store.getState().start();
+  store.getState().addFiles([file()]); store.getState().setFault("parse"); await store.getState().start();
   const failed = store.getState().run!.steps.find(step => step.status === "failed")!;
-  engine.retryStep = async () => { throw new Error("Workspace storage is temporarily unavailable."); };
-  await store.getState().retry(failed.id);
+  engine[action === "retry" ? "retryStep" : "skipStep"] = async () => { throw new Error("Workspace storage is temporarily unavailable."); };
+  await store.getState()[action](failed.id);
   assert.equal(store.getState().run?.status, "failed"); assert.equal(store.getState().saveStatus, "error"); assert.match(store.getState().errors[0], /storage/);
+  assert.equal(store.getState().documents.length, 1);
+  assert.equal(store.getState().documents[0].id, failed.input.documentId);
   store.getState().reset();
 });

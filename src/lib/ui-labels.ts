@@ -19,6 +19,7 @@ const states: Record<string, string> = {
 const tools: Record<string, string> = {
   read_document: "读取资料", analyze_document: "分析资料", analyze_image: "分析图片",
   summarize_document: "生成摘要", classify_document: "分类资料", generate_tags: "生成标签",
+  generate_filename: "建议文件名",
   detect_duplicates: "检测重复", build_relationships: "建立关联",
   generate_organization_plan: "生成整理方案",
 };
@@ -49,7 +50,7 @@ const messages: Record<string, string> = {
   "Image metadata captured locally. Image content has not been analyzed.": "已在本地读取图片信息，尚未分析图片内容。",
 };
 
-// Only translate FileMind's own status messages; source text and model answers stay intact.
+// 只转换系统提示，保留资料原文和模型回答。
 export function systemMessage(value: string) {
   if (messages[value]) return messages[value];
   const prefixes: [string, string][] = [
