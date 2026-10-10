@@ -3,37 +3,37 @@ import type { NavigationItem } from "@/types";
 export const navItems = [
   {
     href: "/dashboard",
-    label: "Overview",
+    label: "概览",
     description: "查看个人知识空间",
     iconKey: "overview",
   },
   {
     href: "/workspace",
-    label: "Workspace",
+    label: "工作区",
     description: "审阅 AI 整理建议",
     iconKey: "workspace",
   },
   {
     href: "/library",
-    label: "Library",
+    label: "资料库",
     description: "浏览与筛选文件",
     iconKey: "library",
   },
   {
     href: "/search",
-    label: "AI Search",
+    label: "智能搜索",
     description: "围绕问题寻找资料",
     iconKey: "search",
   },
   {
     href: "/graph",
-    label: "Knowledge Graph",
+    label: "知识图谱",
     description: "探索文档与概念的联系",
     iconKey: "graph",
   },
   {
     href: "/cleanup",
-    label: "Smart Cleanup",
+    label: "智能清理",
     description: "审阅待整理项目",
     iconKey: "cleanup",
   },
@@ -41,7 +41,7 @@ export const navItems = [
 
 export const settingsNavItem = {
   href: "/settings",
-  label: "Settings",
+  label: "设置",
   description: "管理个人偏好",
 };
 

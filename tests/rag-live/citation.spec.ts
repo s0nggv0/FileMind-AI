@@ -31,16 +31,16 @@ test("real DashScope + Kimi: verified final answer, citation DB content, refresh
     const upload = await context.request.post(`/api/workspaces/${workspace}/files`, { headers, multipart: { documentId: id, file: { name: document.name, mimeType: document.mimeType, buffer: bytes } } }); expect(upload.ok()).toBe(true);
     user = (await upload.json()).documents[0].storagePath.split("/")[0];
     const indexed = await context.request.post("/api/index", { headers, data: { workspaceId: workspace } }); expect(indexed.ok()).toBe(true); expect((await indexed.json()).results[0].status).toBe("ready");
-    await page.goto("/search"); await expect(page.getByText("Demo / Mock", { exact: true })).toHaveCount(0);
-    await page.getByLabel("Ask your knowledge", { exact: true }).fill("简短解释 Query、Key、Value 的作用，并引用我的资料。"); await page.getByRole("button", { name: "搜索", exact: true }).click();
-    await expect(page.getByRole("button", { name: "Citation 1", exact: true }).first()).toBeVisible({ timeout: 180000 });
+    await page.goto("/search"); await expect(page.getByText("演示 / 模拟结果", { exact: true })).toHaveCount(0);
+    await page.getByLabel("向资料提问", { exact: true }).fill("简短解释 Query、Key、Value 的作用，并引用我的资料。"); await page.getByRole("button", { name: "搜索", exact: true }).click();
+    await expect(page.getByRole("button", { name: "引用 1", exact: true }).first()).toBeVisible({ timeout: 180000 });
     const events = (await page.evaluate(() => (window as unknown as { ragStream: Promise<string> }).ragStream)).split("\n\n").filter(e => e.startsWith("data: ")).map(e => JSON.parse(e.slice(6))); const result = events.find(e => e.type === "result").data;
     expect(result.mock).toBe(false); expect(result.answerUnavailable).toBe(false); expect(result.answer.citations.length).toBeGreaterThan(0); report.noUnverifiedDraft = !events.some(e => e.type === "draft"); expect(report.noUnverifiedDraft).toBe(true); expect(result.verification.status).toBe("verified"); report.factVerificationPassed = true;
-    await page.getByRole("button", { name: "Citation 1", exact: true }).first().click();
+    await page.getByRole("button", { name: "引用 1", exact: true }).first().click();
     const source = await (await context.request.get(`/api/search?chunkId=${result.answer.citations[0].chunkId}`)).json();
     await expect(page.getByRole("dialog").locator("mark")).toHaveText(source.content); expect(bytes.toString()).toContain(source.content); report.databaseOriginalMatched = true;
-    await page.getByRole("button", { name: "关闭", exact: true }).click(); await page.reload(); await expect(page.getByRole("button", { name: "Citation 1", exact: true }).first()).toBeVisible(); report.refreshPassed = true;
-    await page.getByLabel("Ask your knowledge", { exact: true }).fill("我的资料里量子纠缠有哪些解释？"); await page.getByRole("button", { name: "搜索", exact: true }).click();
+    await page.getByRole("button", { name: "关闭", exact: true }).click(); await page.reload(); await expect(page.getByRole("button", { name: "引用 1", exact: true }).first()).toBeVisible(); report.refreshPassed = true;
+    await page.getByLabel("向资料提问", { exact: true }).fill("我的资料里量子纠缠有哪些解释？"); await page.getByRole("button", { name: "搜索", exact: true }).click();
     await expect(page.getByText("我没有在你的资料中找到足够依据回答这个问题。", { exact: true })).toBeVisible({ timeout: 60000 }); report.noAnswerPassed = true;
     expect(errors).toEqual([]); report.REAL_RAG_BROWSER_VERIFIED = true;
   } finally {

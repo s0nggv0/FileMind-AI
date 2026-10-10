@@ -26,7 +26,7 @@ export function createWorkspaceStore(engine: AgentEngine) {
       timer = setTimeout(async () => {
         const proposal = get().proposal; if (!proposal) return;
         try { await engine.saveProposal!(proposal); if (version === generation) set({ saveStatus: "saved" }); }
-        catch (error) { if (version === generation) set({ saveStatus: "error", errors: [error instanceof Error ? error.message : "Workspace could not be saved."] }); }
+        catch (error) { if (version === generation) set({ saveStatus: "error", errors: [error instanceof Error ? error.message : "工作区保存失败，请重试。"] }); }
       }, 500);
     };
     const locked = () => get().run !== null;
@@ -35,14 +35,14 @@ export function createWorkspaceStore(engine: AgentEngine) {
       set({ run, documents: run.documents, ...(run.status === "waiting_for_review" ? { proposal: run.result ?? null } : {}) });
     };
     return {
-      initialized: !engine.initialize, persistent: false, engineLabel: "Local-only Demo", saveStatus: "local",
+      initialized: !engine.initialize, persistent: false, engineLabel: "仅本地演示", saveStatus: "local",
       initialize: async (id) => {
         if (get().initialized && (!id || get().workspaceId === id)) return;
         try {
           const session = await engine.initialize?.(id); if (!session) return;
           const snapshot = session.snapshot;
           set({ initialized: true, persistent: session.persistent, engineLabel: session.label, saveStatus: session.persistent ? "saved" : "local", workspaceId: snapshot?.id, ...(snapshot ? { documents: snapshot.documents, run: snapshot.run, proposal: snapshot.proposal, applied: snapshot.run?.status === "completed" && snapshot.run.result ? [snapshot.run.result] : get().applied } : {}) });
-        } catch (error) { set({ initialized: true, errors: [error instanceof Error ? error.message : "Workspace could not be restored."] }); }
+        } catch (error) { set({ initialized: true, errors: [error instanceof Error ? error.message : "工作区恢复失败，请重试。"] }); }
       },
       continueLocally: async () => {
         if (!engine.continueLocally) return; const documents = get().documents;
@@ -72,8 +72,8 @@ export function createWorkspaceStore(engine: AgentEngine) {
         set({ run: null, proposal: null, fault: "none", documents: get().documents.map((document) => ({ ...document, parseStatus: "ready", parseError: undefined })) });
         await get().start();
       },
-      retry: async (id) => { const run = get().run; if (run) { try { await engine.retryStep(run.id, id, update); } catch (error) { const message = error instanceof Error ? error.message : "Retry could not be saved."; set({ run: { ...(get().run ?? run), status: "failed", error: message }, saveStatus: "error", errors: [message] }); } } },
-      skip: async (id) => { const run = get().run; if (run) { try { await engine.skipStep(run.id, id, update); } catch (error) { const message = error instanceof Error ? error.message : "Skip could not be saved."; set({ run: { ...(get().run ?? run), status: "failed", error: message }, saveStatus: "error", errors: [message] }); } } },
+      retry: async (id) => { const run = get().run; if (run) { try { await engine.retryStep(run.id, id, update); } catch (error) { const message = error instanceof Error ? error.message : "重试状态保存失败，请重试。"; set({ run: { ...(get().run ?? run), status: "failed", error: message }, saveStatus: "error", errors: [message] }); } } },
+      skip: async (id) => { const run = get().run; if (run) { try { await engine.skipStep(run.id, id, update); } catch (error) { const message = error instanceof Error ? error.message : "跳过状态保存失败，请重试。"; set({ run: { ...(get().run ?? run), status: "failed", error: message }, saveStatus: "error", errors: [message] }); } } },
       editDocument: (id, patch) => {
         const proposal = get().proposal;
         if (!proposal || get().run?.status !== "waiting_for_review") return;
@@ -93,7 +93,7 @@ export function createWorkspaceStore(engine: AgentEngine) {
         set({ run: { ...run, status: "applying" } });
         const plan = { ...proposal, documents: proposal.documents.map((document) => ({ ...document, name: document.renameDecision === "accepted" && document.suggestedName ? document.suggestedName : document.originalName })) };
         try { await engine.applyPlan(run.id, plan, update); }
-        catch (error) { set({ run, saveStatus: "error", errors: [error instanceof Error ? error.message : "Plan could not be applied."] }); return; }
+        catch (error) { set({ run, saveStatus: "error", errors: [error instanceof Error ? error.message : "方案应用失败，请重试。"] }); return; }
         if (get().run?.id === run.id && get().run?.status === "completed") {
           set({ applied: [...get().applied, structuredClone({ ...plan, relationships: plan.relationships.filter(item => item.decision !== "ignored") })], saveStatus: get().persistent ? "saved" : "local" });
           get().documents.forEach((document) => releaseFile(document.id));

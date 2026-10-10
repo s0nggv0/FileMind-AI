@@ -7,7 +7,7 @@ export const runtime = "nodejs";
 export async function POST(request: Request) {
   try {
     sameOrigin(request); const service = backupService(); const userId = await getUserId();
-    if (!userId) throw new BackupError("Create or recover a knowledge space before exporting.");
+    if (!userId) throw new BackupError("导出前请先创建或恢复知识空间。");
     let cancelled = false;
     const stream = new ReadableStream<Uint8Array>({
       async start(controller) {
@@ -17,7 +17,7 @@ export async function POST(request: Request) {
           request.signal.throwIfAborted();
           await database.query(userId, "update filemind.profiles set last_backup_at=$2 where id=$1", [userId, result.manifest.createdAt]);
           send({ type: "result", filename: `filemind-${result.manifest.createdAt.slice(0, 10)}.filemind-backup`, base64: Buffer.from(result.bytes).toString("base64"), createdAt: result.manifest.createdAt });
-        } catch (error) { send({ type: "error", error: error instanceof BackupError ? error.message : "Export failed. Please retry." }); }
+        } catch (error) { send({ type: "error", error: error instanceof BackupError ? error.message : "导出失败，请重试。" }); }
         finally { if (!cancelled) controller.close(); }
       },
       cancel() { cancelled = true; },

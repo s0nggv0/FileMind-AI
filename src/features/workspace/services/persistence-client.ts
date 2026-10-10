@@ -6,18 +6,18 @@ import { getDocumentContent, getOriginalFile, restoreDocumentContent } from "./f
 export async function requestJSON(url: string, init?: RequestInit): Promise<unknown> {
   const response = await fetch(url, { ...init, headers: { ...(init?.body instanceof FormData ? {} : { "content-type": "application/json" }), ...init?.headers }, cache: "no-store" });
   const value: unknown = await response.json();
-  if (!response.ok) throw new Error(z.object({ error: z.string() }).safeParse(value).data?.error ?? "Workspace service is unavailable.");
+  if (!response.ok) throw new Error(z.object({ error: z.string() }).safeParse(value).data?.error ?? "工作区服务暂时不可用。");
   return value;
 }
 export class PersistenceClient {
-  persistent = false; label = "Local-only Demo"; intelligence = false; competition = false;
+  persistent = false; label = "仅本地演示"; intelligence = false; competition = false;
   snapshot: WorkspaceSnapshot | null = null;
   private queue: Promise<unknown> = Promise.resolve();
   private serial<T>(task: () => Promise<T>): Promise<T> { const result = this.queue.then(task); this.queue = result.catch(() => {}); return result; }
   async initialize(id?: string) {
     const config = z.object({ persistent: z.boolean(), intelligence: z.boolean(), label: z.string(), competition: z.boolean().optional().default(false) }).parse(await requestJSON("/api/workspace-config"));
     Object.assign(this, config);
-    if (id && !config.persistent) throw new Error("Set up persistent storage to restore saved workspaces.");
+    if (id && !config.persistent) throw new Error("配置持久化存储后才能恢复已保存工作区。");
     if (id) { this.snapshot = WorkspaceSnapshotSchema.parse(await requestJSON(`/api/workspaces/${id}`)); for (const d of this.snapshot.documents) { d.contentRef = d.id; restoreDocumentContent(d.id, this.snapshot.texts[d.id] ?? ""); } }
     return { snapshot: this.snapshot, persistent: this.persistent, label: this.label };
   }
@@ -25,7 +25,7 @@ export class PersistenceClient {
     if (!this.persistent) return;
     await this.serial(async () => {
       if (!this.snapshot) {
-        this.snapshot = WorkspaceSnapshotSchema.parse(await requestJSON("/api/workspaces", { method: "POST", body: JSON.stringify({ name: documents[0]?.name.replace(/\.[^.]+$/, "") || "My workspace" }) }));
+        this.snapshot = WorkspaceSnapshotSchema.parse(await requestJSON("/api/workspaces", { method: "POST", body: JSON.stringify({ name: documents[0]?.name.replace(/\.[^.]+$/, "") || "我的工作区" }) }));
         window.history.replaceState(null, "", `/workspace?workspace=${this.snapshot.id}`);
       } else if (this.snapshot.run) {
         this.snapshot = WorkspaceSnapshotSchema.parse(await requestJSON(`/api/workspaces/${this.snapshot.id}`, { method: "PATCH", body: JSON.stringify({ action: "resume", revision: this.snapshot.revision }) }));
@@ -59,7 +59,7 @@ export class PersistenceClient {
   }
   apply(proposal: OrganizationPlan) {
     return this.serial(async () => {
-      if (!this.snapshot) throw new Error("Workspace has not been saved.");
+      if (!this.snapshot) throw new Error("工作区尚未保存。");
       this.snapshot = WorkspaceSnapshotSchema.parse(await requestJSON(`/api/workspaces/${this.snapshot.id}`, { method: "PATCH", body: JSON.stringify({ action: "apply", revision: this.snapshot.revision, proposal }) }));
       return this.snapshot.run!;
     });

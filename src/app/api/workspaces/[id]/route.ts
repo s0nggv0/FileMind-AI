@@ -10,7 +10,7 @@ import { workspaceOperations } from "@/lib/server/reliability";
 type Context = { params: Promise<{ id: string }> };
 async function owned(context: Context) {
   const id = z.uuid().parse((await context.params).id); const user = await getUserId();
-  if (!user) throw new WorkspaceError("NOT_FOUND", "Workspace not found.", 404);
+  if (!user) throw new WorkspaceError("NOT_FOUND", "工作区不存在或无法访问。", 404);
   return { user, snapshot: await workspaceRepository.get(user, id) };
 }
 export async function GET(_request: Request, context: Context) {
@@ -20,13 +20,13 @@ export async function PUT(request: Request, context: Context) {
   try {
     sameOrigin(request); const { user, snapshot } = await owned(context);
     const next = WorkspaceSnapshotSchema.parse(await readJSON(request));
-    if (next.id !== snapshot.id || next.revision !== snapshot.revision) throw new WorkspaceError("CONFLICT", "Workspace changed. Reload before saving.", 409);
+    if (next.id !== snapshot.id || next.revision !== snapshot.revision) throw new WorkspaceError("CONFLICT", "工作区已更新，请刷新后再保存。", 409);
     // Browser snapshots are only permitted for mock runs. LLM results are server-owned.
-    if (next.run?.engine === "llm" || snapshot.run?.engine === "llm") throw new WorkspaceError("INVALID_STATE", "AI runs are saved by the server.", 403);
-    if (snapshot.run?.status === "completed" && next.run?.id === snapshot.run.id) throw new WorkspaceError("INVALID_STATE", "Completed runs are immutable.", 409);
-    if (snapshot.documents.length && (snapshot.documents.length !== next.documents.length || snapshot.documents.some(d => !next.documents.some(item => item.id === d.id)))) throw new WorkspaceError("INVALID_STATE", "Saved document identities cannot be changed.");
-    if (next.documents.some(d => { const old = snapshot.documents.find(p => p.id === d.id); return old && (old.name !== d.name || old.type !== d.type || old.size !== d.size || old.mimeType !== d.mimeType); })) throw new WorkspaceError("INVALID_STATE", "Original document metadata is immutable.");
-    if (next.documents.some(d => d.storagePath && d.storagePath !== snapshot.documents.find(p => p.id === d.id)?.storagePath)) throw new WorkspaceError("INVALID_STATE", "Storage references are server-owned.");
+    if (next.run?.engine === "llm" || snapshot.run?.engine === "llm") throw new WorkspaceError("INVALID_STATE", "AI 整理记录由服务器保存。", 403);
+    if (snapshot.run?.status === "completed" && next.run?.id === snapshot.run.id) throw new WorkspaceError("INVALID_STATE", "已完成的整理记录不能修改。", 409);
+    if (snapshot.documents.length && (snapshot.documents.length !== next.documents.length || snapshot.documents.some(d => !next.documents.some(item => item.id === d.id)))) throw new WorkspaceError("INVALID_STATE", "已保存资料的标识不能修改。");
+    if (next.documents.some(d => { const old = snapshot.documents.find(p => p.id === d.id); return old && (old.name !== d.name || old.type !== d.type || old.size !== d.size || old.mimeType !== d.mimeType); })) throw new WorkspaceError("INVALID_STATE", "原文件信息不能修改。");
+    if (next.documents.some(d => d.storagePath && d.storagePath !== snapshot.documents.find(p => p.id === d.id)?.storagePath)) throw new WorkspaceError("INVALID_STATE", "文件存储位置由服务器管理。");
     const saved = next.run?.status === "completed" ? await workspaceOperations().apply(user, next) : await workspaceRepository.save(user, next);
     if (next.run?.status === "completed") scheduleKnowledgeIndex({ userId: user, workspaceId: next.id });
     return Response.json(saved);
@@ -36,12 +36,12 @@ export async function PATCH(request: Request, context: Context) {
   try {
     sameOrigin(request); const { user, snapshot } = await owned(context);
     const body = z.object({ action: z.enum(["review", "apply", "resume"]), revision: z.number().int().nonnegative(), proposal: OrganizationProposalSchema.optional() }).parse(await readJSON(request));
-    if (body.revision !== snapshot.revision) throw new WorkspaceError("CONFLICT", "Workspace changed. Reload before saving.", 409);
+    if (body.revision !== snapshot.revision) throw new WorkspaceError("CONFLICT", "工作区已更新，请刷新后再保存。", 409);
     if (body.action === "resume") {
-      if (!snapshot.run || !["running", "planning", "failed", "cancelled"].includes(snapshot.run.status)) throw new WorkspaceError("INVALID_STATE", "This run cannot resume.", 409);
+      if (!snapshot.run || !["running", "planning", "failed", "cancelled"].includes(snapshot.run.status)) throw new WorkspaceError("INVALID_STATE", "此整理记录无法继续，请重新开始。", 409);
       snapshot.run = null; snapshot.proposal = null;
     } else {
-      if (!body.proposal) throw new WorkspaceError("INVALID_STATE", "Missing proposal.");
+      if (!body.proposal) throw new WorkspaceError("INVALID_STATE", "缺少整理方案。");
       validateReview(snapshot, body.proposal); snapshot.proposal = body.proposal;
       if (body.action === "apply" && snapshot.run) {
         snapshot.proposal.documents = snapshot.proposal.documents.map(d => ({ ...d, name: d.renameDecision === "accepted" && d.suggestedName ? sanitizeFilename(d.suggestedName, d.originalName) : d.originalName }));

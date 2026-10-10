@@ -17,15 +17,15 @@ for(const width of [1440,390]) test(`verified Search states preserve sources and
   });
   await page.route("**/api/search?chunkId=*",route=>route.fulfill({json:source}));
   const errors:string[]=[];page.on("pageerror",e=>errors.push(e.message));
-  await page.goto("/search");await page.getByLabel("Ask your knowledge",{exact:true}).fill("Retention?");await page.getByRole("button",{name:"搜索",exact:true}).click();
+  await page.goto("/search");await page.getByLabel("向资料提问",{exact:true}).fill("Retention?");await page.getByRole("button",{name:"搜索",exact:true}).click();
   await expect(page.getByText("正在检查原文依据，完成后显示回答。")).toBeVisible();
   await expect(page.getByText("UNVERIFIED ANSWER MUST STAY HIDDEN")).toHaveCount(0);
   await expect(page.getByText("找到相关段落，但 AI 回答的生成或依据验证暂时不可用。来源仍可查看。")).toBeVisible();
   await expect(page.getByRole("button",{name:/retention.txt/}).first()).toBeVisible();
   await mkdir("artifacts/phase8-qa",{recursive:true});await page.screenshot({path:`artifacts/phase8-qa/search-unavailable-${width}.png`,fullPage:true});
-  await page.getByRole("button",{name:"重试回答",exact:true}).click();await expect(page.getByRole("button",{name:"Citation 1",exact:true})).toBeVisible();
+  await page.getByRole("button",{name:"重试回答",exact:true}).click();await expect(page.getByRole("button",{name:"引用 1",exact:true})).toBeVisible();
   await expect(page.getByText("UNVERIFIED ANSWER MUST STAY HIDDEN")).toHaveCount(0);
   await page.screenshot({path:`artifacts/phase8-qa/search-verified-${width}.png`,fullPage:true});
-  await page.getByRole("button",{name:"Citation 1",exact:true}).click();await expect(page.getByRole("dialog").locator("mark")).toHaveText(source.content);
+  await page.getByRole("button",{name:"引用 1",exact:true}).click();await expect(page.getByRole("dialog").locator("mark")).toHaveText(source.content);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);expect(errors).toEqual([]);
 });

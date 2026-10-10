@@ -10,10 +10,10 @@ import type { AgentRun, DemoFault } from "../src/types/workspace";
 const file = (name = "Transformer notes.txt") => new File(["Transformer attention lecture notes."], name, { type: "text/plain" });
 test("validation accepts supported files and bounds size, MIME and count", () => {
   assert.equal(validateFiles([file()], 0).accepted.length, 1);
-  assert.match(validateFiles([file("script.exe")], 0).errors[0], /Unsupported/);
-  assert.match(validateFiles([new File(["x"], "photo.png", { type: "text/html" })], 0).errors[0], /Unsupported/);
+  assert.match(validateFiles([file("script.exe")], 0).errors[0], /不支持/);
+  assert.match(validateFiles([new File(["x"], "photo.png", { type: "text/html" })], 0).errors[0], /不支持/);
   const oversized = { name: "big.txt", type: "text/plain", size: uploadConfig.maxFileBytes + 1 } as File;
-  assert.match(validateFiles([oversized], 0).errors[0], /exceeds/);
+  assert.match(validateFiles([oversized], 0).errors[0], /超过/);
   assert.equal(validateFiles(Array.from({ length: 31 }, () => file()), 0).accepted.length, 30);
   assert.equal(validateFiles([file()], 30).accepted.length, 0);
 });
@@ -70,7 +70,7 @@ test("tool failure transitions through retry to review; agent failure is explici
     assert.equal(context.latest().status, "waiting_for_review");
   } finally { context.cleanup(); }
   const agent = await runWithFault("agent");
-  try { assert.equal(agent.latest().status, "failed"); assert.match(agent.latest().error!, /Agent Error/); } finally { agent.cleanup(); }
+  try { assert.equal(agent.latest().status, "failed"); assert.match(agent.latest().error!, /助手故障/); } finally { agent.cleanup(); }
 });
 test("cancel prevents late events and is terminal", async () => {
   const engine = new MockAgentEngine(10); const document = registerFile(file());

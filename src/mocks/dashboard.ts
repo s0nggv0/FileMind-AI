@@ -23,11 +23,11 @@ export const dashboardInsights: DashboardInsight[] = [
 ];
 
 export const dashboardActivityGroups = [
-  { label: "Today", date: "09.30", items: [
+  { label: "今天", date: "09.30", items: [
     { id: "project", title: "更新项目计划", detail: "AI Web 挑战赛项目计划.docx", time: "14:45", href: "/library?document=doc-project-proposal" },
     { id: "notes", title: "课程资料已就绪", detail: "人工智能课程笔记.pdf", time: "08:30", href: "/library?document=doc-ai-course" },
   ] },
-  { label: "Yesterday", date: "09.29", items: [
+  { label: "昨天", date: "09.29", items: [
     { id: "research", title: "添加研究笔记", detail: "RAG 文献阅读.md · 3 条关联", time: "16:20", href: "/library?document=doc-rag-research" },
   ] },
 ];
@@ -38,7 +38,7 @@ export const dashboardTopics = ["人工智能", "机器学习", "RAG", "FileMind
 });
 
 export const dashboardQuickActions = [
-  { label: "Organize files", description: "让资料开始有序", href: "/workspace", icon: "organize" as const },
-  { label: "Ask your knowledge", description: "从一个问题开始", href: "/search", icon: "search" as const },
-  { label: "Explore connections", description: "沿着关联继续阅读", href: "/graph", icon: "graph" as const },
+  { label: "整理文件", description: "让资料开始有序", href: "/workspace", icon: "organize" as const },
+  { label: "向资料提问", description: "从一个问题开始", href: "/search", icon: "search" as const },
+  { label: "探索关联", description: "沿着关联继续阅读", href: "/graph", icon: "graph" as const },
 ];
