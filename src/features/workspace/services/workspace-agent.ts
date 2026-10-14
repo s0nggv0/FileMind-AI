@@ -3,7 +3,7 @@ import { MockAgentEngine } from "./mock-agent";
 import { LLMAgentEngine } from "./llm-agent";
 import { PersistenceClient } from "./persistence-client";
 import { parseDocument } from "./file-parser";
-import { buildOrganizationPlan } from "./organization-rules";
+import { buildOrganizationPlan } from "@/lib/workspace/organization-rules";
 
 // 在这里选择真实或模拟引擎，页面统一通过 AgentEngine 调用。
 export class WorkspaceAgentEngine implements AgentEngine {

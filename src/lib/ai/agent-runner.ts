@@ -4,7 +4,7 @@ import type { AgentRun, AgentStep, AgentTool, OrganizationPlan, ParsedDocument }
 import type { WorkspaceSnapshot } from "@/lib/workspace/schemas";
 import { OrganizationProposalSchema } from "@/lib/workspace/schemas";
 import { WorkspaceError } from "@/lib/workspace/authorization";
-import { buildOrganizationPlan, buildRelationships, detectDuplicates } from "@/features/workspace/services/organization-rules";
+import { buildOrganizationPlan, buildRelationships, detectDuplicates } from "@/lib/workspace/organization-rules";
 import type { AIProvider, AIUsage } from "./provider";
 import { analyzeDocument } from "./document-analysis";
 import { analysisQueue } from "./analysis-queue";

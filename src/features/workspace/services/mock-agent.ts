@@ -1,6 +1,6 @@
 import type { AgentEngine, AgentRun, AgentStep, AgentTool, DemoFault, OrganizationPlan, ParsedDocument, RunListener } from "@/types/workspace";
-import { parseDocument } from "./file-parser";
-import { buildOrganizationPlan } from "./organization-rules";
+import { getDocumentContent, parseDocument } from "./file-parser";
+import { buildOrganizationPlan } from "@/lib/workspace/organization-rules";
 
 const tools: [AgentTool, string, string][] = [
   ["summarize_document", "理解内容", "正在准备正文摘录"],
@@ -69,7 +69,7 @@ export class MockAgentEngine implements AgentEngine {
             const parsed = await this.parser(doc, signal); signal.throwIfAborted(); Object.assign(doc, parsed);
             step.output = doc.type === "image" ? `已读取文件信息 ·  ${doc.metadata.width} × ${doc.metadata.height}` : `${doc.metadata.characters ?? 0} 个字符已提取${doc.pageCount ? ` · ${doc.pageCount} 页` : ""}`;
           } else {
-            const draft = buildOrganizationPlan(run.documents);
+            const draft = buildOrganizationPlan(run.documents, getDocumentContent);
             const outputs: Partial<Record<AgentTool, string>> = {
               summarize_document: `${draft.documents.length} 份摘录已准备`, classify_document: `发现  ${new Set(draft.documents.map((document) => document.category)).size} 个主要主题`,
               generate_tags: `${new Set(draft.documents.flatMap((document) => document.tags)).size} 个标签建议`,

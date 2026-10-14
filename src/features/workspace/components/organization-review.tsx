@@ -9,7 +9,7 @@ import { DocumentTypeIcon } from "@/components/common/document-type-icon";
 import { formatFileSize } from "@/config/upload";
 import type { Decision, OrganizationPlan, ProposalDocument } from "@/types/workspace";
 import { categoryLabel, systemMessage } from "@/lib/ui-labels";
-import { organizationCategories } from "../services/organization-rules";
+import { organizationCategories } from "@/lib/workspace/organization-rules";
 import { useWorkspaceStore } from "../store/workspace-store";
 
 function DecisionControls({ decision, onChange }: { decision: Decision; onChange: (decision: Decision) => void }) {
