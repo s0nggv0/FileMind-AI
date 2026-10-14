@@ -6,7 +6,7 @@ import { WorkflowSection } from "@/features/landing/workflow-section";
 import { GraphShowcase } from "@/features/landing/graph-showcase";
 import { CleanupShowcase } from "@/features/landing/cleanup-showcase";
 import { FinalCTA } from "@/features/landing/final-cta";
-import { getLandingPresentation } from "@/services/presentation-repository";
+import { getDemoLandingPresentation } from "@/lib/demo/presentation";
 
 export const metadata: Metadata = {
   title: "FileMind AI · 将资料连接成知识",
@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 };
 
 export default function LandingPage() {
-  const data = getLandingPresentation();
+  const data = getDemoLandingPresentation();
   return (
     <>
       <HeroSection formats={data.landingFormats} />

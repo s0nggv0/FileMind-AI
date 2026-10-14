@@ -1,6 +1,6 @@
 export type DocumentType = "pdf" | "docx" | "md" | "txt" | "image";
 
-export interface DemoDocument {
+export interface DocumentViewModel {
   id: string;
   name: string;
   type: DocumentType;

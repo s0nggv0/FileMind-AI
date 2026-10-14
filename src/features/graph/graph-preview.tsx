@@ -4,9 +4,9 @@ import { useState } from "react";
 import { ArrowRight, FileText, Link2, Network } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import type { DemoDocument, DemoGraphEdge, DemoGraphNode } from "@/types";
+import type { DocumentViewModel, GraphEdgeViewModel, GraphNodeViewModel } from "@/types";
 
-export function GraphPreview({ nodes, edges, documents, dataset = "example" }: { nodes: DemoGraphNode[]; edges: DemoGraphEdge[]; documents: DemoDocument[]; dataset?: "example" | "workspace" }) {
+export function GraphPreview({ nodes, edges, documents, dataset = "example" }: { nodes: GraphNodeViewModel[]; edges: GraphEdgeViewModel[]; documents: DocumentViewModel[]; dataset?: "example" | "workspace" }) {
   const [selectedId, setSelectedId] = useState(nodes.find((node) => node.kind === "concept")?.id ?? nodes[0]?.id);
   const selected = nodes.find((node) => node.id === selectedId);
   const document = documents.find((item) => item.id === selected?.documentId);

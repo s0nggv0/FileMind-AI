@@ -42,3 +42,38 @@ export interface DashboardInsight {
   description: string;
   href: string;
 }
+
+// Shared display contracts for saved workspace data and explicitly marked examples.
+export type CleanupIssueType = "duplicate" | "outdated" | "missing-tags";
+
+export interface CleanupIssueViewModel {
+  id: string;
+  type: CleanupIssueType;
+  title: string;
+  description: string;
+  files: string[];
+  recommendation: string;
+  preview: { label: string; before: string; after: string };
+}
+
+export interface GraphNodeViewModel {
+  id: string;
+  label: string;
+  kind: "document" | "concept";
+  x: number;
+  y: number;
+  documentId?: string;
+}
+
+export interface GraphEdgeViewModel {
+  source: string;
+  target: string;
+  label: string;
+}
+
+export interface OverviewMetrics {
+  fileCount: number;
+  categoryCount: number;
+  relationCount: number;
+  pendingCount: number;
+}

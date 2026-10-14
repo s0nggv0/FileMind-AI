@@ -1,6 +1,6 @@
-import type { DemoDocument } from "@/types";
+import type { DocumentViewModel } from "@/types";
 
-export const demoDocuments: DemoDocument[] = [
+export const demoDocuments: DocumentViewModel[] = [
   {
     id: "doc-ai-course",
     name: "人工智能课程笔记.pdf",
