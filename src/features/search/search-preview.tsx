@@ -4,9 +4,9 @@ import { useState } from "react";
 import { ArrowUpRight, FileText, Quote, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import type { DemoDocument } from "@/types";
+import type { DocumentViewModel } from "@/types";
 
-export function SearchPreview({ suggestions, documents }: { suggestions: string[]; documents: DemoDocument[] }) {
+export function SearchPreview({ suggestions, documents }: { suggestions: string[]; documents: DocumentViewModel[] }) {
   const [question, setQuestion] = useState("");
 
   return (

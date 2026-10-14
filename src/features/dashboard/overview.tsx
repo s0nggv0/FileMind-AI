@@ -4,9 +4,9 @@ import { RecentFiles } from "./recent-files";
 import { ActivityTimeline } from "./activity-timeline";
 import { KnowledgeTopics } from "./knowledge-topics";
 import { QuickActions } from "./quick-actions";
-import type { getDashboardPresentation } from "@/services/presentation-repository";
+import type { getDemoDashboardPresentation } from "@/lib/demo/presentation";
 
-export function Overview({ data }: { data: ReturnType<typeof getDashboardPresentation> }) {
+export function Overview({ data }: { data: ReturnType<typeof getDemoDashboardPresentation> }) {
   return (
     <div className="space-y-9 sm:space-y-10">
       <KnowledgeOverview metrics={data.overview} topicCount={data.topicCount} />

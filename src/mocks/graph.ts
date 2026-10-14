@@ -1,6 +1,6 @@
-import type { DemoGraphEdge, DemoGraphNode } from "@/types";
+import type { GraphEdgeViewModel, GraphNodeViewModel } from "@/types";
 
-export const demoGraphNodes: DemoGraphNode[] = [
+export const demoGraphNodes: GraphNodeViewModel[] = [
   { id: "concept-knowledge", label: "知识管理", kind: "concept", x: 460, y: 235 },
   { id: "concept-rag", label: "RAG", kind: "concept", x: 250, y: 190 },
   { id: "concept-ml", label: "机器学习", kind: "concept", x: 635, y: 155 },
@@ -54,7 +54,7 @@ export const demoGraphNodes: DemoGraphNode[] = [
   },
 ];
 
-export const demoGraphEdges: DemoGraphEdge[] = [
+export const demoGraphEdges: GraphEdgeViewModel[] = [
   { source: "graph-ai-course", target: "concept-ml", label: "介绍" },
   { source: "graph-ai-course", target: "graph-ml-lab", label: "相关实验" },
   { source: "graph-ai-course", target: "concept-rag", label: "关联主题" },

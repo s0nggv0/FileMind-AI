@@ -1,6 +1,6 @@
-import type { DemoCleanupIssue } from "@/types";
+import type { CleanupIssueViewModel } from "@/types";
 
-export const demoCleanupIssues: DemoCleanupIssue[] = [
+export const demoCleanupIssues: CleanupIssueViewModel[] = [
   {
     id: "cleanup-overlap",
     type: "duplicate",

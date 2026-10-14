@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/feedback/empty-state";
 import { cn } from "@/lib/utils";
-import type { CleanupIssueType, DemoCleanupIssue } from "@/types";
+import type { CleanupIssueType, CleanupIssueViewModel } from "@/types";
 
 const issuePresentation = {
   duplicate: { label: "内容重叠", icon: Copy },
@@ -14,7 +14,7 @@ const issuePresentation = {
   "missing-tags": { label: "标签建议", icon: Tags },
 } satisfies Record<CleanupIssueType, { label: string; icon: typeof Copy }>;
 
-function SuggestionItem({ issue, active, onSelect }: { issue: DemoCleanupIssue; active: boolean; onSelect: () => void }) {
+function SuggestionItem({ issue, active, onSelect }: { issue: CleanupIssueViewModel; active: boolean; onSelect: () => void }) {
   const { icon: Icon, label } = issuePresentation[issue.type];
   return (
     <button
@@ -32,7 +32,7 @@ function SuggestionItem({ issue, active, onSelect }: { issue: DemoCleanupIssue; 
   );
 }
 
-function SuggestionDetail({ issue, dataset }: { issue: DemoCleanupIssue; dataset: "example" | "workspace" }) {
+function SuggestionDetail({ issue, dataset }: { issue: CleanupIssueViewModel; dataset: "example" | "workspace" }) {
   return (
     <section className="rounded-xl border border-border bg-card p-5 sm:p-6" aria-live="polite">
       <div className="flex items-center justify-between">
@@ -74,7 +74,7 @@ function SuggestionDetail({ issue, dataset }: { issue: DemoCleanupIssue; dataset
   );
 }
 
-export function CleanupReview({ issues, dataset = "example" }: { issues: DemoCleanupIssue[]; dataset?: "example" | "workspace" }) {
+export function CleanupReview({ issues, dataset = "example" }: { issues: CleanupIssueViewModel[]; dataset?: "example" | "workspace" }) {
   const [selectedId, setSelectedId] = useState(issues[0]?.id);
   const selected = issues.find((issue) => issue.id === selectedId);
   return (

@@ -12,15 +12,15 @@ import { EmptyState } from "@/components/feedback/empty-state";
 import { cn } from "@/lib/utils";
 import { categoryLabel, systemMessage } from "@/lib/ui-labels";
 import { formatDocumentDate } from "@/features/library/document-presentation";
-import type { DemoDocument } from "@/types";
+import type { DocumentViewModel } from "@/types";
 import { KnowledgeIndex } from "./knowledge-index";
 import { ImageSourceView } from "@/components/knowledge/image-source-view";
 
-export function LibraryBrowser({ documents, categories, initialSelectedId, dataset = "example", persistent = false }: { documents: DemoDocument[]; categories: string[]; initialSelectedId?: string; dataset?: "example" | "workspace"; persistent?: boolean }) {
+export function LibraryBrowser({ documents, categories, initialSelectedId, dataset = "example", persistent = false }: { documents: DocumentViewModel[]; categories: string[]; initialSelectedId?: string; dataset?: "example" | "workspace"; persistent?: boolean }) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("all");
   const [view, setView] = useState<"grid" | "list">("grid");
-  const [selected, setSelected] = useState<DemoDocument | null>(documents.find((document) => document.id === initialSelectedId) ?? null);
+  const [selected, setSelected] = useState<DocumentViewModel | null>(documents.find((document) => document.id === initialSelectedId) ?? null);
   const filtered = useMemo(() => {
     const needle = query.trim().toLocaleLowerCase();
     return documents.filter((document) => (category === "all" || document.category === category) && (!needle || [document.name, document.summary, ...document.tags].join(" ").toLocaleLowerCase().includes(needle)));
