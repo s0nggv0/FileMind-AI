@@ -5,6 +5,7 @@ import type { RetrievalRoute } from "./retrieval-router";
 import type { EvidenceAssessment } from "./evidence-sufficiency";
 import type { VerificationReport } from "./answer-verifier";
 export const SearchRequestSchema = z.object({ query: z.string().trim().min(1).max(1500), mode: z.enum(["ask", "find"]), workspaceId: z.uuid().optional(), previousRunId: z.uuid().optional(), clarificationOption: z.number().int().min(0).max(7).optional() }).strict();
+export type SearchRequest = z.infer<typeof SearchRequestSchema>;
 export interface SearchResult {
   id: string; query: string; rewrittenQuery: string; mode: "ask" | "find";
   answer: RAGAnswer | null; sources: RAGSource[]; nearest: RAGSource[];
