@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import type { AIProvider } from "../src/lib/ai/provider";
 import { LLMAgentRunner } from "../src/lib/ai/agent-runner";
 import { WorkspaceSnapshotSchema } from "../src/lib/workspace/schemas";
-import { detectDuplicates } from "../src/features/workspace/services/organization-rules";
+import { detectDuplicates } from "../src/lib/workspace/organization-rules";
 import { ToolRegistry } from "../src/lib/ai/tool-registry";
 import { z } from "zod";
 const doc = { id: crypto.randomUUID(), name: "final2.txt", type: "txt" as const, mimeType: "text/plain", size: 30, parseStatus: "completed" as const, metadata: { addedAt: new Date().toISOString() } };

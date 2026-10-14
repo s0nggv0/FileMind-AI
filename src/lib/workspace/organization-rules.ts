@@ -1,4 +1,3 @@
-import { getDocumentContent } from "./file-parser";
 import type { OrganizationPlan, ParsedDocument, ProposalDocument } from "@/types/workspace";
 
 export const organizationCategories = ["Artificial Intelligence", "Study", "Projects", "Research", "Images", "Uncategorized"];
@@ -27,7 +26,8 @@ function proposeDocument(document: ParsedDocument, content: (document: ParsedDoc
   const summary = document.type === "image" ? text ? `Image knowledge: ${text.slice(0, 360)}${text.length > 360 ? "…" : ""}` : "Image metadata captured locally. Image content has not been analyzed." : text ? `Extracted excerpt: ${text.slice(0, 360)}${text.length > 360 ? "…" : ""}` : `Document named “${document.name}”. No readable text was extracted; topic suggestions use its filename.`;
   return { id: document.id, originalName: document.name, name: document.name, category, tags, summary, suggestedName, renameDecision: "pending", document };
 }
-export function buildOrganizationPlan(input: ParsedDocument[], content = getDocumentContent): OrganizationPlan {
+// Both browser and server callers supply text from their own storage.
+export function buildOrganizationPlan(input: ParsedDocument[], content: (document: ParsedDocument) => string): OrganizationPlan {
   const documents = input.filter((document) => document.parseStatus === "completed").map(document => proposeDocument(document, content));
   const duplicates = detectDuplicates(input.filter(document => document.parseStatus === "completed"));
   return { documents, duplicates, relationships: buildRelationships(documents), simulation: true };

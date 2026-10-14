@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { uploadConfig } from "../src/config/upload";
 import { registerFile, parseDocument, getDocumentContent, releaseDocument, validateFiles, parserResourceCounts } from "../src/features/workspace/services/file-parser";
 import { MockAgentEngine } from "../src/features/workspace/services/mock-agent";
-import { normalizedFilename } from "../src/features/workspace/services/organization-rules";
+import { normalizedFilename } from "../src/lib/workspace/organization-rules";
 import { createWorkspaceStore } from "../src/features/workspace/store/workspace-store";
 import type { AgentRun, DemoFault } from "../src/types/workspace";
 
