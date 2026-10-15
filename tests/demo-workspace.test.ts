@@ -5,7 +5,7 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, relative, resolve, isAbsolute } from "node:path";
 import { PGlite } from "@electric-sql/pglite";
-import { applyMigrations } from "../scripts/migrate-database.mjs";
+import { applyMigrations } from "../scripts/database/migrate-database.mjs";
 import { runTenantQuery, runTenantTransaction } from "../src/lib/workspace/tenant-query";
 import { PostgresWorkspaceRepository, type TransactionalTenantDatabase } from "../src/lib/workspace/postgres-repository";
 import { RecoveryService } from "../src/lib/reliability/recovery";

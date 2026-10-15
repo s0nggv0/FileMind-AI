@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { verifyKimiLive, renderGateReport } from "../scripts/verify-kimi-live";
+import { verifyKimiLive, renderGateReport } from "../scripts/verification/verify-kimi-live";
 
 const env = { KIMI_API_KEY: "synthetic-secret-only", AI_PROVIDER: "kimi" };
 function completion(content: string, toolCalls?: unknown[]) {

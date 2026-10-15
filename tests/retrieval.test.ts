@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { PGlite } from "@electric-sql/pglite";
-import { applyMigrations } from "../scripts/migrate-database.mjs";
+import { applyMigrations } from "../scripts/database/migrate-database.mjs";
 import { PostgresWorkspaceRepository, type TransactionalTenantDatabase } from "../src/lib/workspace/postgres-repository";
 import { runTenantQuery, runTenantTransaction } from "../src/lib/workspace/tenant-query";
 import { PostgresKnowledgeRepository } from "../src/lib/retrieval/postgres-knowledge";

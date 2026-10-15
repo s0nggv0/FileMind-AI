@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { originalKey } from "../../../scripts/storage-recovery.mjs";
+import { originalKey } from "../../../scripts/runtime/storage-recovery.mjs";
 import { OperationPayloadSchema } from "./operation-journal";
 import { RecoveryService } from "./recovery";
 import { PrivateFileStorage } from "../workspace/private-file-storage";

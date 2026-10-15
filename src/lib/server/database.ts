@@ -4,7 +4,7 @@ import { z } from "zod";
 import { WorkspaceError } from "@/lib/workspace/authorization";
 import { storageFailure, type TransactionalTenantDatabase } from "@/lib/workspace/postgres-repository";
 import { runTenantQuery, runTenantTransaction } from "@/lib/workspace/tenant-query";
-import { createOperationLease } from "../../../scripts/operation-lease.mjs";
+import { createOperationLease } from "../../../scripts/runtime/operation-lease.mjs";
 
 const shared = globalThis as typeof globalThis & { filemindPool?: Pool; filemindLockPool?: Pool };
 export function persistenceConfigured() { return Boolean(process.env.DATABASE_URL?.trim()); }

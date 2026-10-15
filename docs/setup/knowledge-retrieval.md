@@ -26,9 +26,9 @@ Search 的 Ask 依据原文生成带引用回答，Find 只找文件和段落；
 先启动本项目专用便携数据库。以下实时命令会调用已配置的收费模型，仅使用自写合成资料；结果不包含 Key。
 
 ```powershell
-node --import tsx scripts/verify-kimi-live.ts
-node --import tsx scripts/verify-embedding-live.ts
-node --import tsx scripts/evaluate-rag.ts --live
+node --import tsx scripts/verification/verify-kimi-live.ts
+node --import tsx scripts/verification/verify-embedding-live.ts
+node --import tsx scripts/evaluation/evaluate-rag.ts --live
 ```
 
 真实浏览器验收：先运行 `node scripts/portable-start.mjs --port 3082`，然后 `npx playwright test --config playwright.rag-live.config.ts`。完成后运行 `node scripts/portable-start.mjs --stop`。

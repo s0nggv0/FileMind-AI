@@ -9,7 +9,7 @@ import type { DocumentChunk, IndexDocument, RetrievalScope } from "./types";
 import type { PostgresKnowledgeRepository } from "./postgres-knowledge";
 import { RecoveryService } from "../reliability/recovery";
 import { atomicWriteFile } from "../reliability/atomic-file";
-import { ensureStorageDirectory } from "../../../scripts/storage-recovery.mjs";
+import { ensureStorageDirectory } from "../../../scripts/runtime/storage-recovery.mjs";
 
 export interface IndexBuildOptions {
   storageRoot?: string;

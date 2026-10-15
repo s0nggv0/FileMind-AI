@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { recoverTenantOperations, repairOperationFiles, reconcileStorage, type TenantRecoveryQuery } from "../../../scripts/storage-recovery.mjs";
+import { recoverTenantOperations, repairOperationFiles, reconcileStorage, type TenantRecoveryQuery } from "../../../scripts/runtime/storage-recovery.mjs";
 import type { TransactionalTenantDatabase } from "../workspace/postgres-repository";
 import { OperationJournal, type JournalRow } from "./operation-journal";
 

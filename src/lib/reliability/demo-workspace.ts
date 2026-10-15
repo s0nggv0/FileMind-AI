@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { link, readFile, unlink } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { z } from "zod";
-import { ensureStorageDirectory, originalKey } from "../../../scripts/storage-recovery.mjs";
+import { ensureStorageDirectory, originalKey } from "../../../scripts/runtime/storage-recovery.mjs";
 import { WorkspaceSnapshotSchema } from "../workspace/schemas";
 import { WorkspaceError } from "../workspace/authorization";
 import { PostgresWorkspaceRepository } from "../workspace/postgres-repository";
