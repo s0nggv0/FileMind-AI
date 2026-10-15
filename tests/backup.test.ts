@@ -5,7 +5,7 @@ import { mkdtemp, rm, readFile, readdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { zipSync, unzipSync, strToU8 } from 'fflate';
-import { applyMigrations } from '../scripts/migrate-database.mjs';
+import { applyMigrations } from '../scripts/database/migrate-database.mjs';
 import { runTenantQuery, runTenantTransaction } from '../src/lib/workspace/tenant-query';
 import { PostgresWorkspaceRepository, type TransactionalTenantDatabase } from '../src/lib/workspace/postgres-repository';
 import { PrivateFileStorage } from '../src/lib/workspace/private-file-storage';

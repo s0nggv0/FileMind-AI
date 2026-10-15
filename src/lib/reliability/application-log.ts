@@ -1,7 +1,7 @@
 import { appendFile, rename, rm, stat } from "node:fs/promises";
 import { resolve, join } from "node:path";
 import { z } from "zod";
-import { ensureStorageDirectory } from "../../../scripts/storage-recovery.mjs";
+import { ensureStorageDirectory } from "../../../scripts/runtime/storage-recovery.mjs";
 import { withPathMutex } from "./atomic-file";
 export const ApplicationLogSchema = z.object({
   timestamp:z.iso.datetime(),level:z.enum(["info","warn","error"]),

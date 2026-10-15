@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { retrievalMetrics,answerOutcome,percentiles } from "../scripts/blind-protocol";
+import { retrievalMetrics,answerOutcome,percentiles } from "../scripts/evaluation/blind-protocol";
 test("blind protocol deduplicates document ranks, scores all relevant documents, and keeps outages distinct from refusal",()=>{
   const metrics=retrievalMetrics(["irrelevant","a","a","b"].map(documentName=>({documentName})),["a","b"]);
   assert.equal(metrics?.mrr,.5);assert.equal(metrics?.recallAt10,1);assert.ok(metrics!.ndcgAt10<1);assert.equal(retrievalMetrics([],[]),null);

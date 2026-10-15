@@ -18,6 +18,8 @@ FileMind AI 用来整理学习和研究资料。导入 PDF、Word、笔记和图
 
 ## 本地开发
 
+目录职责与依赖约定见[项目结构](docs/architecture/project-structure.md)，构建、评测和验收入口见[脚本导航](scripts/README.md)。
+
 需要 Node.js 22.13.0+。
 
 ```powershell

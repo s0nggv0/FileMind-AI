@@ -5,8 +5,8 @@ import { mkdtemp, mkdir, readFile, readdir, rm, symlink } from "node:fs/promises
 import { tmpdir } from "node:os";
 import { join, resolve, relative, isAbsolute } from "node:path";
 import { PGlite } from "@electric-sql/pglite";
-import { applyMigrations } from "../scripts/migrate-database.mjs";
-import { ensureStorageDirectory, quarantineStorage } from "../scripts/storage-recovery.mjs";
+import { applyMigrations } from "../scripts/database/migrate-database.mjs";
+import { ensureStorageDirectory, quarantineStorage } from "../scripts/runtime/storage-recovery.mjs";
 import { runTenantQuery, runTenantTransaction } from "../src/lib/workspace/tenant-query";
 import { PostgresWorkspaceRepository, type TransactionalTenantDatabase } from "../src/lib/workspace/postgres-repository";
 import { PrivateFileStorage } from "../src/lib/workspace/private-file-storage";

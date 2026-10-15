@@ -9,7 +9,7 @@ import type { AIProvider } from "../src/lib/ai/provider";
 import { WorkspaceError } from "../src/lib/workspace/authorization";
 import { verifierFixtureResponse } from "./helpers/verifier-fixture";
 import { PGlite } from "@electric-sql/pglite";
-import { applyMigrations } from "../scripts/migrate-database.mjs";
+import { applyMigrations } from "../scripts/database/migrate-database.mjs";
 import { PostgresSearchHistory } from "../src/lib/retrieval/postgres-search-history";
 import { runTenantQuery } from "../src/lib/workspace/tenant-query";
 
