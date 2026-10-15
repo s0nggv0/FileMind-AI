@@ -1,6 +1,6 @@
 import * as landing from "@/mocks/landing";
 import * as dashboard from "@/mocks/dashboard";
-import { getDocumentViewModels, getDemoOverview } from "./repository";
+import { getDemoDocuments, getDemoOverview } from "./repository";
 
 export function getDemoLandingPresentation() {
   return {
@@ -19,7 +19,7 @@ export function getDemoDashboardPresentation() {
     ...dashboard,
     overview: getDemoOverview(),
     topicCount: dashboard.dashboardTopics.length,
-    recentFiles: [...getDocumentViewModels()].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 4),
+    recentFiles: [...getDemoDocuments()].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 4),
     snapshot: "2026.09.30",
   };
 }

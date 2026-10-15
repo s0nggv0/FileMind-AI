@@ -20,7 +20,7 @@ export function getDemoOverview(): OverviewMetrics {
   };
 }
 
-export function getDocumentViewModels() {
+export function getDemoDocuments() {
   return demoDocuments;
 }
 
@@ -36,7 +36,7 @@ export function getDemoSearchSuggestions() {
   return demoSearchSuggestions;
 }
 
-export function getCleanupIssueViewModels() {
+export function getDemoCleanupIssues() {
   return demoCleanupIssues;
 }
 
