@@ -8,6 +8,8 @@ FileMind AI 用来整理学习和研究资料。导入 PDF、Word、笔记和图
 
 2026-10-10 完成主要界面中文化，并整理工作区保存和重试代码。后续检查通过 108 项单元测试和 17 项浏览器回归，未重新调用真实模型。改动与验证范围见[开发整理记录](docs/competition/development-notes.md)。
 
+2026-10-21 完成一轮产品优化：保存后可直接向本批资料提问，资料详情提供原件、提取全文和分类标签修正，历史直接打开已有结果；增加比较全部、审阅筛选、重复候选决定修改、手机图谱列表及任务帮助。分类标签按当前编辑保存，命名/重复标记/关联仅应用已接受建议。验证范围、真实模型首次失败与修正、截图及未覆盖项见[产品优化验收](docs/competition/product-optimization.md)。
+
 ## 已准备好的本地文件夹：直接运行
 
 已准备的便携文件夹包含 Windows x64 Node.js、独立 PostgreSQL 和 standalone 生产构建。在已有 `.env.local` 填写 `KIMI_API_KEY` 后，双击 `启动 FileMind.bat`，访问窗口显示的本机地址。普通模式下，Key 留空使用 Mock，填写后重启使用 Kimi。比赛模式另需配置 Embedding、Vision 验证标记和真实服务，具体见 [运行说明](docs/competition/release-guide.md)。
