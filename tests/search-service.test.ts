@@ -52,7 +52,7 @@ function fixture(evidence = [sample()]) {
 const missing = (error: unknown) => error instanceof WorkspaceError && error.code === "NOT_FOUND" && error.status === 404;
 
 test("clarification stays scoped, limits evidence to the selected subject, and carries it into follow-ups", async () => {
-  const f = fixture([sample(), sample()]);
+  const f = fixture([sample(), { ...sample(), content: "Retention is 8 hours." }]);
   const previousRunId = crypto.randomUUID(), selected = f.evidence[1].documentId;
   const initial = await f.service.prepare(userId, { query: "Retention?", mode: "find", workspaceId });
   const saved = await f.service.execute(initial, new AbortController().signal, () => {});
@@ -89,6 +89,21 @@ test("missing and invalid clarification options fail before search execution", a
   ]) await assert.rejects(f.service.prepare(userId, { query: "Retention?", mode: "ask", ...input }), missing);
   assert.equal(f.queries.length, 0);
   assert.equal(f.writes.length, 0);
+});
+
+test("compare all uses only saved authorized options; history reports stale passages without regenerating", async () => {
+  const f = fixture([sample(), { ...sample(), content: "Retention is 8 hours." }]);
+  const run = await f.service.execute(await f.service.prepare(userId,{query:"Retention?",mode:"find",workspaceId}),new AbortController().signal,()=>{});
+  f.runs.set(run.id,{query:run.query,result:{...run,answerState:"needs_clarification",answer:{answer:"Which?",citations:[],confidence:"low",insufficientEvidence:false,clarification:{required:true,options:f.evidence.map(s=>({label:s.documentName,documentIds:[s.documentId]}))}}}});
+  const all = await f.service.prepare(userId,{query:run.query,mode:"find",workspaceId,previousRunId:run.id,compareAll:true});
+  assert.deepEqual(all.scope.documentIds,f.evidence.map(s=>s.documentId));
+  assert.match(all.rewrittenQuery,/比较全部/);
+  assert.equal((await f.service.execute(all,new AbortController().signal,()=>{})).sources.length,2);
+  await assert.rejects(f.service.prepare(crypto.randomUUID(),{query:run.query,mode:"ask",previousRunId:run.id,compareAll:true}),missing);
+  const calls = f.queries.length;
+  f.evidence[0].content = "Changed retention.";
+  assert.match((await f.service.getRun(userId,run.id)).historyWarning!,/已变更或不可用/);
+  assert.equal(f.queries.length,calls);
 });
 
 test("find and unavailable answers retain sources; history only exposes debug in development", async () => {
