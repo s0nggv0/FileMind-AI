@@ -1,3 +1,5 @@
+import { uniquePassages, diversePassages } from "./evidence-diversity";
+import { questionIntent } from "./question-intent";
 import type { EmbeddingProvider } from "./embedding-provider";
 import type { VectorStore } from "./vector-store";
 import type { Evidence, RetrievalScope } from "./types";
@@ -39,7 +41,7 @@ export class RetrievalEngine {
     };
     if (route.strategy === "VECTOR_ONLY") {
       semantic = await vectorSearch();
-      if (semanticUnavailable) lexical = await lexicalSearch();
+      if (semanticUnavailable || !semantic.length || questionIntent(normalized) === "multi_source") lexical = await lexicalSearch();
     } else if (route.strategy === "VECTOR_WITH_LEXICAL_BOOST") {
       [semantic, lexical] = await Promise.all([vectorSearch(), lexicalSearch()]);
     } else {
@@ -48,12 +50,12 @@ export class RetrievalEngine {
     }
     const fused = semantic.length && lexical.length && route.strategy === "VECTOR_WITH_LEXICAL_BOOST"
       ? rankFusion(semantic, lexical)
-      : route.strategy === "VECTOR_ONLY" ? semantic
+      : route.strategy === "VECTOR_ONLY" ? [...semantic, ...lexical].filter((e, i, all) => all.findIndex(v => v.id === e.id) === i)
       : [...lexical, ...semantic].filter((e, i, all) => all.findIndex(v => v.id === e.id) === i);
     const started = performance.now();
-    const ranked = this.reranker ? await this.reranker.rerank(normalized, fused.slice(0, retrievalConfig.candidateLimit)) : fused.slice(0, retrievalConfig.candidateLimit);
+    const ranked = this.reranker ? await this.reranker.rerank(normalized, uniquePassages(fused).slice(0, retrievalConfig.candidateLimit)) : uniquePassages(fused).slice(0, retrievalConfig.candidateLimit);
     latency.rerank = this.reranker ? performance.now() - started : 0;
     const strong = ranked.filter(e => (e.lexicalCoverage ?? 0) >= retrievalConfig.minimumLexicalCoverage || (e.semanticScore ?? 0) >= retrievalConfig.minimumCosine);
-    return { query: normalized, profile, route, semantic, lexical, fused, evidence: strong.slice(0, retrievalConfig.evidenceLimit), nearest: ranked.slice(0, 5), semanticUnavailable, mock: this.embeddings?.getModelInfo().mock ?? false, reranker: this.reranker ? "deterministic" : "disabled", latency };
+    return { query: normalized, profile, route, semantic, lexical, fused, evidence: questionIntent(normalized) === "multi_source" ? diversePassages(strong, retrievalConfig.evidenceLimit) : strong.slice(0, retrievalConfig.evidenceLimit), nearest: ranked.slice(0, 5), semanticUnavailable, mock: this.embeddings?.getModelInfo().mock ?? false, reranker: this.reranker ? "deterministic" : "disabled", latency };
   }
 }

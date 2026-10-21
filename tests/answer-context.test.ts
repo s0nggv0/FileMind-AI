@@ -68,3 +68,21 @@ test("specific short queries and complementary sources stay answered in a non-am
   const sources=[evidence("Query represents the current token.",1),evidence("Key represents matching information.",2)];
   const r=await generateGroundedAnswer("Query?",sources,{userId},scripted(emptyAnswerContext),async(_s,id)=>sources.find(s=>s.id===id)??null,AbortSignal.timeout(1000));assert.equal(r.answer?.answerState,"answered");assert.equal(r.answer?.clarification?.required,false);
 });
+
+test("explicit comparisons and disagreement requests override a redundant picker but still pass factual verification", async () => {
+  const sources = [evidence("青禾实验方案A的通过线是72分。",1), evidence("青禾实验方案B的通过线是68分。",2)];
+  const picker: AnswerContext = { clarification: { required:true, question:"选择方案？", options:[{label:"A",sourceIds:["S1"]},{label:"B",sourceIds:["S2"]}] }, conflicts:[] };
+  for (const query of ["青禾实验方案A与方案B的通过线分别是多少，是否一致？", "青禾实验的通过线是多少？请说明资料之间的分歧。", "Summarize both experimental thresholds", "汇总各份资料的通过线"]) {
+    const result = await generateGroundedAnswer(query,sources,{userId},scripted(picker),async (_s,id) => sources.find(s=>s.id===id)??null,AbortSignal.timeout(1000));
+    assert.equal(result.answer?.answerState,"answered",query);
+    assert.equal(result.verification?.accepted,true); assert.equal(result.answer?.citations.length,2);
+    assert.match(result.answer!.answer,/72/); assert.match(result.answer!.answer,/68/);
+  }
+});
+
+test("identical passages are one evidence source while differing numbers and OCR provenance remain separate", () => {
+  const a = evidence("Threshold is 31.",1), copy = {...evidence("Threshold is 31.",2)}, b = evidence("Threshold is 29.",3);
+  const context = buildRAGContext([a,copy,b,{...copy,id:randomUUID(),chunkSource:"ocr"}]);
+  assert.equal(context.sources.length,3);
+  assert.deepEqual(context.sources.map(s=>s.documentId),[a.documentId,b.documentId,copy.documentId]);
+});

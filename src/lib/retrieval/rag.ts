@@ -1,3 +1,4 @@
+import { uniquePassages } from "./evidence-diversity";
 import { z } from "zod";
 import type { AIProvider } from "../ai/provider";
 import type { Evidence, RetrievalScope } from "./types";
@@ -35,7 +36,7 @@ export function composeRAGDraft(draft:z.infer<typeof RAGDraftSchema>,sources:RAG
 }
 export function buildRAGContext(evidence: Evidence[]) {
   const sources: RAGSource[] = []; let characters = 0;
-  for (const item of evidence) {
+  for (const item of uniquePassages(evidence)) {
     if (characters + item.content.length > retrievalConfig.contextMaxCharacters) continue;
     const source = { ...item, sourceId: `S${sources.length + 1}`, location: locationLabel(item) };
     sources.push(source); characters += item.content.length;
@@ -64,7 +65,7 @@ const refusal = () => finalizeAnswer({ answer: NO_ANSWER, citations: [], confide
 export async function generateGroundedAnswer(query: string, evidence: Evidence[], scope: RetrievalScope, provider: AIProvider | null, getSource: (scope: RetrievalScope, id: string) => Promise<Evidence | null>, signal: AbortSignal, onStage?: (stage: string) => void) {
   const { sources, context } = buildRAGContext(evidence);
   const evaluator = new EvidenceSufficiencyEvaluator();
-  const assessment = evaluator.evaluate(evidence);
+  const assessment = evaluator.evaluate(uniquePassages(evidence));
   if (!assessment.sufficient) return { answer: refusal(), sources, unavailable: false, assessment };
   if (!provider) return { answer: null, sources, unavailable: true };
   let stage="generation",correction:string|undefined,repairFeedback:unknown;

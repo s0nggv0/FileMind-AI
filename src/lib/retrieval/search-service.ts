@@ -44,6 +44,10 @@ export class SearchService {
     const saved = await this.dependencies.history.get({ userId }, id);
     if (!saved) throw new WorkspaceError("NOT_FOUND", "搜索记录已不可用。", 404);
     const result = { ...saved.result };
+    const sources = [...result.sources, ...result.nearest];
+    const current = await Promise.all(sources.map(s => this.dependencies.knowledge.getSource({ userId }, s.id)));
+    if (sources.some((s, i) => !current[i] || current[i]!.content !== s.content || current[i]!.contentHash !== s.contentHash || current[i]!.chunkVersion !== s.chunkVersion)) result.historyWarning = "部分历史来源已变更或不可用。下面保留的是当时的结果，请重新搜索以核对当前资料。";
+    else if (sources.some((s, i) => current[i]!.documentName !== s.documentName || (s.documentUpdatedAt && current[i]!.documentUpdatedAt !== s.documentUpdatedAt))) result.historyWarning = "来源信息已更新。下面是当时保存的结果，可重新搜索查看最新资料。";
     if (!this.dependencies.developmentControls()) delete result.debug;
     return result;
   }
@@ -58,12 +62,17 @@ export class SearchService {
     await this.dependencies.refreshIndexVersions(scope);
     let rewrittenQuery = input.query;
     let selectedDocumentIds: string[] | undefined = input.documentIds;
-    if (input.clarificationOption !== undefined && !input.previousRunId) {
+    if ((input.clarificationOption !== undefined || input.compareAll) && !input.previousRunId) {
       throw new WorkspaceError("NOT_FOUND", "澄清记录已不可用，请重新搜索。", 404);
     }
     if (input.previousRunId) {
       const prior = await this.dependencies.history.get(scope, input.previousRunId);
-      if (input.clarificationOption !== undefined) {
+      if (input.compareAll) {
+        const options = prior?.result.answer?.clarification?.options;
+        if (prior?.result.answerState !== "needs_clarification" || !options?.length) throw new WorkspaceError("NOT_FOUND", "澄清记录已不可用，请重新搜索。", 404);
+        selectedDocumentIds = [...new Set(options.flatMap(o => o.documentIds))];
+        rewrittenQuery = `${prior.query.slice(-3000)}\n比较全部已列出的对象，保留各方来源并解释差异。`;
+      } else if (input.clarificationOption !== undefined) {
         const option = prior?.result.answer?.clarification?.options?.[input.clarificationOption];
         if (!option || prior?.result.answerState !== "needs_clarification") {
           throw new WorkspaceError("NOT_FOUND", "澄清记录已不可用，请重新搜索。", 404);
@@ -72,7 +81,7 @@ export class SearchService {
         rewrittenQuery = `${prior.query.slice(-3000)}\nSelected subject: ${option.label}`;
       } else if (prior && /\b(it|that|those|these|there)\b|它|这|那/i.test(input.query)) {
         rewrittenQuery = `${prior.query.slice(-3000)}\nFollow-up: ${input.query}`;
-        selectedDocumentIds = prior.result.selectedDocumentIds;
+        selectedDocumentIds = input.documentIds ?? prior.result.selectedDocumentIds;
       }
     }
     return { scope: { ...scope, ...(selectedDocumentIds ? { documentIds: selectedDocumentIds } : {}) }, input, rewrittenQuery, selectedDocumentIds };

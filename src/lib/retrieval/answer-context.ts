@@ -1,3 +1,4 @@
+import { questionIntent } from "./question-intent";
 import { z } from "zod";
 import type { AIProvider } from "../ai/provider";
 import type { RAGSource } from "./rag";
@@ -37,8 +38,12 @@ export function validateAnswerContext(context: AnswerContext, sources: RAGSource
 }
 export async function verifyAnswerContext(query: string, sources: RAGSource[], provider: AIProvider, signal: AbortSignal): Promise<AnswerContext> {
   if (provider.name === "mock" || new Set(sources.map(s => s.documentId)).size < 2) return emptyAnswerContext;
-  const result = await provider.generateObject({ system: contextSystemPrompt, prompt: JSON.stringify({ task: "verify_answer_context", query, untrustedSources: sources.map(s => ({ sourceId: s.sourceId, documentId: s.documentId, document: s.documentName, content: s.content })) }), schema: AnswerContextWireSchema, signal });
+  const intent = questionIntent(query);
+  const result = await provider.generateObject({ system: contextSystemPrompt + (intent === "multi_source" ? "\nThe user explicitly requests multi-source comparison or synthesis. Cover relevant subjects together. needsClarification MUST be false, question empty, options empty. Preserve each attributed value; do not choose a winner." : ""), prompt: JSON.stringify({ task: "verify_answer_context", query, untrustedSources: sources.map(s => ({ sourceId: s.sourceId, documentId: s.documentId, document: s.documentName, content: s.content })) }), schema: AnswerContextWireSchema, signal });
   signal.throwIfAborted();
   const wire = AnswerContextWireSchema.parse(result.object);
-  return validateAnswerContext(AnswerContextSchema.parse({ clarification: { required: wire.needsClarification, question: wire.question, options: wire.options }, conflicts: wire.conflicts }), sources);
+  const context = validateAnswerContext(AnswerContextSchema.parse({ clarification: { required: wire.needsClarification, question: wire.question, options: wire.options }, conflicts: wire.conflicts }), sources);
+  // A subject picker must not override an explicit instruction to compare them.
+  // Conflict quotes and the downstream factual verifier remain mandatory.
+  return intent === "multi_source" ? { ...context, clarification: { required: false, question: "", options: [] } } : context;
 }
