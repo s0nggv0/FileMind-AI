@@ -79,8 +79,8 @@ export class PostgresKnowledgeRepository {
       (select count(*)::float from unnest($3::text[]) q where q=any(c.lexical_tokens)) / cardinality($3::text[]) as "lexicalCoverage",
       (select count(*)::float from unnest($3::text[]) q where q=any(c.lexical_tokens)) as score
       from filemind.document_chunks c join filemind.documents d on d.id=c.document_id and d.user_id=c.user_id
-      where c.user_id=$1 and ($2::uuid is null or c.workspace_id=$2) and c.chunk_version=$4 and d.index_status in ('ready','failed') and c.lexical_tokens && $3::text[]
-      order by score desc,d.display_name,c.chunk_index,c.id limit $5`, [scope.userId, scope.workspaceId ?? null, tokens, CHUNK_VERSION, retrievalConfig.lexicalTopK]);
+      where c.user_id=$1 and ($2::uuid is null or c.workspace_id=$2) and c.chunk_version=$4 and d.index_status in ('ready','failed') and c.lexical_tokens && $3::text[] and ($6::uuid[] is null or d.id=any($6::uuid[]))
+      order by score desc,d.display_name,c.chunk_index,c.id limit $5`, [scope.userId, scope.workspaceId ?? null, tokens, CHUNK_VERSION, retrievalConfig.lexicalTopK, scope.documentIds ?? null]);
     return z.array(EvidenceSchema).parse(result.rows);
   }
   async getSource(scope: RetrievalScope, chunkId: string) {
@@ -91,7 +91,7 @@ export class PostgresKnowledgeRepository {
     const result = await this.db.query(scope.userId, `select ${evidenceColumns},1::float as "lexicalCoverage",1::float as score
       from filemind.document_chunks c join filemind.documents d on d.id=c.document_id and d.user_id=c.user_id
       where c.user_id=$1 and ($2::uuid is null or c.workspace_id=$2) and (lower(d.display_name)=lower($3) or lower(d.original_name)=lower($3))
-      and c.chunk_version=$4 and d.index_status in ('ready','failed') order by c.chunk_index,c.id limit $5`, [scope.userId, scope.workspaceId ?? null, filename, CHUNK_VERSION, retrievalConfig.lexicalTopK]);
+      and c.chunk_version=$4 and d.index_status in ('ready','failed') and ($6::uuid[] is null or d.id=any($6::uuid[])) order by c.chunk_index,c.id limit $5`, [scope.userId, scope.workspaceId ?? null, filename, CHUNK_VERSION, retrievalConfig.lexicalTopK, scope.documentIds ?? null]);
     return z.array(EvidenceSchema).parse(result.rows);
   }
   async cleanup(scope: RetrievalScope, documentId: string) {

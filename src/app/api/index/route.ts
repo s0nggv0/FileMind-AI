@@ -9,7 +9,7 @@ export async function GET() {
     const userId = await getUserId();
     if (!userId || !persistenceConfigured()) return Response.json({ documents: [] });
     await refreshIndexVersions({ userId });
-    const result = await database.query(userId, `select d.id,d.display_name as name,d.index_status as status,d.index_error_code as "errorCode",d.index_build_status as "buildStatus",d.index_build_error_code as "buildErrorCode",(select count(*)::integer from filemind.document_chunks c where c.user_id=$1 and c.document_id=d.id) as chunks from filemind.documents d where d.user_id=$1 order by d.created_at desc limit 1500`, [userId]);
+    const result = await database.query(userId, `select d.id,d.workspace_id as "workspaceId",d.file_type as "fileType",d.ocr_status as "ocrStatus",d.vision_status as "visionStatus",case when d.storage_path is null then 'not_stored' else d.storage_status end as "storageStatus",d.display_name as name,d.index_status as status,d.index_error_code as "errorCode",d.index_build_status as "buildStatus",d.index_build_error_code as "buildErrorCode",(select count(*)::integer from filemind.document_chunks c where c.user_id=$1 and c.document_id=d.id) as chunks from filemind.documents d where d.user_id=$1 order by d.created_at desc limit 1500`, [userId]);
     return Response.json({ documents: result.rows }, { headers: { "cache-control": "no-store" } });
   } catch (error) { return apiError(error); }
 }

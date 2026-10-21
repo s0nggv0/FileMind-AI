@@ -32,7 +32,7 @@ export class PortableVectorStore implements VectorStore {
       const result = await db.query(scope.userId, `select ${evidenceColumns},0::float as score,e.embedding from filemind.chunk_embeddings e
         join filemind.document_chunks c on c.id=e.chunk_id and c.user_id=e.user_id join filemind.documents d on d.id=c.document_id and d.user_id=c.user_id
         where e.user_id=$1 and ($2::uuid is null or e.workspace_id=$2) and e.provider=$3 and e.model=$4 and e.dimensions=$5 and e.chunk_version=$6 and c.chunk_version=$6
-        and d.index_status='ready' and d.embedding_provider=$3 and d.embedding_model=$4 and ($7::uuid is null or c.id > $7) order by c.id limit 200`, [scope.userId, scope.workspaceId ?? null, embedding.provider, embedding.model, embedding.dimensions, CHUNK_VERSION, cursor]);
+        and d.index_status='ready' and d.embedding_provider=$3 and d.embedding_model=$4 and ($7::uuid is null or c.id > $7) and ($8::uuid[] is null or d.id=any($8::uuid[])) order by c.id limit 200`, [scope.userId, scope.workspaceId ?? null, embedding.provider, embedding.model, embedding.dimensions, CHUNK_VERSION, cursor, scope.documentIds ?? null]);
       const rows = z.array(EvidenceSchema.extend({ embedding: z.array(z.number()) })).parse(result.rows);
       for (const row of rows) {
         const score = cosineSimilarity(row.embedding, embedding.vector);

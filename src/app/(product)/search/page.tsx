@@ -5,7 +5,9 @@ import { KnowledgeSearch } from "@/features/search/knowledge-search";
 import { persistenceConfigured } from "@/lib/server/database";
 import { getUserId } from "@/lib/server/identity";
 
-export default async function SearchPage() {
+export default async function SearchPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   await getUserId();
-  return <Reveal className="space-y-7"><PageHeader title="从一句问题，回到原始资料。" description="检索你的知识空间，用原文核对每个回答。" /><KnowledgeSearch persistent={persistenceConfigured()} mock={!realAIRequired()} /></Reveal>;
+  const params = await searchParams;
+  const value = (key: string) => typeof params[key] === "string" ? params[key] as string : undefined;
+  return <Reveal className="space-y-5"><PageHeader title="搜索资料" description="提问或查找正文，核对原始依据。" /><KnowledgeSearch key={[value("workspace"), value("document"), value("run"), value("q")].join(":")} initialWorkspace={value("workspace")} initialDocument={value("document")} initialQuery={value("q")} initialMode={value("mode") === "find" ? "find" : "ask"} persistent={persistenceConfigured()} mock={!realAIRequired()} /></Reveal>;
 }

@@ -54,10 +54,10 @@ export class SearchService {
 
   // Prepare before opening SSE so invalid clarification requests keep their HTTP errors.
   async prepare(userId: string, input: SearchRequest): Promise<PreparedSearch> {
-    const scope = { userId, workspaceId: input.workspaceId };
+    const scope: RetrievalScope = { userId, workspaceId: input.workspaceId, ...(input.documentIds ? { documentIds: input.documentIds } : {}) };
     await this.dependencies.refreshIndexVersions(scope);
     let rewrittenQuery = input.query;
-    let selectedDocumentIds: string[] | undefined;
+    let selectedDocumentIds: string[] | undefined = input.documentIds;
     if (input.clarificationOption !== undefined && !input.previousRunId) {
       throw new WorkspaceError("NOT_FOUND", "澄清记录已不可用，请重新搜索。", 404);
     }
@@ -75,7 +75,7 @@ export class SearchService {
         selectedDocumentIds = prior.result.selectedDocumentIds;
       }
     }
-    return { scope, input, rewrittenQuery, selectedDocumentIds };
+    return { scope: { ...scope, ...(selectedDocumentIds ? { documentIds: selectedDocumentIds } : {}) }, input, rewrittenQuery, selectedDocumentIds };
   }
 
   async execute(prepared: PreparedSearch, signal: AbortSignal, onStage: (stage: string) => void): Promise<SearchResult> {
@@ -100,7 +100,7 @@ export class SearchService {
     signal.throwIfAborted();
     const latency = { ...retrieved.latency, llm: input.mode === "ask" ? performance.now() - llmStarted : 0, total: performance.now() - started };
     const result: SearchResult = {
-      id: crypto.randomUUID(), query: input.query, rewrittenQuery, mode: input.mode,
+      id: crypto.randomUUID(), query: input.query, rewrittenQuery, mode: input.mode, ...(scope.workspaceId ? { workspaceId: scope.workspaceId } : {}),
       answer: grounded.answer, sources: grounded.sources, nearest: buildRAGContext(retrieved.nearest).sources,
       semanticUnavailable: retrieved.semanticUnavailable, answerUnavailable: grounded.unavailable,
       mock: retrieved.mock || !dependencies.realAIRequired(), evidenceCount: grounded.sources.length, candidateCount: retrieved.fused.length,
