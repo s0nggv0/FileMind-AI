@@ -94,7 +94,7 @@ export class SearchService {
     const embedding = dependencies.embedding();
     const engine = new RetrievalEngine(embedding, dependencies.vectors, dependencies.knowledge,
       dependencies.rerankEnabled() ? new DeterministicReranker() : null);
-    const retrieved = await engine.retrieve(scope, rewrittenQuery, onStage);
+    const retrieved = await engine.retrieve(scope, rewrittenQuery, onStage, { mode: input.mode });
     if (selectedDocumentIds) {
       retrieved.evidence = retrieved.evidence.filter(source => selectedDocumentIds.includes(source.documentId));
       retrieved.nearest = retrieved.nearest.filter(source => selectedDocumentIds.includes(source.documentId));

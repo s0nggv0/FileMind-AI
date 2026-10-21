@@ -13,10 +13,11 @@ export interface LexicalSearchProvider {
 }
 export class RetrievalEngine {
   constructor(private embeddings: EmbeddingProvider | null, private vectors: VectorStore, private lexical: LexicalSearchProvider, private reranker: Reranker | null = null) {}
-  async retrieve(scope: RetrievalScope, query: string, onStage: (stage: string) => void = () => {}) {
+  async retrieve(scope: RetrievalScope, query: string, onStage: (stage: string) => void = () => {}, options: { mode?: "ask" | "find" } = {}) {
     const normalized = query.normalize("NFKC").replace(/\s+/g, " ").trim();
     const profile = new QueryAnalyzer().analyze(normalized);
     let route = new RetrievalRouter().route(profile, !!this.embeddings);
+    if (options.mode === "find" && route.strategy === "VECTOR_ONLY") route = { strategy: "VECTOR_WITH_LEXICAL_BOOST", reason: "Passage lookup includes literal text matches as well as semantic candidates." };
     const latency = { queryEmbedding: 0, vector: 0, lexical: 0, rerank: 0 };
     let semanticUnavailable = !this.embeddings;
     let semantic: Evidence[] = [], lexical: Evidence[] = [];
@@ -41,7 +42,7 @@ export class RetrievalEngine {
     };
     if (route.strategy === "VECTOR_ONLY") {
       semantic = await vectorSearch();
-      if (semanticUnavailable || !semantic.length || questionIntent(normalized) === "multi_source") lexical = await lexicalSearch();
+      if (semanticUnavailable || !semantic.some(e => (e.semanticScore ?? e.score) >= retrievalConfig.minimumCosine) || questionIntent(normalized) === "multi_source") lexical = await lexicalSearch();
     } else if (route.strategy === "VECTOR_WITH_LEXICAL_BOOST") {
       [semantic, lexical] = await Promise.all([vectorSearch(), lexicalSearch()]);
     } else {
@@ -53,7 +54,8 @@ export class RetrievalEngine {
       : route.strategy === "VECTOR_ONLY" ? [...semantic, ...lexical].filter((e, i, all) => all.findIndex(v => v.id === e.id) === i)
       : [...lexical, ...semantic].filter((e, i, all) => all.findIndex(v => v.id === e.id) === i);
     const started = performance.now();
-    const ranked = this.reranker ? await this.reranker.rerank(normalized, uniquePassages(fused).slice(0, retrievalConfig.candidateLimit)) : uniquePassages(fused).slice(0, retrievalConfig.candidateLimit);
+    const candidates = questionIntent(normalized) === "multi_source" ? diversePassages(fused, retrievalConfig.candidateLimit) : uniquePassages(fused).slice(0, retrievalConfig.candidateLimit);
+    const ranked = this.reranker ? await this.reranker.rerank(normalized, candidates) : candidates;
     latency.rerank = this.reranker ? performance.now() - started : 0;
     const strong = ranked.filter(e => (e.lexicalCoverage ?? 0) >= retrievalConfig.minimumLexicalCoverage || (e.semanticScore ?? 0) >= retrievalConfig.minimumCosine);
     return { query: normalized, profile, route, semantic, lexical, fused, evidence: questionIntent(normalized) === "multi_source" ? diversePassages(strong, retrievalConfig.evidenceLimit) : strong.slice(0, retrievalConfig.evidenceLimit), nearest: ranked.slice(0, 5), semanticUnavailable, mock: this.embeddings?.getModelInfo().mock ?? false, reranker: this.reranker ? "deterministic" : "disabled", latency };

@@ -45,3 +45,11 @@ test("evidence gate vetoes weak retrieval and unsupported model decisions and ex
   assert.equal(result.sufficient, true); assert.equal(result.documentDiversity, 2); assert.equal(result.confidence, "high");
   assert.equal(evaluator.evaluate(strong, { supported: true, missingInformation: ["Requested numeric value is absent"] }).sufficient, false);
 });
+test("literal passage lookup finds text despite a low vector score without lowering the answer gate", async () => {
+  const source={...evidence("实验.txt",0.1),content:"通过线是31分。",lexicalCoverage:1};
+  let lexicalCalls=0;
+  const engine=new RetrievalEngine(new MockEmbeddingProvider(),{searchSimilar:async()=>[{...source,lexicalCoverage:undefined}]} as unknown as VectorStore,{lexicalSearch:async()=>{lexicalCalls++;return [source];}});
+  const found=await engine.retrieve(scope,"通过线",()=>{},{mode:"find"});
+  assert.equal(lexicalCalls,1);assert.equal(found.evidence[0].id,source.id);
+  assert.equal(new EvidenceSufficiencyEvaluator().evaluate([{...source,lexicalCoverage:0,semanticScore:0.1}]).sufficient,false);
+});

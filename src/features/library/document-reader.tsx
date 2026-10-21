@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,7 +23,7 @@ export function DocumentReading({ documentId, onSaved }: { documentId: string; o
     } catch (e) { setError(e instanceof Error ? e.message : "保存失败，请重试。"); } finally { setBusy(false); }
   }
   return <div className="space-y-5 border-t pt-4">
-    <div className="flex flex-wrap gap-2"><Button asChild size="sm"><Link href={`/search?document=${documentId}`}>向这份资料提问</Link></Button>{detail?.storageStatus === "available" && <Button asChild variant="outline" size="sm"><a href={`/api/documents/${documentId}/original`} target="_blank" rel="noopener noreferrer">打开或下载原文件</a></Button>}</div>
+
     {detail && detail.storageStatus !== "available" && <p role="status" className="text-sm leading-7 text-muted-foreground">原文件暂不可用。已保存的提取全文、摘要、分类和标签仍可阅读；能否搜索请看下方准备状态。</p>}
     {!detail && !error && <p role="status" className="text-sm">正在加载提取全文…</p>}
     {detail && <><details><summary className="min-h-11 cursor-pointer py-3 text-sm font-medium">查看已提取全文 · {detail.text.length.toLocaleString()} 字符</summary><div className="max-h-[50dvh] overflow-auto whitespace-pre-wrap break-words rounded-lg bg-muted/50 p-4 text-sm leading-8">{detail.text || "未提取到可阅读文字。扫描 PDF 请先转为可选中文字的 PDF 或单页图片。"}</div>{detail.metadata.truncated && <p className="mt-2 text-sm text-muted-foreground">提取已达到上限，此处仅为已保存部分，请打开原文件阅读完整内容。</p>}</details>

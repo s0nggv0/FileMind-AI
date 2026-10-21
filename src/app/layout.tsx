@@ -11,5 +11,5 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="zh-CN" suppressHydrationWarning><body className={`${GeistSans.variable} ${GeistMono.variable} font-sans`}><Providers>{children}</Providers></body></html>;
+  return <html data-scroll-behavior="smooth" lang="zh-CN" suppressHydrationWarning><body className={`${GeistSans.variable} ${GeistMono.variable} font-sans`}><Providers>{children}</Providers></body></html>;
 }
