@@ -50,6 +50,23 @@ test("Vision failure preserves OCR; OCR failure preserves labelled interpretatio
   assert.equal(b.analysis.ocrStatus, "failed"); assert.match(b.text, /AI interpretation/); assert.doesNotMatch(b.text, /Image OCR/);
   const c = await new MultimodalPipeline(badVision, badOCR).analyze(randomUUID(), image, "hash", signal()); assert.equal(c.text, "");
 });
+
+test("partial image retries reuse successful OCR and a failed replacement retains prior labelled results", async () => {
+  let ocrCalls=0,visionCalls=0;
+  const countedOCR={...ocr,extractText:async () => {ocrCalls++;return ocr.extractText(image,signal());}};
+  const badVision={...vision,analyzeImage:async () => {visionCalls++;throw new Error("outage");}};
+  const id=randomUUID();
+  const partial=await new MultimodalPipeline(badVision,countedOCR).analyze(id,image,"hash",signal());
+  const ready=await new MultimodalPipeline(vision,countedOCR).analyze(id,image,"hash",signal(),partial.analysis);
+  assert.equal(ocrCalls,1);assert.equal(visionCalls,1);assert.equal(ready.analysis.visionStatus,"ready");
+  const changedVision={...badVision,getModelInfo:()=>({provider:"test",model:"replacement",promptVersion:"v2"})};
+  const failed=await new MultimodalPipeline(changedVision,countedOCR).analyze(id,image,"hash",signal(),ready.analysis);
+  assert.deepEqual(failed.analysis.vision,ready.analysis.vision);assert.equal(failed.analysis.visionStatus,"stale");
+  assert.equal(failed.analysis.model,ready.analysis.model);assert.equal(failed.analysis.visionCacheKey,ready.analysis.visionCacheKey);
+  assert.equal(ocrCalls,1);
+  const offline=await new MultimodalPipeline(null,null).analyze(id,image,"hash",signal(),ready.analysis);
+  assert.deepEqual(offline.analysis.ocr,ready.analysis.ocr);assert.deepEqual(offline.analysis.vision,ready.analysis.vision);
+});
 test("image chunks preserve distinct provenance and citations never invent page or line", async () => {
   const merged = mergeKnowledge({ vision: value, ocr: { text: "Query Key Value", confidence: 0.9, blocks: [] } });
   const userId = randomUUID(); const documentId = randomUUID(); const workspaceId = randomUUID();
