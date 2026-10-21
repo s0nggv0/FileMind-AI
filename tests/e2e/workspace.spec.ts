@@ -36,6 +36,7 @@ test("real mixed files → visible tools → editable review → session Library
   await expect(page.getByText("9 份文件", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "开始整理" }).click();
   await expect(page.getByRole("heading", { name: "AI 整理助手" })).toBeVisible();
+  await page.getByText("查看详细执行步骤与日志", { exact: true }).click();
   await expect(page.getByText("读取资料", { exact: true }).first()).toBeVisible();
   await expect(page.getByLabel("文件解析状态").getByText("处理中", { exact: true })).toBeVisible();
   await capture(page, "execution-desktop");
@@ -75,7 +76,7 @@ test("empty, invalid format, oversized file, over count, remove and clear", asyn
 test("single-file drag and drop completes with zero relationships", async ({ page }) => {
   await page.getByRole("heading", { name: "在这里导入文件" }).evaluate((heading) => { const transfer = new DataTransfer(); transfer.items.add(new File(["plain text"], "unknown.txt", { type: "text/plain" })); heading.parentElement!.dispatchEvent(new DragEvent("drop", { bubbles: true, dataTransfer: transfer })); });
   await review(page); await expect(page.getByText("这些文件没有共同主题。")).toBeVisible();
-  await page.getByRole("button", { name: "应用方案" }).click(); await expect(page.getByText("1 份资料已整理")).toBeVisible();
+  await page.getByRole("button", { name: "应用方案" }).click(); await expect(page.getByText(/1 份资料 · 1 个分类/)).toBeVisible();
 });
 test("real corrupt DOCX fails locally, retry fails again, skip preserves a valid file", async ({ page }) => {
   await page.getByLabel("选择本地文件").setInputFiles([{ ...docxFile("broken.docx"), buffer: Buffer.from("corrupt") }, textFile()]);
