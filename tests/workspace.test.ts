@@ -96,7 +96,11 @@ test("store locks mutations, edits proposal, applies once, retains Library snaps
   store.getState().reset(); assert.equal(store.getState().documents.length, 0); assert.equal(store.getState().applied[0].documents.length, 2);
 });
 test("applying a review persists only accepted relationship suggestions", async () => {
-  const store = createWorkspaceStore(new MockAgentEngine(1));
+  const engine = new MockAgentEngine(1);
+  const originalApply = engine.applyPlan.bind(engine);
+  let reviewedCount = 0;
+  engine.applyPlan = async (id,plan,listener) => { reviewedCount=plan.relationships.length; return originalApply(id,plan,listener); };
+  const store = createWorkspaceStore(engine);
   store.getState().addFiles([file("lecture-a.txt"),file("lecture-b.txt"),file("lecture-c.txt")]);
   await store.getState().start();
   const relations=store.getState().proposal!.relationships;
@@ -104,6 +108,7 @@ test("applying a review persists only accepted relationship suggestions", async 
   store.getState().decide("relationships",relations[0].id,"accepted");
   store.getState().decide("relationships",relations[1].id,"ignored");
   await store.getState().apply();
+  assert.equal(reviewedCount,relations.length); // Server review validation needs the complete original suggestion set.
   assert.deepEqual(store.getState().applied[0].relationships.map(r=>r.id),[relations[0].id]);
   assert.equal(store.getState().applied[0].documents.length,3);
   store.getState().reset();
