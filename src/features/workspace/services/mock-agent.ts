@@ -123,7 +123,7 @@ export class MockAgentEngine implements AgentEngine {
     context.listener = onUpdate; context.busy = true; context.run.status = "applying"; this.publish(context);
     try {
       await delay(this.pace * 2, context.controller.signal);
-      context.run.result = structuredClone({ ...plan, relationships: plan.relationships.filter(r => r.decision !== "ignored") }); context.run.status = "completed"; context.run.completedAt = Date.now();
+      context.run.result = structuredClone({ ...plan, relationships: plan.relationships.filter(r => r.decision === "accepted") }); context.run.status = "completed"; context.run.completedAt = Date.now();
       this.log(context, "方案已应用，仅保存在当前浏览器会话"); this.publish(context);
     } catch (error) {
       if (!context.controller.signal.aborted) { context.run.status = "failed"; context.run.error = error instanceof Error ? error.message : "无法应用方案"; this.publish(context); }
