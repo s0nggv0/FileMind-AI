@@ -16,7 +16,7 @@ export interface Evidence extends DocumentChunk {
   score: number; lexicalCoverage?: number; semanticScore?: number;
   retrievalSource?: "semantic" | "lexical" | "both"; fusedRank?: number;
 }
-export interface RetrievalScope { userId: string; workspaceId?: string }
+export interface RetrievalScope { userId: string; workspaceId?: string; documentIds?: string[] }
 export interface ParsedStructure {
   knowledgeSections?: { charStart: number; charEnd: number; source: "ocr" | "vision_summary" | "concepts" | "mixed" }[];
   pages?: { page: number; charStart: number; charEnd: number }[];

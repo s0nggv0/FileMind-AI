@@ -70,7 +70,7 @@ test("clarification stays scoped, limits evidence to the selected subject, and c
   assert.deepEqual(result.nearest.map(source => source.documentId), [selected]);
   assert.equal(result.candidateCount, 2);
   assert.deepEqual(result.selectedDocumentIds, [selected]);
-  assert.deepEqual(f.writes.at(-1)?.scope, { userId, workspaceId });
+  assert.deepEqual(f.writes.at(-1)?.scope, { userId, workspaceId, documentIds: [selected] });
   const followUp = await f.service.prepare(userId, { query: "What about it?", mode: "ask", workspaceId, previousRunId: result.id });
   assert.match(followUp.rewrittenQuery, /Follow-up: What about it\?/);
   assert.deepEqual(followUp.selectedDocumentIds, [selected]);

@@ -10,7 +10,7 @@ const categories: Record<string, string> = {
 };
 
 const states: Record<string, string> = {
-  pending: "待处理", queued: "排队中", processing: "处理中", running: "执行中",
+  draft: "尚未开始", waiting_for_review: "等待审阅", applying: "正在保存", pending: "待决定", queued: "排队中", processing: "处理中", running: "执行中",
   planning: "规划中", completed: "已完成", failed: "失败", skipped: "已跳过",
   cancelled: "已取消", ready: "已就绪", unavailable: "不可用", not_analyzed: "未分析",
   high: "高", medium: "中", low: "低",
