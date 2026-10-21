@@ -11,8 +11,7 @@ export async function analyzeDocument(provider: AIProvider, document: ParsedDocu
     try {
       const result = await provider.generateObject({ role: "small", system: documentAnalysisPrompt, prompt: untrustedData({ documentId: document.id, documentName: document.name, content: guarded.text, sampled: guarded.sampled, existingCategories, metadata: document.metadata, type: document.type, promptVersion: DOCUMENT_PROMPT_VERSION }), schema: DocumentAnalysisSchema, signal });
       recordUsage(result.usage); const value = DocumentAnalysisSchema.parse(result.object);
-      value.tags = [...new Set(value.tags.map(tag => tag.trim()).filter(tag => !/^(document|file|information)$/i.test(tag)))];
-      if (value.tags.length < 3) throw new Error("Insufficient specific tags");
+      value.tags = [...new Map(value.tags.map(tag => tag.trim()).filter(tag => tag && !/^(document|file|information)$/i.test(tag)).map(tag => [tag.normalize("NFKC").toLocaleLowerCase(), tag])).values()].slice(0, 5);
       if (!existingCategories.includes(value.category) && !value.isNewCategory) value.category = "Other";
       if (!shouldSuggestFilename(document.name) || !value.filenameSuggestion.suggestedFilename) value.filenameSuggestion = { shouldRename: false, suggestedFilename: null, reason: "Keep the original meaningful filename." };
       else value.filenameSuggestion.suggestedFilename = sanitizeFilename(value.filenameSuggestion.suggestedFilename, document.name);

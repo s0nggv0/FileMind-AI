@@ -29,7 +29,7 @@ export class DocumentReader {
       const plan = snapshot.proposal;
       plan.documents = plan.documents.map(d => d.id === id ? { ...d, category: patch.category, tags: patch.tags } : d);
       const previous = new Map(plan.relationships.map(r => [r.id, r]));
-      plan.relationships = buildRelationships(plan.documents).map(r => ({ ...r, decision: previous.get(r.id)?.decision ?? r.decision }));
+      plan.relationships = buildRelationships(plan.documents).filter(r => previous.get(r.id)?.decision === "accepted").map(r => ({ ...r, decision: "accepted" as const }));
       snapshot.run.result = structuredClone(plan);
       // The existing atomic save updates the snapshot, document tables, tags and
       // rule relations together. Content/structure remain identical: no embedding

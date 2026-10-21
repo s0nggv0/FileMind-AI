@@ -116,7 +116,7 @@ export function createWorkspaceStore(engine: AgentEngine) {
         if (!run || !proposal || run.status !== "waiting_for_review") return;
         clearTimeout(timer); ++generation;
         set({ run: { ...run, status: "applying" } });
-        const plan = { ...proposal, documents: proposal.documents.map((document) => ({ ...document, name: document.renameDecision === "accepted" && document.suggestedName ? document.suggestedName : document.originalName })) };
+        const plan = { ...proposal, relationships: proposal.relationships.filter(r => r.decision === "accepted"), documents: proposal.documents.map((document) => ({ ...document, name: document.renameDecision === "accepted" && document.suggestedName ? document.suggestedName : document.originalName })) };
         try { await engine.applyPlan(run.id, plan, update); }
         catch (error) { set({ run, saveStatus: "error", errors: [error instanceof Error ? error.message : "方案应用失败，请重试。"] }); return; }
         if (get().run?.id === run.id && get().run?.status === "completed") {
