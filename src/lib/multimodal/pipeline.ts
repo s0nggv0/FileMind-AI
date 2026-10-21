@@ -31,7 +31,8 @@ export class MultimodalPipeline {
   async analyze(documentId: string, image: ImageInput, contentHash: string, signal: AbortSignal, cached?: MultimodalAnalysis | null, event: (message: string) => Promise<void> = async () => {}) {
     const preserveVision = !this.vision && cached?.imageHash === contentHash && cached.vision && cached.visionPromptVersion;
     const info = this.vision?.getModelInfo() ?? (preserveVision ? { provider: cached.provider, model: cached.model, promptVersion: cached.visionPromptVersion! } : { provider: "unavailable", model: "none", promptVersion: "none" });
-    const engine = this.ocr?.getEngineInfo() ?? { engine: "disabled", version: "none" };
+    const preserveOCR = !this.ocr && cached?.imageHash === contentHash && cached.ocr;
+    const engine = this.ocr?.getEngineInfo() ?? (preserveOCR ? { engine: cached.ocrEngine, version: cached.ocrVersion ?? "none" } : { engine: "disabled", version: "none" });
     const visionCacheKey = imageCacheKey(contentHash, info.provider, info.model, info.promptVersion);
     const ocrCacheKey = imageCacheKey(contentHash, engine.engine, engine.version, "ocr-v1");
     return limited(multimodalConfig(this.env).concurrency, signal, async () => {
@@ -53,14 +54,19 @@ export class MultimodalPipeline {
         })(),
       ]);
       signal.throwIfAborted();
-      const vision = visual.status === "fulfilled" ? visual.value : null;
-      const ocr = extracted.status === "fulfilled" ? extracted.value : null;
+      const freshVision = visual.status === "fulfilled" ? visual.value : null;
+      const freshOCR = extracted.status === "fulfilled" ? extracted.value : null;
+      const sameOriginal = cached?.imageHash === contentHash;
+      const oldVision = !freshVision && sameOriginal ? cached?.vision : null;
+      const oldOCR = !freshOCR && sameOriginal ? cached?.ocr : null;
+      const vision = freshVision ?? oldVision ?? null;
+      const ocr = freshOCR ?? oldOCR ?? null;
       await event(vision ? "Generating concepts" : ocr?.text.trim() ? "Visual understanding unavailable. Text extraction succeeded." : "Image saved. Not searchable by content.");
       const analysis: MultimodalAnalysis = { documentId, imageType: vision?.imageType ?? null, vision, ocr,
-        visionStatus: vision ? "ready" : this.vision ? "failed" : "disabled", ocrStatus: ocr ? "ready" : this.ocr ? "failed" : "disabled",
-        provider: info.provider, model: info.model, ocrEngine: engine.engine, analysisVersion: MULTIMODAL_INDEX_VERSION,
-        visionCacheKey, ocrCacheKey, createdAt: new Date().toISOString(), usage: { requests, latencyMs: Math.round(performance.now() - start), ...usage },
-        imageHash: contentHash, visionPromptVersion: info.promptVersion, ocrVersion: engine.version,
+        visionStatus: oldVision ? "stale" : vision ? "ready" : this.vision ? "failed" : "disabled", ocrStatus: oldOCR ? "stale" : ocr ? "ready" : this.ocr ? "failed" : "disabled",
+        provider: oldVision ? cached!.provider : info.provider, model: oldVision ? cached!.model : info.model, ocrEngine: oldOCR ? cached!.ocrEngine : engine.engine, analysisVersion: MULTIMODAL_INDEX_VERSION,
+        visionCacheKey: oldVision ? cached!.visionCacheKey : visionCacheKey, ocrCacheKey: oldOCR ? cached!.ocrCacheKey : ocrCacheKey, createdAt: new Date().toISOString(), usage: { requests, latencyMs: Math.round(performance.now() - start), ...usage },
+        imageHash: contentHash, visionPromptVersion: oldVision ? cached!.visionPromptVersion : info.promptVersion, ocrVersion: oldOCR ? cached!.ocrVersion : engine.version,
       };
       return { analysis, ...mergeKnowledge(analysis) };
     });
