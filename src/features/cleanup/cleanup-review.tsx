@@ -1,10 +1,13 @@
 "use client";
 
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ArrowRight, Copy, FileText, History, ShieldCheck, Tags } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/feedback/empty-state";
+import { stateLabel } from "@/lib/ui-labels";
 import { cn } from "@/lib/utils";
 import type { CleanupIssueType, CleanupIssueViewModel } from "@/types";
 
@@ -33,6 +36,11 @@ function SuggestionItem({ issue, active, onSelect }: { issue: CleanupIssueViewMo
 }
 
 function SuggestionDetail({ issue, dataset }: { issue: CleanupIssueViewModel; dataset: "example" | "workspace" }) {
+  const router = useRouter(); const [revision,setRevision]=useState(issue.review?.revision); const [decision,setDecision]=useState(issue.review?.decision); const [message,setMessage]=useState(""); const [busy,setBusy]=useState(false);
+  async function save(value: "pending"|"accepted"|"ignored") {
+    if(!issue.review)return; setBusy(true); setMessage("");
+    try { const response=await fetch("/api/duplicates",{method:"PATCH",headers:{"content-type":"application/json"},body:JSON.stringify({...issue.review,kind:undefined,revision,decision:value})}); const data=await response.json(); if(!response.ok)throw new Error(data.error); setRevision(data.revision);setDecision(data.decision);setMessage("审阅决定已保存，全部原件保留。");router.refresh(); } catch(e){setMessage(e instanceof Error?e.message:"保存失败，请重试。");} finally{setBusy(false);}
+  }
   return (
     <section className="rounded-xl border border-border bg-card p-5 sm:p-6" aria-live="polite">
       <div className="flex items-center justify-between">
@@ -47,27 +55,27 @@ function SuggestionDetail({ issue, dataset }: { issue: CleanupIssueViewModel; da
           {issue.files.map((file) => (
             <div key={file} className="flex items-center gap-2 py-3 text-xs">
               <FileText size={15} className="shrink-0 text-muted-foreground" />
-              <span className="truncate">{file}</span>
+              {issue.documentLinks?.find(d=>d.name===file) ? <Link href={`/library?source=workspace&document=${issue.documentLinks.find(d=>d.name===file)!.id}`} className="inline-flex min-h-11 items-center break-words text-primary underline">{file} · 阅读资料</Link> : <span className="truncate">{file}</span>}
             </div>
           ))}
         </div>
       </div>
       <div className="mt-6">
-        <p className="mb-3 text-xs font-medium">差异预览 · {issue.preview.label}</p>
+        <p className="mb-3 text-xs font-medium">{dataset === "workspace" ? "审阅记录（未检测正文差异）" : "差异预览"} · {issue.preview.label}</p>
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="rounded-lg border border-border p-4">
             <p className="text-[11px] text-muted-foreground">{dataset === "workspace" ? "当前资料" : "当前示例"}</p>
             <p className="mt-2 text-xs leading-6">{issue.preview.before}</p>
           </div>
           <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
-            <p className="text-[11px] text-primary">建议变化</p>
+            <p className="text-[11px] text-primary">{dataset === "workspace" ? "审阅决定" : "建议变化"}</p>
             <p className="mt-2 text-xs leading-6">{issue.preview.after}</p>
           </div>
         </div>
       </div>
       <p className="mt-5 text-sm leading-7 text-muted-foreground">{issue.recommendation}</p>
       <div className="mt-6 flex flex-col items-start gap-3 border-t border-border pt-5">
-        {dataset === "example" && <Button disabled size="sm">确认并应用</Button>}
+        {issue.review && <><p className="text-sm">当前决定：{decision === "accepted" ? "接受" : decision === "ignored" ? "忽略" : "待决定"}</p><div className="flex flex-wrap gap-2">{(["accepted","ignored","pending"] as const).map(value => <Button key={value} size="sm" variant="outline" disabled={busy} aria-pressed={decision===value} onClick={()=>void save(value)}>{value === "accepted" ? "接受候选" : value === "ignored" ? "忽略候选" : stateLabel(value)}</Button>)}</div>{message && <p role="status" className="text-sm">{message}</p>}</>}
         <p className="text-xs leading-6 text-muted-foreground">{dataset === "workspace" ? "候选来自已应用的整理方案。请对照原文件核对；所有文件均保留。" : "执行与恢复将在整理功能阶段接入。此处建议并非真实检测结果。"}</p>
       </div>
     </section>
@@ -99,7 +107,7 @@ export function CleanupReview({ issues, dataset = "example" }: { issues: Cleanup
               {issues.map((issue) => <SuggestionItem key={issue.id} issue={issue} active={selectedId === issue.id} onSelect={() => setSelectedId(issue.id)} />)}
             </div>
           </section>
-          <SuggestionDetail issue={selected} dataset={dataset} />
+          <SuggestionDetail key={`${selected.id}:${selected.review?.revision}`} issue={selected} dataset={dataset} />
         </div>
       )}
     </div>

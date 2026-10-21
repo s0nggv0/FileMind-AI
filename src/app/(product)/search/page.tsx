@@ -1,5 +1,4 @@
 import { realAIRequired } from "@/lib/competition";
-import { PageHeader } from "@/components/common/page-header";
 import { Reveal } from "@/components/motion/reveal";
 import { KnowledgeSearch } from "@/features/search/knowledge-search";
 import { persistenceConfigured } from "@/lib/server/database";
@@ -9,5 +8,5 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
   await getUserId();
   const params = await searchParams;
   const value = (key: string) => typeof params[key] === "string" ? params[key] as string : undefined;
-  return <Reveal className="space-y-5"><PageHeader title="搜索资料" description="提问或查找正文，核对原始依据。" /><KnowledgeSearch key={[value("workspace"), value("document"), value("run"), value("q")].join(":")} initialWorkspace={value("workspace")} initialDocument={value("document")} initialQuery={value("q")} initialMode={value("mode") === "find" ? "find" : "ask"} persistent={persistenceConfigured()} mock={!realAIRequired()} /></Reveal>;
+  return <Reveal className="space-y-5"><KnowledgeSearch key={[value("workspace"), value("document"), value("documents"), value("run"), value("q")].join(":")} initialWorkspace={value("workspace")} initialDocument={value("document")} initialDocuments={value("documents")?.split(",")} initialQuery={value("q")} initialMode={value("mode") === "find" ? "find" : "ask"} persistent={persistenceConfigured()} mock={!realAIRequired()} /></Reveal>;
 }

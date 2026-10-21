@@ -11,6 +11,7 @@ import { PostgresKnowledgeRepository } from "../src/lib/retrieval/postgres-knowl
 import { PortableVectorStore } from "../src/lib/retrieval/portable-vector-store";
 import { IndexingPipeline } from "../src/lib/retrieval/indexing";
 import { MockEmbeddingProvider } from "../src/lib/retrieval/embedding-provider";
+import { updateDuplicateReview } from "../src/lib/workspace/duplicate-review";
 test("authorized reading and atomic metadata edits survive reload without rebuilding content; conflicts and RLS hold", async () => {
   const db = new PGlite();
   try {
@@ -23,10 +24,11 @@ test("authorized reading and atomic metadata edits survive reload without rebuil
     const ws = await repository.create(user, "Synthetic reading");
     const document = { id, name: "reading.md", type: "md" as const, mimeType: "text/markdown", size: 40, parseStatus: "completed" as const, metadata: { addedAt: new Date().toISOString() } };
     const text = "# 阅读资料\n数据库索引与共享分类。";
-    const plan = buildOrganizationPlan([document], () => text);
-    await repository.save(user, { ...ws, documents: [document], texts: { [id]: text }, proposal: plan, run: { id: crypto.randomUUID(), status: "completed", engine: "mock", simulation: true, documents: [document], steps: [], activity: [], progress: 100, startedAt: Date.now(), result: plan } });
+    const copy = { ...document,id:crypto.randomUUID(),name:"reading-copy.md" };
+    const plan = buildOrganizationPlan([document,copy], () => text);
+    await repository.save(user, { ...ws, documents: [document,copy], texts: { [id]: text,[copy.id]:text }, proposal: plan, run: { id: crypto.randomUUID(), status: "completed", engine: "mock", simulation: true, documents: [document,copy], steps: [], activity: [], progress: 100, startedAt: Date.now(), result: plan } });
     const knowledge = new PostgresKnowledgeRepository(tenant), vectors = new PortableVectorStore(tenant), provider = new MockEmbeddingProvider();
-    await new IndexingPipeline(knowledge,vectors,provider).indexDocument((await knowledge.documents({ userId: user }))[0]);
+    await new IndexingPipeline(knowledge,vectors,provider).indexDocument((await knowledge.documents({ userId: user })).find(d=>d.id===id)!);
     const before = await tenant.query(user, "select index_generation,index_status,text_content from filemind.documents where id=$1", [id]);
     const current = await reader.get(user,id);
     assert.equal(current.text,text); assert.equal(current.storageStatus,"not_stored");
@@ -46,5 +48,13 @@ test("authorized reading and atomic metadata edits survive reload without rebuil
     await assert.rejects(reader.update(other,id,{ ...patch,revision:saved.revision }), (e: unknown) => e instanceof WorkspaceError && e.status===404);
     assert.equal((await reader.get(user,id)).category,"研究修正");
     assert.equal(MetadataEditSchema.safeParse({ ...patch,tags:Array(9).fill("tag") }).success,false);
+    const review = {workspaceId:ws.id,candidateId:plan.duplicates[0].id,revision:saved.revision,decision:"accepted" as const};
+    const changed=await updateDuplicateReview(tenant,user,review);
+    assert.equal((await repository.get(user,ws.id)).run!.result!.duplicates[0].decision,"accepted");
+    await assert.rejects(updateDuplicateReview(tenant,other,{...review,revision:changed.revision}),(e:unknown)=>e instanceof WorkspaceError && e.status===404);
+    await assert.rejects(updateDuplicateReview(tenant,user,review),(e:unknown)=>e instanceof WorkspaceError && e.status===409);
+    await updateDuplicateReview(tenant,user,{...review,revision:changed.revision,decision:"ignored"});
+    const after = await repository.get(user,ws.id);
+    assert.equal(after.proposal!.duplicates[0].decision,"ignored"); assert.equal(after.documents.length,2);
   } finally { await db.close(); }
 });

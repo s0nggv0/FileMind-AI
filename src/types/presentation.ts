@@ -47,6 +47,8 @@ export interface DashboardInsight {
 export type CleanupIssueType = "duplicate" | "outdated" | "missing-tags";
 
 export interface CleanupIssueViewModel {
+  documentLinks?: {id:string;name:string}[];
+  review?: {workspaceId:string;candidateId:string;revision:number;decision:"pending"|"accepted"|"ignored";kind?:string};
   id: string;
   type: CleanupIssueType;
   title: string;
