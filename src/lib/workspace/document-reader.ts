@@ -11,11 +11,11 @@ export class DocumentReader {
   async get(userId: string, id: string) {
     z.uuid().parse(id);
     const result = await this.db.query(userId, `select d.id,d.workspace_id as "workspaceId",d.display_name as name,d.text_content as text,
-      d.category,case when d.storage_path is null then 'not_stored' else d.storage_status end as "storageStatus",d.metadata,w.revision,
+      d.category,case when d.storage_path is null then 'not_stored' else d.storage_status end as "storageStatus",d.metadata,w.revision,(select count(*)::integer from filemind.document_relations r where r.user_id=$1 and (r.source_id=d.id or r.target_id=d.id)) as relations,
       coalesce((select array_agg(t.tag order by t.tag) from filemind.document_tags t where t.user_id=$1 and t.document_id=d.id),'{}') as tags
       from filemind.documents d join filemind.workspaces w on w.id=d.workspace_id and w.user_id=d.user_id where d.user_id=$1 and d.id=$2`, [userId, id]);
     if (!result.rows.length) throw new WorkspaceError("NOT_FOUND", "资料不存在或无法访问。", 404);
-    return z.object({ id: z.uuid(), workspaceId: z.uuid(), name: z.string(), text: z.string(), category: z.string().nullable(), storageStatus: z.enum(["available", "missing", "not_stored"]), metadata: z.object({ truncated: z.boolean().optional(), warnings: z.array(z.string()).optional() }), revision: z.number().int(), tags: z.array(z.string()) }).parse(result.rows[0]);
+    return z.object({ id: z.uuid(), workspaceId: z.uuid(), name: z.string(), text: z.string(), category: z.string().nullable(), storageStatus: z.enum(["available", "missing", "not_stored"]), metadata: z.object({ truncated: z.boolean().optional(), warnings: z.array(z.string()).optional() }), revision: z.number().int(), relations:z.number().int(), tags: z.array(z.string()) }).parse(result.rows[0]);
   }
   async update(userId: string, id: string, input: z.input<typeof MetadataEditSchema>) {
     const patch = MetadataEditSchema.parse(input);
