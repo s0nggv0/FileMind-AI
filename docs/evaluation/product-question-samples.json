@@ -1,0 +1,157 @@
+{
+  "checkedAt": "2026-10-21T13:15:12.496Z",
+  "live": true,
+  "synthetic": true,
+  "retrievalTested": false,
+  "scope": "Three bounded grounded-answer samples, two paraphrased comparisons and one absent fact. No global accuracy or user-success claim.",
+  "limit": 14,
+  "callsUsed": 12,
+  "rows": [
+    {
+      "query": "青禾实验方案A与方案B的通过线分别是多少，是否一致？",
+      "passed": true,
+      "answer": {
+        "answer": "青禾实验方案A的通过线为72分，该方案未声明替代其他方案。 [S1]\n青禾实验方案B的通过线为68分，该方案未声明替代其他方案。 [S2]\n青禾实验方案A与方案B的通过线不一致，方案A为72分，方案B为68分。 [S1][S2]",
+        "citations": [
+          {
+            "sourceId": "S1",
+            "chunkId": "618024f3-a218-42f1-8823-ef6c419eb4a5",
+            "documentId": "34946980-ef1d-4ddf-91b5-0d103bfba765"
+          },
+          {
+            "sourceId": "S2",
+            "chunkId": "701dc6f6-2edd-45b7-ad7c-84448aeeba48",
+            "documentId": "58ab6892-4b0d-4e4c-990b-08888deed07a"
+          }
+        ],
+        "confidence": "high",
+        "insufficientEvidence": false,
+        "evidenceDecision": {
+          "supported": true,
+          "missingInformation": []
+        },
+        "answerState": "answered",
+        "conflict": {
+          "detected": false,
+          "claims": []
+        },
+        "clarification": {
+          "required": false
+        }
+      },
+      "verification": {
+        "accepted": true
+      },
+      "unavailable": false,
+      "sourceCount": 2
+    },
+    {
+      "query": "青禾实验的通过线是多少？请说明资料之间的分歧。",
+      "passed": true,
+      "answer": {
+        "answer": "青禾实验方案A（青禾实验方案A.txt）规定通过线为72分。 [S1]\n青禾实验方案B（青禾实验方案B.txt）规定通过线为68分。 [S2]\n两个方案均未声明替代其他方案，因此两个通过线数值之间存在未解决的分歧：方案A为72分，方案B为68分。 [S1][S2]",
+        "citations": [
+          {
+            "sourceId": "S1",
+            "chunkId": "618024f3-a218-42f1-8823-ef6c419eb4a5",
+            "documentId": "34946980-ef1d-4ddf-91b5-0d103bfba765"
+          },
+          {
+            "sourceId": "S2",
+            "chunkId": "701dc6f6-2edd-45b7-ad7c-84448aeeba48",
+            "documentId": "58ab6892-4b0d-4e4c-990b-08888deed07a"
+          }
+        ],
+        "confidence": "high",
+        "insufficientEvidence": false,
+        "evidenceDecision": {
+          "supported": true,
+          "missingInformation": []
+        },
+        "answerState": "conflicting",
+        "conflict": {
+          "detected": true,
+          "claims": [
+            {
+              "topic": "青禾实验通过线",
+              "sourceIds": [
+                "S1",
+                "S2"
+              ],
+              "values": [
+                "72分",
+                "68分"
+              ]
+            }
+          ]
+        },
+        "clarification": {
+          "required": false
+        }
+      },
+      "verification": {
+        "accepted": true
+      },
+      "unavailable": false,
+      "sourceCount": 2
+    },
+    {
+      "query": "青禾实验的样本量是多少？",
+      "passed": false,
+      "answer": {
+        "answer": "存在多个青禾实验方案，请确认您查询的是哪个方案：",
+        "citations": [],
+        "confidence": "low",
+        "insufficientEvidence": false,
+        "answerState": "needs_clarification",
+        "conflict": {
+          "detected": false,
+          "claims": []
+        },
+        "clarification": {
+          "required": true,
+          "question": "存在多个青禾实验方案，请确认您查询的是哪个方案：",
+          "options": [
+            {
+              "label": "青禾实验方案A（通过线72分）",
+              "documentIds": [
+                "34946980-ef1d-4ddf-91b5-0d103bfba765"
+              ]
+            },
+            {
+              "label": "青禾实验方案B（通过线68分）",
+              "documentIds": [
+                "58ab6892-4b0d-4e4c-990b-08888deed07a"
+              ]
+            }
+          ]
+        }
+      },
+      "verification": null,
+      "unavailable": false,
+      "sourceCount": 2
+    },
+    {
+      "query": "青禾实验的样本量是多少？",
+      "passed": true,
+      "afterPromptCorrection": true,
+      "answer": {
+        "answer": "我没有在你的资料中找到足够依据回答这个问题。",
+        "citations": [],
+        "confidence": "low",
+        "insufficientEvidence": true,
+        "answerState": "no_answer",
+        "conflict": {
+          "detected": false,
+          "claims": []
+        },
+        "clarification": {
+          "required": false
+        }
+      },
+      "verification": null,
+      "unavailable": false,
+      "sourceCount": 2
+    }
+  ]
+}
