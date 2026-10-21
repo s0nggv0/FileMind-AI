@@ -27,6 +27,7 @@ export async function PUT(request: Request, context: Context) {
     if (snapshot.documents.length && (snapshot.documents.length !== next.documents.length || snapshot.documents.some(d => !next.documents.some(item => item.id === d.id)))) throw new WorkspaceError("INVALID_STATE", "已保存资料的标识不能修改。");
     if (next.documents.some(d => { const old = snapshot.documents.find(p => p.id === d.id); return old && (old.name !== d.name || old.type !== d.type || old.size !== d.size || old.mimeType !== d.mimeType); })) throw new WorkspaceError("INVALID_STATE", "原文件信息不能修改。");
     if (next.documents.some(d => d.storagePath && d.storagePath !== snapshot.documents.find(p => p.id === d.id)?.storagePath)) throw new WorkspaceError("INVALID_STATE", "文件存储位置由服务器管理。");
+    if (next.run?.status === "completed" && next.proposal) { next.proposal.relationships = next.proposal.relationships.filter(r => r.decision === "accepted"); next.run.result = structuredClone(next.proposal); }
     const saved = next.run?.status === "completed" ? await workspaceOperations().apply(user, next) : await workspaceRepository.save(user, next);
     if (next.run?.status === "completed") scheduleKnowledgeIndex({ userId: user, workspaceId: next.id });
     return Response.json(saved);
@@ -45,6 +46,7 @@ export async function PATCH(request: Request, context: Context) {
       validateReview(snapshot, body.proposal); snapshot.proposal = body.proposal;
       if (body.action === "apply" && snapshot.run) {
         snapshot.proposal.documents = snapshot.proposal.documents.map(d => ({ ...d, name: d.renameDecision === "accepted" && d.suggestedName ? sanitizeFilename(d.suggestedName, d.originalName) : d.originalName }));
+        snapshot.proposal.relationships = snapshot.proposal.relationships.filter(r => r.decision === "accepted");
         snapshot.run.status = "completed"; snapshot.run.completedAt = Date.now(); snapshot.run.result = structuredClone({ ...snapshot.proposal, relationships: snapshot.proposal.relationships.filter(r => r.decision !== "ignored") });
       }
     }

@@ -95,6 +95,19 @@ test("store locks mutations, edits proposal, applies once, retains Library snaps
   assert.equal(store.getState().applied[0].duplicates[0].decision, "accepted");
   store.getState().reset(); assert.equal(store.getState().documents.length, 0); assert.equal(store.getState().applied[0].documents.length, 2);
 });
+test("applying a review persists only accepted relationship suggestions", async () => {
+  const store = createWorkspaceStore(new MockAgentEngine(1));
+  store.getState().addFiles([file("lecture-a.txt"),file("lecture-b.txt"),file("lecture-c.txt")]);
+  await store.getState().start();
+  const relations=store.getState().proposal!.relationships;
+  assert.ok(relations.length>=2);
+  store.getState().decide("relationships",relations[0].id,"accepted");
+  store.getState().decide("relationships",relations[1].id,"ignored");
+  await store.getState().apply();
+  assert.deepEqual(store.getState().applied[0].relationships.map(r=>r.id),[relations[0].id]);
+  assert.equal(store.getState().applied[0].documents.length,3);
+  store.getState().reset();
+});
 for (const action of ["retry", "skip"] as const) test(`${action} transport failure leaves the run recoverable and preserves files`, async () => {
   const engine = new MockAgentEngine(1); const store = createWorkspaceStore(engine);
   store.getState().addFiles([file()]); store.getState().setFault("parse"); await store.getState().start();
