@@ -13,18 +13,23 @@ import { cn } from "@/lib/utils";
 import { categoryLabel, systemMessage } from "@/lib/ui-labels";
 import { formatDocumentDate } from "@/features/library/document-presentation";
 import type { DocumentViewModel } from "@/types";
+import { DocumentReading } from "./document-reader";
+import { useRouter } from "next/navigation";
 import { KnowledgeIndex } from "./knowledge-index";
 import { ImageSourceView } from "@/components/knowledge/image-source-view";
 
 export function LibraryBrowser({ documents, categories, initialSelectedId, dataset = "example", persistent = false }: { documents: DocumentViewModel[]; categories: string[]; initialSelectedId?: string; dataset?: "example" | "workspace"; persistent?: boolean }) {
+  const router = useRouter();
+  const [overrides, setOverrides] = useState<Record<string, Partial<DocumentViewModel>>>({});
+  const currentDocuments = useMemo(() => documents.map(d => ({ ...d, ...overrides[d.id] })), [documents, overrides]);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("all");
   const [view, setView] = useState<"grid" | "list">("grid");
   const [selected, setSelected] = useState<DocumentViewModel | null>(documents.find((document) => document.id === initialSelectedId) ?? null);
   const filtered = useMemo(() => {
     const needle = query.trim().toLocaleLowerCase();
-    return documents.filter((document) => (category === "all" || document.category === category) && (!needle || [document.name, document.summary, ...document.tags].join(" ").toLocaleLowerCase().includes(needle)));
-  }, [documents, category, query]);
+    return currentDocuments.filter((document) => (category === "all" || document.category === category) && (!needle || [document.name, document.summary, ...document.tags].join(" ").toLocaleLowerCase().includes(needle)));
+  }, [currentDocuments, category, query]);
 
   return (
     <div className="space-y-6">
@@ -49,11 +54,11 @@ export function LibraryBrowser({ documents, categories, initialSelectedId, datas
       )}
 
       <Dialog open={selected !== null} onOpenChange={(open) => { if (!open) setSelected(null); }}>
-        <DialogContent className={cn("max-h-[90dvh] overflow-y-auto", selected?.type === "image" ? "sm:max-w-2xl" : "sm:max-w-lg")}>
-          <DialogHeader><DialogTitle className="break-words pr-5 text-base leading-7">{selected?.name}</DialogTitle><DialogDescription>{dataset === "workspace" ? persistent ? ["missing","not_stored"].includes(selected?.storageStatus??"")?"原文件不可用 · 仍可查看已保存摘要、分类和标签":"工作区资料详情 · 已保存摘要、分类和标签，保留原文件" : "本地提取摘要 · 分类和标签使用演示规则，原文件未修改" : "示例资料详情 · 没有连接真实原文件"}</DialogDescription></DialogHeader>
+        <DialogContent className={cn("max-h-[90dvh] overflow-y-auto", selected?.type === "image" ? "sm:max-w-2xl" : "sm:max-w-2xl")}>
+          <DialogHeader><DialogTitle className="break-words pr-5 text-base leading-7">{selected?.name}</DialogTitle><DialogDescription>{dataset === "workspace" ? persistent ? ["missing","not_stored"].includes(selected?.storageStatus??"")?"原文件不可用 · 仍可查看已保存摘要、分类和标签":"已保存资料 · 阅读原件、提取全文或修正分类标签" : "本地提取摘要 · 分类和标签使用演示规则，原文件未修改" : "示例资料详情 · 没有连接真实原文件"}</DialogDescription></DialogHeader>
           {selected?.type === "image" && persistent && <ImageSourceView key={selected.id} documentId={selected.id} />}
           {selected && <div className="space-y-6"><div className="grid grid-cols-3 gap-4 rounded-lg bg-muted/60 p-4"><div><p className="text-[11px] text-muted-foreground">分类</p><p className="mt-1.5 text-xs">{categoryLabel(selected.category)}</p></div><div><p className="text-[11px] text-muted-foreground">大小</p><p className="mt-1.5 text-xs">{selected.size}</p></div><div><p className="text-[11px] text-muted-foreground">更新日期</p><p className="mt-1.5 text-xs">{formatDocumentDate(selected.updatedAt)}</p></div></div><div><h3 className="text-xs font-medium text-muted-foreground">内容摘要</h3><p className="mt-2 text-sm leading-7">{systemMessage(selected.summary)}</p></div><div className="flex flex-wrap gap-2">{selected.tags.map((tag) => <Badge key={tag} variant="secondary">{tag}</Badge>)}</div><div className="flex items-center justify-between border-t border-border pt-4"><span className="flex items-center gap-2 text-xs text-muted-foreground"><Network size={15} /> {selected.relations} 条{dataset === "workspace" ? "规则" : "示例"}关联</span><Button variant="outline" size="sm" asChild><Link href={dataset === "workspace" ? "/graph?source=workspace" : "/graph"}>探索图谱 <ArrowUpRight size={14} /></Link></Button></div></div>}
-          {selected && dataset === "workspace" && persistent && <KnowledgeIndex documentId={selected.id} />}
+          {selected && dataset === "workspace" && persistent && <><DocumentReading key={selected.id} documentId={selected.id} onSaved={data => { const patch = { category: data.category ?? "Uncategorized", tags: data.tags }; setOverrides(old => ({ ...old, [selected.id]: patch })); setSelected({ ...selected, ...patch }); router.refresh(); }} /><KnowledgeIndex documentId={selected.id} /></>}
         </DialogContent>
       </Dialog>
     </div>
