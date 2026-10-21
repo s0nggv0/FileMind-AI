@@ -33,8 +33,8 @@ export const navItems = [
   },
   {
     href: "/cleanup",
-    label: "智能清理",
-    description: "审阅待整理项目",
+    label: "重复候选",
+    description: "核对重复，保留原件",
     iconKey: "cleanup",
   },
 ] satisfies NavigationItem[];

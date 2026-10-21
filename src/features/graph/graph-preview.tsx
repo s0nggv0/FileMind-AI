@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { categoryLabel, systemMessage } from "@/lib/ui-labels";
 import { useState } from "react";
 import { ArrowRight, FileText, Link2, Network } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -18,14 +20,14 @@ export function GraphPreview({ nodes, edges, documents, dataset = "example" }: {
       <div className="grid overflow-hidden rounded-2xl border border-border bg-card xl:grid-cols-[minmax(0,1fr)_280px]">
         <section className="min-w-0">
           <div className="flex items-center gap-2 border-b border-border px-5 py-4"><Network size={16} className="text-primary" /><h2 className="text-sm font-medium">点选一个节点，沿着连接继续探索。</h2></div>
-          <div className="overflow-x-auto bg-[radial-gradient(var(--border)_1px,transparent_1px)] bg-size-[22px_22px]">
+          <ul className="divide-y px-4 sm:hidden" aria-label="相关资料与概念列表">{nodes.map(node => <li key={node.id}><button type="button" onClick={() => setSelectedId(node.id)} aria-pressed={selectedId === node.id} className="min-h-11 w-full break-words py-3 text-left text-sm">{node.kind === "document" ? "资料" : "概念"} · {node.label}</button></li>)}</ul><div className="hidden overflow-x-auto sm:block bg-[radial-gradient(var(--border)_1px,transparent_1px)] bg-size-[22px_22px]">
             <svg viewBox="0 0 900 500" className="min-w-150 w-full" aria-label={dataset === "workspace" ? "本地规则知识图谱，支持鼠标点击或 Tab 与 Enter 选择节点" : "示例知识图谱，支持鼠标点击或 Tab 与 Enter 选择节点"} role="group">
               {edges.map((edge) => {
                 const source = nodes.find((node) => node.id === edge.source);
                 const target = nodes.find((node) => node.id === edge.target);
                 if (!source || !target) return null;
                 const active = edge.source === selectedId || edge.target === selectedId;
-                return <g key={`${edge.source}-${edge.target}`} aria-hidden="true"><line x1={source.x} y1={source.y} x2={target.x} y2={target.y} className={cn(active ? "stroke-primary/50" : "stroke-border")} strokeWidth={active ? 1.5 : 1} />{active && <text x={(source.x + target.x) / 2} y={(source.y + target.y) / 2 - 8} textAnchor="middle" className="fill-muted-foreground text-[10px]" paintOrder="stroke" stroke="var(--card)" strokeWidth={4} strokeLinejoin="round">{edge.label}</text>}</g>;
+                return <g key={`${edge.source}-${edge.target}`} aria-hidden="true"><line x1={source.x} y1={source.y} x2={target.x} y2={target.y} className={cn(active ? "stroke-primary/50" : "stroke-border")} strokeWidth={active ? 1.5 : 1} />{active && <text x={(source.x + target.x) / 2} y={(source.y + target.y) / 2 - 8} textAnchor="middle" className="fill-muted-foreground text-[10px]" paintOrder="stroke" stroke="var(--card)" strokeWidth={4} strokeLinejoin="round">{systemMessage(edge.label)}</text>}</g>;
               })}
               {nodes.map((node) => {
                 const active = node.id === selectedId;
@@ -39,9 +41,9 @@ export function GraphPreview({ nodes, edges, documents, dataset = "example" }: {
           <p className="border-t border-border px-5 py-3 text-[11px] text-muted-foreground">{dataset === "workspace" ? "本地工作区关联 · 根据共同分类和标签生成" : "知识关联预览 · 选择节点查看资料与概念的联系。"}</p>
         </section>
         <aside className="border-t border-border p-5 xl:border-l xl:border-t-0" aria-live="polite">
-          {selected ? <div><Badge variant="secondary">{selected.kind === "concept" ? "概念节点" : "文件节点"}</Badge><h3 className="mt-4 text-lg font-medium leading-7">{selected.label}</h3><p className="mt-3 text-xs leading-6 text-muted-foreground">{document?.summary ?? "这个概念连接了不同文件中的主题。以下关联来自预置演示数据。"}</p>{document && <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground"><FileText size={14} /> {document.category} · {document.size}</div>}<div className="mt-6 border-t border-border pt-5"><p className="mb-4 flex items-center gap-2 text-xs font-medium"><Link2 size={14} /> 关联节点 · {connections.length}</p><div className="space-y-2">{connections.map((edge) => {
+          {selected ? <div><Badge variant="secondary">{selected.kind === "concept" ? "概念节点" : "文件节点"}</Badge><h3 className="mt-4 text-lg font-medium leading-7">{selected.label}</h3><p className="mt-3 text-xs leading-6 text-muted-foreground">{document?.summary ? systemMessage(document.summary) : dataset === "workspace" ? "通过共同分类或标签产生的规则关联，可打开资料核对。" : "这个概念连接了示例文件中的主题。"}</p>{document && <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground"><FileText size={14} /> {categoryLabel(document.category)} · {document.size}</div>}{dataset === "workspace" && <div className="mt-4 flex flex-wrap gap-3">{document ? <Link className="inline-flex min-h-11 items-center text-sm text-primary underline" href={`/library?source=workspace&document=${document.id}`}>阅读这份资料</Link> : <Link className="inline-flex min-h-11 items-center text-sm text-primary underline" href={`/search?mode=find&q=${encodeURIComponent(selected.label)}&documents=${documents.map(d => d.id).join(",")}`}>在此批资料查找</Link>}</div>}<div className="mt-6 border-t border-border pt-5"><p className="mb-4 flex items-center gap-2 text-xs font-medium"><Link2 size={14} /> 关联节点 · {connections.length}</p><div className="space-y-2">{connections.map((edge) => {
             const other = nodes.find((node) => node.id === (edge.source === selectedId ? edge.target : edge.source));
-            return other ? <button key={`${edge.source}-${edge.target}`} onClick={() => setSelectedId(other.id)} className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left transition-colors hover:bg-muted"><div className="min-w-0 flex-1"><p className="truncate text-xs">{other.label}</p><p className="mt-1 text-[10px] text-muted-foreground">{edge.label}</p></div><ArrowRight size={13} className="text-muted-foreground" /></button> : null;
+            return other ? <button key={`${edge.source}-${edge.target}`} onClick={() => setSelectedId(other.id)} className="flex min-h-11 w-full items-center gap-2 rounded-lg px-2 py-2 text-left transition-colors hover:bg-muted"><div className="min-w-0 flex-1"><p className="truncate text-xs">{other.label}</p><p className="mt-1 text-[10px] text-muted-foreground">{systemMessage(edge.label)}</p></div><ArrowRight size={13} className="text-muted-foreground" /></button> : null;
           })}</div></div></div> : <p className="text-sm text-muted-foreground">选择节点查看示例关联。</p>}
         </aside>
       </div>

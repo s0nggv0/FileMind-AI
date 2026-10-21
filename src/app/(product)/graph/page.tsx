@@ -9,5 +9,5 @@ export default async function GraphPage({ searchParams }: { searchParams: Promis
   const params = await searchParams;
   const graph = getDemoGraph();
   const saved = await getWorkspacePresentation();
-  return <Reveal className="space-y-7"><PageHeader title="知识之间，还有更多连接。" description="从一份文件出发，发现相关的概念、内容与思路。" /><DemoNote>规则关系 · 使用共享分类和标签，预置示例可切换。尚无语义相似度。</DemoNote><SessionGraph key={params.source ?? "graph"} preferSession={saved.persistent || params.source === "workspace"} savedPlans={saved.plans} nodes={graph.nodes} edges={graph.edges} documents={getDemoDocuments()} /></Reveal>;
+  return <Reveal className="space-y-7"><PageHeader title="相关资料图谱" description="按共同分类和标签探索资料，并打开原文核对。" /><DemoNote>规则关系 · 使用共享分类和标签，预置示例可切换。尚无语义相似度。</DemoNote><SessionGraph key={params.source ?? "graph"} preferSession={saved.persistent || params.source === "workspace"} savedPlans={saved.plans} nodes={graph.nodes} edges={graph.edges} documents={getDemoDocuments()} /></Reveal>;
 }
