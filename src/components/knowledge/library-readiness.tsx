@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { readiness, type ReadinessDocument } from "@/lib/retrieval/readiness";
+import { prepareSearch } from "@/lib/retrieval/prepare-search";
 export function LibraryReadiness({ workspaceId, documentIds, onDocuments }: { workspaceId?: string; documentIds?: string[]; onDocuments?: (documents: ReadinessDocument[]) => void }) {
   const [mock,setMock]=useState(false);
   const [documents, setDocuments] = useState<ReadinessDocument[] | null>(null);
@@ -22,11 +23,8 @@ export function LibraryReadiness({ workspaceId, documentIds, onDocuments }: { wo
   async function retry() {
     if (!documents) return; setBusy(true); setError("");
     try {
-      // Retry only unfinished files. Successful files and cached image results survive.
-      for (const d of documents.filter(d => d.status !== "ready" || ["failed", "interrupted"].includes(d.buildStatus ?? ""))) {
-        const response = await fetch("/api/index", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ documentId: d.id, ...(workspaceId ? { workspaceId } : {}) }) });
-        if (!response.ok) throw new Error();
-      }
+      const { results } = await prepareSearch({ workspaceId, documentIds });
+      if (results.some(r => r.status === "failed")) throw new Error();
     } catch { setError("部分资料尚未准备完成。可在资料详情重试，或在设置查看服务配置说明。"); }
     finally { setBusy(false); }
   }
