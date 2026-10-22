@@ -1,6 +1,7 @@
 // Opt-in, original synthetic sources. 14 HTTP attempts total, including SDK retries.
 import { loadEnvConfig } from "@next/env";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import { createKimiProvider } from "../../src/lib/ai/providers/kimi-provider";
 import { readModelConfig } from "../../src/lib/ai/models";
 import { generateGroundedAnswer } from "../../src/lib/retrieval/rag";
@@ -20,6 +21,8 @@ async function main() {
   const userId=crypto.randomUUID(), workspaceId=crypto.randomUUID();
   const evidence = (name:string,content:string): Evidence => ({id:crypto.randomUUID(),documentId:crypto.randomUUID(),userId,workspaceId,chunkIndex:0,content,contentHash:content,chunkVersion:"chunk-v1",tokenEstimate:40,pageStart:null,pageEnd:null,lineStart:1,lineEnd:2,paragraphStart:null,paragraphEnd:null,headingPath:[],charStart:0,charEnd:content.length,documentName:name,fileType:"txt",summary:"",tags:[],score:0.9,semanticScore:0.9});
   const a=evidence("青禾实验方案A.txt","青禾实验方案A：通过线为72分。该方案未声明替代其他方案。"), b=evidence("青禾实验方案B.txt","青禾实验方案B：通过线为68分。该方案未声明替代其他方案。");
+  a.documentHash=createHash("sha256").update(a.content).digest("hex");
+  b.documentHash=createHash("sha256").update(b.content).digest("hex");
   const sources=[a,{...a,id:crypto.randomUUID(),documentId:crypto.randomUUID(),documentName:"青禾实验方案A副本.txt"},b];
   const retryMissing = process.argv.includes("--retry-missing");
   const prior = retryMissing ? JSON.parse(await readFile("docs/evaluation/product-question-samples.json","utf8")) : null;

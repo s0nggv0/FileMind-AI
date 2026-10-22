@@ -10,6 +10,7 @@ export interface DocumentChunk extends ChunkLocation {
   chunkIndex: number; content: string; contentHash: string; tokenEstimate: number; chunkVersion: string;
 }
 export interface Evidence extends DocumentChunk {
+  documentHash?: string | null;
   storageStatus?: "available" | "missing" | "not_stored";
   documentUpdatedAt?: string;
   documentName: string; fileType: string; summary: string; tags: string[];

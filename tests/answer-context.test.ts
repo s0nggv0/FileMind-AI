@@ -80,9 +80,30 @@ test("explicit comparisons and disagreement requests override a redundant picker
   }
 });
 
-test("identical passages are one evidence source while differing numbers and OCR provenance remain separate", () => {
-  const a = evidence("Threshold is 31.",1), copy = {...evidence("Threshold is 31.",2)}, b = evidence("Threshold is 29.",3);
+test("verified file copies collapse while differing numbers and OCR provenance remain separate", () => {
+  const a = {...evidence("Threshold is 31.",1),documentHash:"a".repeat(64)}, copy = {...evidence("Threshold is 31.",2),documentHash:a.documentHash}, b = evidence("Threshold is 29.",3);
   const context = buildRAGContext([a,copy,b,{...copy,id:randomUUID(),chunkSource:"ocr"}]);
   assert.equal(context.sources.length,3);
   assert.deepEqual(context.sources.map(s=>s.documentId),[a.documentId,b.documentId,copy.documentId]);
+});
+
+test("shared paragraphs from distinct or unverified documents retain both comparison sources", async () => {
+  const a = {...evidence("通过线为72分。",1),documentName:"方案甲.txt",documentHash:"a".repeat(64)};
+  const b = {...evidence(a.content,2),documentName:"方案乙.txt",documentHash:"b".repeat(64)};
+  for (const sources of [[a,b],[{...a,documentHash:null},{...b,documentHash:undefined}]]) {
+    const context = buildRAGContext(sources);
+    assert.deepEqual(context.sources.map(s=>s.documentName),[a.documentName,b.documentName]);
+    const result = await generateGroundedAnswer("比较两个方案的通过线。",sources,{userId},scripted(emptyAnswerContext),async(_s,id)=>sources.find(s=>s.id===id)??null,AbortSignal.timeout(1000));
+    assert.equal(result.answer?.answerState,"answered");
+    assert.equal(result.verification?.accepted,true);
+    assert.deepEqual(result.answer?.citations.map(c=>c.documentId),[a.documentId,b.documentId]);
+  }
+});
+
+test("copy grouping preserves distinct passage positions and tenant boundaries", () => {
+  const a = {...evidence("通过线为72分。",1),documentHash:"a".repeat(64)};
+  const copy = {...a,id:randomUUID(),documentId:randomUUID()};
+  const laterSection = {...copy,id:randomUUID(),chunkIndex:1,headingPath:["另一实验"]};
+  const foreign = {...copy,id:randomUUID(),userId:randomUUID()};
+  assert.deepEqual(buildRAGContext([a,copy,laterSection,foreign]).sources.map(s=>s.id),[a.id,laterSection.id,foreign.id]);
 });
