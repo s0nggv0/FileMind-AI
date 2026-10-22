@@ -1,9 +1,16 @@
 import type { Evidence } from "./types";
-// Identical text is one passage of evidence, even when stored in several files.
-// Do not merge near matches or different source types (e.g. OCR vs AI reading).
+// A shared paragraph does not prove two documents are copies. Collapse only
+// matching passages at the same position in a verified whole-file copy. Without
+// a file hash, keep each document's identity; never use the chunk hash instead.
 export function uniquePassages(evidence: Evidence[]) {
   const seen = new Set<string>();
-  return evidence.filter(e => { const key = JSON.stringify([e.chunkSource ?? "text", e.content]); if (seen.has(key)) return false; seen.add(key); return true; });
+  return evidence.filter(e => {
+    const document = e.documentHash ? ["file", e.documentHash] : ["document", e.documentId];
+    const key = JSON.stringify([e.userId, document, e.fileType, e.chunkVersion, e.chunkSource ?? "text", e.chunkIndex, e.headingPath, e.content]);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 export function diversePassages(evidence: Evidence[], limit: number) {
   const unique = uniquePassages(evidence), documents = new Set<string>();

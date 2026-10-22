@@ -10,6 +10,7 @@ import { embeddingCacheKey, validateVector, type EmbeddingModelInfo, type Embedd
 import type { OperationContext } from "../reliability/operation-journal";
 const nullableNumber = z.number().int().nullable();
 export const EvidenceSchema = z.object({
+  documentHash: z.string().nullable().optional(),
   storageStatus:z.enum(["available","missing","not_stored"]).optional(),
   documentUpdatedAt:PostgresDateSchema.optional(),
   chunkSource: z.enum(["text", "ocr", "vision_summary", "concepts", "mixed"]).optional(),
@@ -23,7 +24,7 @@ export const evidenceColumns = `c.chunk_source as "chunkSource",c.id,c.user_id a
   c.chunk_index as "chunkIndex",c.content,c.content_hash as "contentHash",c.page_start as "pageStart",c.page_end as "pageEnd",
   c.line_start as "lineStart",c.line_end as "lineEnd",c.paragraph_start as "paragraphStart",c.paragraph_end as "paragraphEnd",
   c.heading_path as "headingPath",c.char_start as "charStart",c.char_end as "charEnd",c.token_estimate as "tokenEstimate",c.chunk_version as "chunkVersion",
-  d.display_name as "documentName",d.file_type as "fileType",d.updated_at as "documentUpdatedAt",case when d.storage_path is null then 'not_stored' else d.storage_status end as "storageStatus",coalesce(d.summary,'') as summary,
+  d.content_hash as "documentHash",d.display_name as "documentName",d.file_type as "fileType",d.updated_at as "documentUpdatedAt",case when d.storage_path is null then 'not_stored' else d.storage_status end as "storageStatus",coalesce(d.summary,'') as summary,
   coalesce((select array_agg(t.tag) from filemind.document_tags t where t.document_id=d.id and t.user_id=d.user_id),'{}') as tags`;
 export class PostgresKnowledgeRepository {
   constructor(public readonly db: TenantDatabase, private chunker = new DocumentChunker()) {}

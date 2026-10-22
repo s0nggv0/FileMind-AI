@@ -73,7 +73,7 @@ test("real SQL index, cached embeddings, lexical matching, RLS, stale invalidati
     const owner = crypto.randomUUID(), attacker = crypto.randomUUID();
     const workspace = await workspaces.create(owner, "Synthetic RAG");
     const id = crypto.randomUUID();
-    const snapshot = await workspaces.save(owner, { ...workspace, documents: [{ id, name: "database.md", type: "md", mimeType: "text/markdown", size: 40, parseStatus: "completed", metadata: { addedAt: new Date().toISOString() } }], texts: { [id]: "# 数据库\n数据库索引优化减少扫描。 A covering index avoids table reads." } });
+    const snapshot = await workspaces.save(owner, { ...workspace, documents: [{ id, name: "database.md", type: "md", mimeType: "text/markdown", size: 40, contentHash: "c".repeat(64), parseStatus: "completed", metadata: { addedAt: new Date().toISOString() } }], texts: { [id]: "# 数据库\n数据库索引优化减少扫描。 A covering index avoids table reads." } });
     const provider = new MockEmbeddingProvider(); let embeddingCalls = 0;
     const original = provider.embedDocuments.bind(provider); provider.embedDocuments = async texts => { embeddingCalls++; return original(texts); };
     const pipeline = new IndexingPipeline(knowledge, vectors, provider);
@@ -96,6 +96,7 @@ test("real SQL index, cached embeddings, lexical matching, RLS, stale invalidati
     const lexical = await knowledge.lexicalSearch({ userId: owner }, "数据库索引"); assert.equal(lexical.length, 1);
     const semantic = await vectors.searchSimilar({ userId: owner }, await provider.embedQuery("covering index"), 20); assert.equal(semantic.length, 1);
     const source = await knowledge.getSource({ userId: owner }, lexical[0].id); assert.ok(source);
+    assert.deepEqual([lexical[0].documentHash,semantic[0].documentHash,source.documentHash],Array(3).fill("c".repeat(64)));
     assert.equal(await knowledge.getSource({ userId: attacker }, lexical[0].id), null);
     assert.deepEqual(await knowledge.lexicalSearch({ userId: attacker }, "数据库"), []);
     assert.deepEqual(await vectors.searchSimilar({ userId: attacker }, await provider.embedQuery("index"), 20), []);
