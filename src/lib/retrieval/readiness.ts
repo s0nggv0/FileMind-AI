@@ -1,9 +1,18 @@
 // A saved file, a readable passage, and semantic search are separate capabilities.
 export interface ReadinessDocument { id: string; workspaceId?: string; name: string; status: string; chunks: number; buildStatus?: string; storageStatus?: string; ocrStatus?: string; visionStatus?: string; fileType?: string }
+export function documentReadiness(document: ReadinessDocument) {
+  const searchable = document.chunks > 0 && ["ready", "failed"].includes(document.status);
+  const semantic = searchable && document.status === "ready";
+  const processing = ["chunking", "embedding"].includes(document.buildStatus ?? "") ||
+    [document.ocrStatus, document.visionStatus].some(status => status === "running" || status === "processing");
+  const replacementFailed = ["failed", "interrupted"].includes(document.buildStatus ?? "");
+  const partialCapabilities = document.fileType === "image" && (document.ocrStatus !== "ready" || document.visionStatus !== "ready");
+  return { searchable, semantic, processing, replacementFailed, partialCapabilities,
+    retryable: !processing && (!semantic || replacementFailed || partialCapabilities),
+    partial: document.status === "failed" || replacementFailed || partialCapabilities };
+}
 export function readiness(documents: ReadinessDocument[]) {
-  const searchable = documents.filter(d => d.chunks > 0 && ["ready", "failed"].includes(d.status)).length;
-  const semantic = documents.filter(d => d.status === "ready" && d.chunks > 0).length;
-  const processing = documents.filter(d => ["chunking", "embedding"].includes(d.buildStatus ?? "")).length;
-  const partial = documents.filter(d => d.status === "failed" || ["failed", "interrupted"].includes(d.buildStatus ?? "") || (d.fileType === "image" && (d.ocrStatus !== "ready" || d.visionStatus !== "ready"))).length;
-  return { total: documents.length, searchable, semantic, processing, partial };
+  const states = documents.map(documentReadiness);
+  const count = (key: keyof ReturnType<typeof documentReadiness>) => states.filter(state => state[key]).length;
+  return { total: documents.length, searchable: count("searchable"), semantic: count("semantic"), processing: count("processing"), partial: count("partial"), retryable: count("retryable"), replacementFailed: count("replacementFailed"), partialCapabilities: count("partialCapabilities") };
 }

@@ -5,6 +5,7 @@ import { getUserId } from "@/lib/server/identity";
 import { database, persistenceConfigured } from "@/lib/server/database";
 import { indexKnowledge, refreshIndexVersions } from "@/lib/server/knowledge";
 import { WorkspaceError } from "@/lib/workspace/authorization";
+import { prepareDocument } from "@/lib/retrieval/prepare-document";
 export async function GET() {
   try {
     const userId = await getUserId();
@@ -19,7 +20,9 @@ export async function POST(request: Request) {
     sameOrigin(request);
     const userId = await getUserId();
     if (!userId || !persistenceConfigured()) throw new WorkspaceError("NOT_FOUND", "请先导入并保存资料。", 404);
-    const body = z.object({ workspaceId: z.uuid().optional(), documentId: z.uuid().optional() }).strict().parse(await readJSON(request, 4096));
-    return Response.json({ results: await indexKnowledge({ userId, workspaceId: body.workspaceId }, body.documentId) });
+    const body = z.object({ workspaceId: z.uuid().optional(), documentId: z.uuid().optional(), unfinishedOnly: z.boolean().optional() }).strict().refine(value => !value.unfinishedOnly || !!value.documentId).parse(await readJSON(request, 4096));
+    const scope = { userId, workspaceId: body.workspaceId };
+    const work = () => indexKnowledge(scope, body.documentId);
+    return Response.json({ results: body.unfinishedOnly ? await prepareDocument(database, scope, body.documentId!, work) : await work() });
   } catch (error) { return apiError(error); }
 }
