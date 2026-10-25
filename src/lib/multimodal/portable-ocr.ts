@@ -1,5 +1,4 @@
 import { createWorker, OEM } from "tesseract.js";
-import { createRequire } from "node:module";
 import { dirname, join, resolve } from "node:path";
 import { cp, mkdir } from "node:fs/promises";
 import { existsSync } from "node:fs";
@@ -8,7 +7,8 @@ import type { ImageInput, OCRProvider } from "./provider";
 // Runtime resolution must stay native: Turbopack's static require.resolve maps
 // package JSON and worker paths to virtual module IDs rather than disk paths.
 const runtimeAnchor = existsSync(resolve(".next/standalone/server.js")) ? resolve(".next/standalone/server.js") : resolve("package.json");
-const nativeRequire = createRequire(runtimeAnchor);
+// Resolve the built-in at runtime so both bundlers retain Node's native factory.
+const nativeRequire = process.getBuiltinModule("module").createRequire(runtimeAnchor);
 const resolvePackage = (specifier: string) => nativeRequire.resolve(specifier);
 let languagePathPromise: Promise<string> | undefined;
 function prepareLanguages() {
