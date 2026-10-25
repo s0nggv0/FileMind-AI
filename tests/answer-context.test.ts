@@ -107,3 +107,10 @@ test("copy grouping preserves distinct passage positions and tenant boundaries",
   const foreign = {...copy,id:randomUUID(),userId:randomUUID()};
   assert.deepEqual(buildRAGContext([a,copy,laterSection,foreign]).sources.map(s=>s.id),[a.id,laterSection.id,foreign.id]);
 });
+
+test("coverage gaps use only current context IDs and do not invent supporting facts",()=>{
+  const sources=buildRAGContext([evidence("Scheme A threshold is 72.",1),evidence("Scheme B does not state a threshold.",2)]).sources;
+  const gap={...emptyAnswerContext,missingSourceFacts:[{sourceId:"S2",detail:"Scheme B threshold value"}]};
+  assert.equal(validateAnswerContext(gap,sources).missingSourceFacts?.[0].sourceId,"S2");
+  assert.throws(()=>validateAnswerContext({...gap,missingSourceFacts:[{sourceId:"S99",detail:"invented"}]},sources),/INVALID_SOURCE_COVERAGE/);
+});

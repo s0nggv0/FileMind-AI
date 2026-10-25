@@ -228,3 +228,18 @@ test("current ownership and explicit intersection constrain saved compare-all op
   await assert.rejects(f.service.prepare(userId,{query:"retention",mode:"ask",previousRunId:run.id,compareAll:true}),missing);
   await assert.rejects(f.service.prepare(userId,{query:"retention",mode:"find",documentIds:[crypto.randomUUID()]}),missing);
 });
+
+test("citing a truthful absence does not turn missing requested facts into complete comparison coverage", async()=>{
+  const a={...sample(),content:"Policy A retention is 6 hours."},b={...sample(),content:"Policy B does not state a retention value."},f=fixture([a,b]);
+  f.setProvider({name:"fixture",models:{main:"fixture",small:"fixture"},async generateObject(input){
+    const p=JSON.parse(input.prompt);let response:unknown;
+    if(p.task==="verify_answer_context")response={needsClarification:false,question:"",options:[],conflicts:[],missingSourceFacts:[{sourceId:"S2",detail:"Policy B retention value"}]};
+    else if(p.task==="check_evidence_support")response={unitCoverage:p.untrustedAnswerUnits.map((u:{id:string})=>({unitId:u.id,allFactsCovered:true,missingFacts:[]})),claims:p.atomicClaims.map((c:{claimId:string;text:string})=>({claimId:c.claimId,status:"supported",supportingSourceIds:p.untrustedSources.filter((s:{content:string})=>s.content.includes(c.text)).map((s:{sourceId:string})=>s.sourceId),contradictingSourceIds:[]})),conflicts:[]};
+    else response=verifierFixtureResponse(input.prompt)??{statements:p.evidence.untrustedSources.map((s:{content:string;sourceId:string})=>({text:s.content,sourceIds:[s.sourceId]})),confidence:"high",insufficientEvidence:false,evidenceDecision:{supported:true,missingInformation:[]}};
+    return {object:input.schema.parse(response),usage:{promptTokens:0,completionTokens:0,totalTokens:0}};
+  }} as AIProvider);
+  const result=await f.service.execute(await f.service.prepare(userId,{query:"Compare both policy retention values",mode:"ask",documentIds:[a.documentId,b.documentId]}),new AbortController().signal,()=>{});
+  assert.equal(result.verification?.status,"verified");assert.equal(result.answer!.citations.length,2);
+  assert.equal(result.coverage?.evidenceDocumentIds.length,2);assert.equal(result.coverage?.citedDocumentIds.length,2);
+  assert.equal(result.coverage?.complete,false);assert.ok(result.coverage?.uncovered.some(g=>g.documentId===b.documentId&&g.reason==="missing_facts"));
+});
