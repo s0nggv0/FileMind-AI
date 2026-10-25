@@ -6,7 +6,7 @@ test("clarification selection, compare all and stale history expose their actual
   const sources=[source(a,"甲方案.txt",1),source(b,"乙方案.txt",2)];
   const base={id:run,query:"这个实验保留多久？",rewrittenQuery:"这个实验保留多久？",mode:"ask",sources,nearest:[],mock:true,evidenceCount:2,candidateCount:2,semanticUnavailable:false,answerUnavailable:false,answerState:"needs_clarification",verification:{status:"needs_clarification",version:"fixture"},answer:{answer:"请选择对象",citations:[],confidence:"low",insufficientEvidence:false,clarification:{required:true,question:"请选择对象",options:[{label:"甲方案",documentIds:[a]},{label:"乙方案",documentIds:[b]}]}}};
   const requests:Record<string,unknown>[]=[];
-  await page.route("**/api/index",route=>route.fulfill({json:{documents:[{id:a,name:"甲方案.txt",status:"ready",chunks:1},{id:b,name:"乙方案.txt",status:"ready",chunks:1}],mock:true}}));
+  await page.route("**/api/index*",route=>route.fulfill({json:{documents:[{id:a,name:"甲方案.txt",status:"ready",chunks:1},{id:b,name:"乙方案.txt",status:"ready",chunks:1}],mock:true}}));
   await page.route("**/api/search*",async route=>{
     if(route.request().method()==="GET")return route.fulfill({json:new URL(route.request().url()).searchParams.has("runId")?{...base,historyWarning:"部分历史来源已变更或不可用，请重新搜索。"}:{recent:[]}});
     const body=route.request().postDataJSON();requests.push(body);

@@ -29,7 +29,7 @@ export async function PUT(request: Request, context: Context) {
     if (next.documents.some(d => d.storagePath && d.storagePath !== snapshot.documents.find(p => p.id === d.id)?.storagePath)) throw new WorkspaceError("INVALID_STATE", "文件存储位置由服务器管理。");
     if (next.run?.status === "completed" && next.proposal) { next.proposal.relationships = next.proposal.relationships.filter(r => r.decision === "accepted"); next.run.result = structuredClone(next.proposal); }
     const saved = next.run?.status === "completed" ? await workspaceOperations().apply(user, next) : await workspaceRepository.save(user, next);
-    if (next.run?.status === "completed") scheduleKnowledgeIndex({ userId: user, workspaceId: next.id });
+    if (next.run?.status === "completed") await scheduleKnowledgeIndex({ userId: user, workspaceId: next.id });
     return Response.json(saved);
   } catch (error) { return apiError(error); }
 }
@@ -51,7 +51,7 @@ export async function PATCH(request: Request, context: Context) {
       }
     }
     const saved = body.action === "apply" ? await workspaceOperations().apply(user, snapshot) : await workspaceRepository.save(user, snapshot);
-    if (body.action === "apply") scheduleKnowledgeIndex({ userId: user, workspaceId: snapshot.id });
+    if (body.action === "apply") await scheduleKnowledgeIndex({ userId: user, workspaceId: snapshot.id });
     return Response.json(saved);
   } catch (error) { return apiError(error); }
 }

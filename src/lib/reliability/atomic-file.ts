@@ -26,7 +26,10 @@ export async function atomicWriteFile(target: string, bytes: Uint8Array, options
 // SQL operation locks provide cross-process serialization in the application.
 // This mutex also protects standalone service callers inside one Node process.
 const paths = new Map<string, Promise<unknown>>();
-export async function withPathMutex<T>(key: string, action: () => Promise<T>): Promise<T> {
+export function withPathMutex<T>(key: string, action: () => Promise<T>): Promise<T>;
+export function withPathMutex<T>(key: string, action: () => Promise<T>, tryOnly: boolean): Promise<T | null>;
+export async function withPathMutex<T>(key: string, action: () => Promise<T>, tryOnly = false): Promise<T | null> {
+  if (tryOnly && paths.has(key)) return null;
   const previous = paths.get(key) ?? Promise.resolve();
   const current = previous.catch(() => {}).then(action);
   paths.set(key, current);

@@ -78,10 +78,11 @@ test("synthetic identity completes import, scoped retrieval, reading, correction
     expect(errors).toEqual([]);
   } finally {
     if(workspace&&user&&/^[a-f0-9-]{36}$/.test(user)){
-      const metadata=JSON.parse(await readFile(".filemind/postgresql/instance.json","utf8"));const password=(await readFile(".filemind/postgresql/admin.password","utf8")).trim();
+      const testRoot=process.env.FILEMIND_TEST_ROOT ?? process.cwd();
+      const metadata=JSON.parse(await readFile(join(testRoot,".filemind/postgresql/instance.json"),"utf8"));const password=(await readFile(join(testRoot,".filemind/postgresql/admin.password"),"utf8")).trim();
       const db=new Client({host:"127.0.0.1",port:metadata.port,database:"filemind_ai",user:"filemind_admin",password});
       try {await db.connect();await db.query("delete from filemind.workspaces where id=$1 and user_id=$2",[workspace,user]);await db.query("delete from filemind.retrieval_runs where user_id=$1",[user]);await db.query("delete from filemind.profiles where id=$1 and not exists(select 1 from filemind.workspaces where user_id=$1)",[user]);}finally{await db.end();}
-      const root=resolve(".filemind/storage"),target=resolve(root,user,workspace),inside=relative(root,target);if(!inside||inside.startsWith("..")||isAbsolute(inside))throw new Error("Invalid synthetic cleanup path");await rm(target,{recursive:true,force:true});
+      const root=resolve(testRoot,".filemind/storage"),target=resolve(root,user,workspace),inside=relative(root,target);if(!inside||inside.startsWith("..")||isAbsolute(inside))throw new Error("Invalid synthetic cleanup path");await rm(target,{recursive:true,force:true});
     }
   }
 });

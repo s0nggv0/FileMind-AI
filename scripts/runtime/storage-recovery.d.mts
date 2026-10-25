@@ -1,5 +1,5 @@
 export interface TenantRecoveryQuery { (userId: string, sql: string, values?: unknown[]): Promise<{ rows: Record<string, unknown>[] }> }
-export interface StorageRecoveryOptions { storageRoot: string; quarantineRoot?: string; signal?: AbortSignal; onQuarantineIntent?: (id: string) => Promise<void> }
+export interface StorageRecoveryOptions { storageRoot: string; quarantineRoot?: string; signal?: AbortSignal; skipQueued?: boolean; onQuarantineIntent?: (id: string) => Promise<void> }
 export interface ReconciliationResult { referenced: number; orphan: number; missing: number; notStored: number; unsafe: number; quarantineIds: string[]; repairedIntents: number }
 export function originalKey(userId: string, workspaceId: string, documentId: string, extension: string): string;
 export function ensureStorageDirectory(path: string): Promise<string>;

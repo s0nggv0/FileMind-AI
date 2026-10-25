@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { prepareSearch } from "../src/lib/retrieval/prepare-search";
-import type { ReadinessDocument } from "../src/lib/retrieval/readiness";
+import { readiness, type ReadinessDocument } from "../src/lib/retrieval/readiness";
 
 const doc = (id: string, extra: Partial<ReadinessDocument> = {}): ReadinessDocument => ({ id, workspaceId: "batch", name: id, status: "failed", chunks: 1, ...extra });
 
@@ -15,9 +15,9 @@ test("preparation intersects document and batch scope, skips ready and running f
     return Response.json({results:[{documentId:body.documentId,status:"ready",chunks:1}]});
   };
   const scope = {workspaceId:"batch",documentIds:["pending","ready","running"]};
-  assert.deepEqual(await prepareSearch(scope,transport),{results:[{documentId:"pending",status:"ready",chunks:1}],processing:1,documents:documents.slice(0,3)});
+  assert.deepEqual(await prepareSearch(scope,transport),{results:[{documentId:"pending",status:"ready",chunks:1}],processing:1,documents:documents.slice(0,3),summary:readiness(documents.slice(0,3))});
   assert.deepEqual(posted,[{documentId:"pending",unfinishedOnly:true,workspaceId:"batch"}]);
-  assert.deepEqual(await prepareSearch(scope,transport),{results:[],processing:1,documents:documents.slice(0,3)});
+  assert.deepEqual(await prepareSearch(scope,transport),{results:[],processing:1,documents:documents.slice(0,3),summary:readiness(documents.slice(0,3))});
   assert.equal(reads,4); assert.equal(posted.length,1);
   await assert.rejects(prepareSearch({...scope,documentIds:["other-batch"]},transport),/无法确认/);
   assert.equal(posted.length,1);

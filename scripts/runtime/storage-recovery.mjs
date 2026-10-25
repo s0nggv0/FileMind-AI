@@ -164,7 +164,10 @@ export async function recoverTenantOperations(query, withLease, userId, options)
   const rows = (await query(userId, "select * from filemind.operation_journal where user_id=$1 and ((status in ('pending','running','interrupted') and stage<>'recovered') or (status='committed' and stage<>'settled' and (payload ? 'stagingId' or payload ? 'buildId' or payload ? 'removedFiles'))) order by started_at", [userId])).rows;
   const result = { recovered: 0, active: 0, quarantineIds: [] };
   for (const snapshot of rows) {
-    if (!uuid.test(snapshot.id) || snapshot.user_id !== userId || !(snapshot.lock_key === "storage" || snapshot.lock_key === `index:${snapshot.resource_id}` && uuid.test(snapshot.resource_id))) throw new Error("INVALID_JOURNAL_LOCK");
+    // Runtime indexing must not cancel work queued by a live application.
+    // Startup recovery includes queued jobs before accepting any Web requests.
+    if (!uuid.test(snapshot.id) || snapshot.user_id !== userId || !(snapshot.lock_key === "storage" || [ `index:${snapshot.resource_id}`, `prepare:${snapshot.resource_id}` ].includes(snapshot.lock_key) && uuid.test(snapshot.resource_id))) throw new Error("INVALID_JOURNAL_LOCK");
+    if (options.skipQueued && snapshot.status === "pending" && snapshot.stage === "queued") continue;
     const acquired = await withLease(`${userId}:${snapshot.lock_key}`, async signal => {
       signal.throwIfAborted();
       const row = (await query(userId, "select * from filemind.operation_journal where user_id=$1 and id=$2", [userId, snapshot.id])).rows[0];

@@ -9,6 +9,7 @@ import type { EmbeddingProvider } from "../retrieval/embedding-provider";
 import type { RetrievalScope } from "../retrieval/types";
 import { CHUNK_VERSION } from "../retrieval/config";
 import { prepareImageIndexes, refreshMultimodalVersions } from "./multimodal";
+import { queueIndexPreparation, runQueuedPreparation } from "../retrieval/index-preparation-queue";
 export const knowledgeRepository = new PostgresKnowledgeRepository(database);
 export const vectorStore = new PortableVectorStore(database);
 export function configuredEmbedding(): EmbeddingProvider | null { try { return getEmbeddingProvider(); } catch { return null; } }
@@ -16,7 +17,7 @@ export async function refreshIndexVersions(scope: RetrievalScope) {
   await refreshMultimodalVersions(scope);
   const info = configuredEmbedding()?.getModelInfo();
   if (!info) return;
-  await database.query(scope.userId, `update filemind.documents d set index_status='stale',index_generation=null where d.user_id=$1 and ($2::uuid is null or d.workspace_id=$2) and d.index_status='ready' and (d.embedding_provider is distinct from $3 or d.embedding_model is distinct from $4 or d.chunk_version is distinct from $5 or exists(select 1 from filemind.chunk_embeddings e where e.user_id=$1 and e.document_id=d.id and e.dimensions<>$6))`, [scope.userId, scope.workspaceId ?? null, info.provider, info.model, CHUNK_VERSION, info.dimensions]);
+  await database.query(scope.userId, `update filemind.documents d set index_status='stale',index_generation=null where d.user_id=$1 and ($2::uuid is null or d.workspace_id=$2) and ($7::uuid[] is null or d.id=any($7::uuid[])) and d.index_status='ready' and (d.embedding_provider is distinct from $3 or d.embedding_model is distinct from $4 or d.chunk_version is distinct from $5 or exists(select 1 from filemind.chunk_embeddings e where e.user_id=$1 and e.document_id=d.id and e.dimensions<>$6))`, [scope.userId, scope.workspaceId ?? null, info.provider, info.model, CHUNK_VERSION, info.dimensions, scope.documentIds ?? null]);
 }
 export async function indexKnowledge(scope: RetrievalScope, documentId?: string) {
   await prepareImageIndexes(scope, documentId);
@@ -25,8 +26,11 @@ export async function indexKnowledge(scope: RetrievalScope, documentId?: string)
   // ready index if its replacement fails. Mock vectors are never stored here.
   return new IndexingPipeline(knowledgeRepository, vectorStore, provider, process.env).indexLibrary(scope, documentId);
 }
-export function scheduleKnowledgeIndex(scope: RetrievalScope) {
-  after(async () => { await indexKnowledge(scope).catch(() => {}); });
+export async function scheduleKnowledgeIndex(scope: RetrievalScope) {
+  const jobs = await queueIndexPreparation(database, scope);
+  after(async () => {
+    for (const job of jobs) await runQueuedPreparation(database, job, () => indexKnowledge({ userId: job.userId, workspaceId: job.workspaceId }, job.documentId));
+  });
 }
 export function offlineRAGProvider() {
   // Deterministic extractive output only. Explicit Mock UI and no paid LLM call.
