@@ -110,6 +110,12 @@ export function KnowledgeSearch({ persistent, mock, initialWorkspace, initialDoc
     {result && <section className="grid min-w-0 gap-8 border-t pt-7 lg:grid-cols-[minmax(0,1fr)_320px]">
       <div className="min-w-0 space-y-6">
         {result.historyWarning && <p role="status" className="rounded-lg border p-4 text-sm leading-7">{result.historyWarning}</p>}
+        {result.coverage && <div role="status" className="space-y-2 rounded-lg border p-4 text-sm leading-7">
+          <p>比较范围 {result.coverage.selectedCount} 份 · 参与证据 {result.coverage.evidenceDocumentIds.length} 份 · 合并副本 {result.coverage.mergedCopies.length} 份{result.mode === "ask" && ` · 回答引用 ${result.coverage.citedDocumentIds.length} 份`}</p>
+          <p className="text-muted-foreground">{result.coverage.complete ? "当前范围的来源均已参与；证据覆盖不代表每份资料包含全部请求事实。" : "本次仅覆盖部分来源，不能视为完整比较。候选、证据和上下文预算保持有界；可缩小范围分批比较。"}</p>
+          {result.coverage.uncovered.map(item => <p key={item.documentId} className="break-words text-muted-foreground">{item.name}：{({not_ready:"索引尚未就绪",no_relevant_evidence:"未召回足够相关证据（可能受候选预算限制）",budget:"未进入本次证据或上下文预算",not_cited:"尚无通过验证的回答引用支持所请求事实"})[item.reason]}</p>)}
+          {result.coverage.unlistedCount > 0 && <p>另有 {result.coverage.unlistedCount} 份超出本次来源统计预算。</p>}
+        </div>}
         <Button variant="outline" size="sm" disabled={busy} onClick={() => void search()}>{result.mode === "ask" ? "重新搜索并生成回答" : "重新搜索"}</Button>
         {result.semanticUnavailable && <p role="status" className="text-sm text-muted-foreground">语义搜索暂时不可用，当前展示关键词检索结果。</p>}
         {result.answer?.conflict?.detected && <section role="status" className="space-y-3 rounded-lg border p-4"><h3 className="text-sm font-semibold">发现来源冲突</h3><p className="text-sm leading-7 text-muted-foreground">资料包含不同的值。FileMind 保留双方来源，缺少额外依据时不替你判断哪一方正确。</p>{result.answer.conflict.claims.map((claim, i) => <div key={i} className="space-y-2"><p className="break-words text-sm font-medium">{claim.topic}</p>{claim.sourceIds.map((id, j) => { const item = result.sources.find(s => s.sourceId === id); return item ? <button key={`${id}-${j}`} type="button" onClick={() => void preview(item)} className="block min-h-11 w-full break-words text-left text-sm text-primary underline underline-offset-4">{item.documentName}: {claim.values[j]}</button> : null; })}</div>)}</section>}

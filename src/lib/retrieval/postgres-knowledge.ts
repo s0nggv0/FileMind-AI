@@ -4,10 +4,11 @@ import { ParsedStructureSchema } from "../workspace/schemas";
 import { DocumentChunker } from "./chunker";
 import { lexicalTokens } from "./lexical-tokens";
 import { CHUNK_VERSION, retrievalConfig } from "./config";
-import type { Evidence, IndexDocument, RetrievalScope } from "./types";
+import type { CandidateOptions, Evidence, IndexDocument, RetrievalScope } from "./types";
 import type { DocumentChunk } from "./types";
 import { embeddingCacheKey, validateVector, type EmbeddingModelInfo, type EmbeddingResult } from "./embedding-provider";
 import type { OperationContext } from "../reliability/operation-journal";
+import type { CoverageSelection } from "./source-coverage";
 const nullableNumber = z.number().int().nullable();
 export const EvidenceSchema = z.object({
   documentHash: z.string().nullable().optional(),
@@ -73,16 +74,26 @@ export class PostgresKnowledgeRepository {
       await op.commit(tx);
     });
   }
-  async lexicalSearch(scope: RetrievalScope, query: string): Promise<Evidence[]> {
+  async lexicalSearch(scope: RetrievalScope, query: string, options: CandidateOptions = {}): Promise<Evidence[]> {
     const tokens = lexicalTokens(query).slice(0, 64);
     if (!tokens.length) return [];
-    const result = await this.db.query(scope.userId, `select ${evidenceColumns},
+    const result = await this.db.query(scope.userId, `select * from (select ${evidenceColumns},
+      ${options.documentCoverage ? 'row_number() over (partition by d.id order by (select count(*) from unnest($3::text[]) q where q=any(c.lexical_tokens)) desc,c.chunk_index,c.id) as document_rank,' : ''}
       (select count(*)::float from unnest($3::text[]) q where q=any(c.lexical_tokens)) / cardinality($3::text[]) as "lexicalCoverage",
       (select count(*)::float from unnest($3::text[]) q where q=any(c.lexical_tokens)) as score
       from filemind.document_chunks c join filemind.documents d on d.id=c.document_id and d.user_id=c.user_id
       where c.user_id=$1 and ($2::uuid is null or c.workspace_id=$2) and c.chunk_version=$4 and d.index_status in ('ready','failed') and c.lexical_tokens && $3::text[] and ($6::uuid[] is null or d.id=any($6::uuid[]))
-      order by score desc,d.display_name,c.chunk_index,c.id limit $5`, [scope.userId, scope.workspaceId ?? null, tokens, CHUNK_VERSION, retrievalConfig.lexicalTopK, scope.documentIds ?? null]);
+      ) candidates order by ${options.documentCoverage ? 'document_rank,' : ''}score desc,"documentName","chunkIndex",id limit $5`, [scope.userId, scope.workspaceId ?? null, tokens, CHUNK_VERSION, retrievalConfig.lexicalTopK, scope.documentIds ?? null]);
     return z.array(EvidenceSchema).parse(result.rows);
+  }
+  async coverageDocuments(scope: RetrievalScope): Promise<CoverageSelection> {
+    const result = await this.db.query(scope.userId, `select d.id,d.display_name as name,d.index_status as status,
+      (select count(*)::integer from filemind.document_chunks c where c.user_id=$1 and c.document_id=d.id) as chunks,
+      count(*) over()::integer as total from filemind.documents d
+      where d.user_id=$1 and ($2::uuid is null or d.workspace_id=$2) and ($3::uuid[] is null or d.id=any($3::uuid[]))
+      order by d.id limit $4`, [scope.userId, scope.workspaceId ?? null, scope.documentIds ?? null, retrievalConfig.coverageDocumentLimit]);
+    const documents = z.array(z.object({ id: z.uuid(), name: z.string(), status: z.string(), chunks: z.number(), total: z.number() })).parse(result.rows);
+    return { documents, total: documents[0]?.total ?? 0 };
   }
   async getSource(scope: RetrievalScope, chunkId: string) {
     const result = await this.db.query(scope.userId, `select ${evidenceColumns},0::float as score from filemind.document_chunks c join filemind.documents d on d.id=c.document_id and d.user_id=c.user_id where c.user_id=$1 and c.id=$2 and ($3::uuid is null or c.workspace_id=$3)`, [scope.userId, chunkId, scope.workspaceId ?? null]);

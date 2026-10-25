@@ -4,6 +4,7 @@ import type { QueryProfile } from "./query-analyzer";
 import type { RetrievalRoute } from "./retrieval-router";
 import type { EvidenceAssessment } from "./evidence-sufficiency";
 import type { VerificationReport } from "./answer-verifier";
+import type { SourceCoverage } from "./source-coverage";
 export const SearchRequestSchema = z.object({ query: z.string().trim().min(1).max(1500), mode: z.enum(["ask", "find"]), workspaceId: z.uuid().optional(), documentIds: z.array(z.uuid()).min(1).max(30).optional(), previousRunId: z.uuid().optional(), compareAll: z.boolean().optional(), clarificationOption: z.number().int().min(0).max(7).optional() }).strict();
 export type SearchRequest = z.infer<typeof SearchRequestSchema>;
 export interface SearchResult {
@@ -16,6 +17,7 @@ export interface SearchResult {
   selectedDocumentIds?: string[];
   workspaceId?: string;
   historyWarning?: string;
+  coverage?: SourceCoverage;
   verification?:{status:"verified"|"conflict"|"rejected"|"unavailable"|"no_answer"|"needs_clarification";version:string};
   debug?: { queryProfile: QueryProfile; selectedStrategy: RetrievalRoute["strategy"]; reason: string; evidenceAssessment?: EvidenceAssessment; verification?:Pick<VerificationReport,"version"|"accepted"|"reason"|"completeness"|"faithfulness">; semantic: { id: string; score: number }[]; lexical: { id: string; score: number }[]; fused: { id: string; score: number; fusedRank?: number }[]; reranker: string; latency: Record<string, number> };
 }

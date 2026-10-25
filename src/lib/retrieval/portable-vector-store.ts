@@ -3,7 +3,8 @@ import type { TenantDatabase } from "../workspace/postgres-repository";
 import { CHUNK_VERSION } from "./config";
 import { EvidenceSchema, evidenceColumns } from "./postgres-knowledge";
 import { embeddingCacheKey, validateVector, type EmbeddingModelInfo, type EmbeddingResult } from "./embedding-provider";
-import type { DocumentChunk, Evidence, RetrievalScope } from "./types";
+import type { CandidateOptions, DocumentChunk, Evidence, RetrievalScope } from "./types";
+import { coverageCandidates } from "./evidence-diversity";
 import { cosineSimilarity, type VectorStore } from "./vector-store";
 export class PortableVectorStore implements VectorStore {
   constructor(private db: TenantDatabase) {}
@@ -22,11 +23,11 @@ export class PortableVectorStore implements VectorStore {
     const result = await this.db.query(scope.userId, `select chunk_id,embedding_hash from filemind.chunk_embeddings where user_id=$1 and ($2::uuid is null or workspace_id=$2) and chunk_id=any($3::uuid[]) and provider=$4 and model=$5 and dimensions=$6 and chunk_version=$7`, [scope.userId, scope.workspaceId ?? null, chunkIds, info.provider, info.model, info.dimensions, CHUNK_VERSION]);
     return new Map(z.array(z.object({ chunk_id: z.uuid(), embedding_hash: z.string() })).parse(result.rows).map(r => [r.chunk_id, r.embedding_hash]));
   }
-  async searchSimilar(scope: RetrievalScope, embedding: EmbeddingResult, topK: number): Promise<Evidence[]> {
+  async searchSimilar(scope: RetrievalScope, embedding: EmbeddingResult, topK: number, options: CandidateOptions = {}): Promise<Evidence[]> {
     validateVector(embedding.vector, embedding.dimensions);
     if (!Number.isInteger(topK) || topK < 1 || topK > 100) throw new Error("Invalid top K");
     const scan = async (db:TenantDatabase) => {
-    const best: Evidence[] = []; let cursor: string | null = null;
+    let best: Evidence[] = []; let cursor: string | null = null;
     // Page through the complete accessible index. Keep only top K in memory.
     while (true) {
       const result = await db.query(scope.userId, `select ${evidenceColumns},0::float as score,e.embedding from filemind.chunk_embeddings e
@@ -38,7 +39,8 @@ export class PortableVectorStore implements VectorStore {
         const score = cosineSimilarity(row.embedding, embedding.vector);
         const { embedding: _vector, ...source } = row; void _vector;
         best.push({ ...source, score, semanticScore: score });
-        best.sort((a, b) => b.score - a.score || a.id.localeCompare(b.id)); best.length = Math.min(best.length, topK);
+        if (options.documentCoverage) best = coverageCandidates(best, topK);
+        else { best.sort((a, b) => b.score - a.score || a.id.localeCompare(b.id)); best.length = Math.min(best.length, topK); }
       }
       if (rows.length < 200) break;
       cursor = rows.at(-1)!.id;

@@ -42,6 +42,10 @@ function fixture(evidence = [sample()]) {
     provider: () => provider, realAIRequired: () => true, developmentControls: () => debug,
     log: async () => true,
     knowledge: {
+      async coverageDocuments(scope) {
+        const documents = [...new Map(evidence.filter(s => s.userId === scope.userId && (!scope.workspaceId || s.workspaceId === scope.workspaceId) && (!scope.documentIds || scope.documentIds.includes(s.documentId))).map(s => [s.documentId, {id:s.documentId,name:s.documentName,status:"ready",chunks:1}])).values()];
+        return {documents,total:documents.length};
+      },
       async lexicalSearch(_scope, query) { queries.push(query); return evidence; },
       async getSource(scope, id) { return evidence.find(source => source.id === id && source.userId === scope.userId) ?? null; },
     },
@@ -68,7 +72,7 @@ test("clarification stays scoped, limits evidence to the selected subject, and c
   const result = await f.service.execute(prepared, new AbortController().signal, () => {});
   assert.deepEqual(result.sources.map(source => source.documentId), [selected]);
   assert.deepEqual(result.nearest.map(source => source.documentId), [selected]);
-  assert.equal(result.candidateCount, 2);
+  assert.equal(result.candidateCount, 1);
   assert.deepEqual(result.selectedDocumentIds, [selected]);
   assert.deepEqual(f.writes.at(-1)?.scope, { userId, workspaceId, documentIds: [selected] });
   const followUp = await f.service.prepare(userId, { query: "What about it?", mode: "ask", workspaceId, previousRunId: result.id });
@@ -189,4 +193,38 @@ test("PostgreSQL search history preserves results, diagnostics, tenant isolation
     assert.deepEqual(row.evidence_ids, result.sources.map(source => source.id));
     assert.deepEqual(row.retrieved_chunk_ids, diagnostics.candidateIds);
   } finally { await db.close(); }
+});
+
+test("comparison coverage reports actual evidence and validated citations; absent requested facts cannot become complete", async () => {
+  const a={...sample(),content:"Policy A retention is 6 hours.",documentName:"A.txt"};
+  const b={...sample(),content:"Policy B retention is 8 hours.",documentName:"B.txt"};
+  const f=fixture([a,b]);
+  f.setProvider({name:"fixture",models:{main:"fixture",small:"fixture"},async generateObject(input){
+    const p=JSON.parse(input.prompt);
+    let response:unknown;
+    if(p.task==="check_evidence_support") response={unitCoverage:p.untrustedAnswerUnits.map((u:{id:string})=>({unitId:u.id,allFactsCovered:true,missingFacts:[]})),claims:p.atomicClaims.map((c:{claimId:string;text:string})=>({claimId:c.claimId,status:"supported",supportingSourceIds:p.untrustedSources.filter((s:{content:string})=>s.content.includes(c.text)).map((s:{sourceId:string})=>s.sourceId),contradictingSourceIds:[]})),conflicts:[]};
+    else response=verifierFixtureResponse(input.prompt)??{statements:p.evidence.untrustedSources.map((s:{content:string;sourceId:string})=>({text:s.content,sourceIds:[s.sourceId]})),confidence:"high",insufficientEvidence:false,evidenceDecision:{supported:true,missingInformation:[]}};
+    return {object:input.schema.parse(response),usage:{promptTokens:0,completionTokens:0,totalTokens:0}};
+  }} as AIProvider);
+  const input={query:"Summarize both retention policies",mode:"ask" as const,documentIds:[a.documentId,b.documentId]};
+  const result=await f.service.execute(await f.service.prepare(userId,input),new AbortController().signal,()=>{});
+  assert.equal(result.verification?.status,"verified");assert.equal(result.coverage?.complete,true);
+  assert.deepEqual(new Set(result.coverage?.citedDocumentIds),new Set(input.documentIds));
+  for(const citation of result.answer!.citations)assert.equal(result.sources.find(s=>s.id===citation.chunkId)?.documentId,citation.documentId);
+  b.content="Policy B has no requested retention value.";
+  f.setProvider({name:"fixture",models:{main:"fixture",small:"fixture"},async generateObject(input){return {object:input.schema.parse(verifierFixtureResponse(input.prompt)??{statements:[],confidence:"low",insufficientEvidence:true,evidenceDecision:{supported:false,missingInformation:["Policy B retention value"]}}),usage:{promptTokens:0,completionTokens:0,totalTokens:0}};}} as AIProvider);
+  const missing=await f.service.execute(await f.service.prepare(userId,input),new AbortController().signal,()=>{});
+  assert.equal(missing.answerState,"no_answer");assert.equal(missing.coverage?.complete,false);
+  assert.deepEqual(missing.coverage?.citedDocumentIds,[]);assert.ok(missing.coverage?.uncovered.some(s=>s.documentId===b.documentId&&s.reason==="not_cited"));
+});
+
+test("current ownership and explicit intersection constrain saved compare-all options before recall", async () => {
+  const a=sample(),b=sample(), f=fixture([a,b]);
+  const run=await f.service.execute(await f.service.prepare(userId,{query:"retention",mode:"find"}),new AbortController().signal,()=>{});
+  f.runs.set(run.id,{query:run.query,result:{...run,answerState:"needs_clarification",answer:{answer:"Which?",citations:[],confidence:"low",insufficientEvidence:false,clarification:{required:true,options:[a,b].map(s=>({label:s.documentName,documentIds:[s.documentId]}))}}}});
+  const narrowed=await f.service.prepare(userId,{query:"retention",mode:"find",previousRunId:run.id,compareAll:true,documentIds:[a.documentId]});
+  assert.deepEqual(narrowed.scope.documentIds,[a.documentId]);
+  f.evidence.pop();
+  await assert.rejects(f.service.prepare(userId,{query:"retention",mode:"ask",previousRunId:run.id,compareAll:true}),missing);
+  await assert.rejects(f.service.prepare(userId,{query:"retention",mode:"find",documentIds:[crypto.randomUUID()]}),missing);
 });
