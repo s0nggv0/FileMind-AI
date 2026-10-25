@@ -1,9 +1,9 @@
-import type { DocumentChunk, Evidence, RetrievalScope } from "./types";
+import type { CandidateOptions, DocumentChunk, Evidence, RetrievalScope } from "./types";
 import type { EmbeddingModelInfo, EmbeddingResult } from "./embedding-provider";
 export interface VectorStore {
   upsertEmbedding(scope: RetrievalScope, chunk: DocumentChunk, embedding: EmbeddingResult, cacheKey: string): Promise<void>;
   deleteDocumentEmbeddings(scope: RetrievalScope, documentId: string): Promise<void>;
-  searchSimilar(scope: RetrievalScope, embedding: EmbeddingResult, topK: number): Promise<Evidence[]>;
+  searchSimilar(scope: RetrievalScope, embedding: EmbeddingResult, topK: number, options?: CandidateOptions): Promise<Evidence[]>;
   getEmbeddingStatus(scope: RetrievalScope, chunkIds: string[], info: EmbeddingModelInfo): Promise<Map<string, string>>;
   getCachedEmbeddings?(scope: RetrievalScope, chunks: DocumentChunk[], info: EmbeddingModelInfo): Promise<Map<string, EmbeddingResult>>;
 }

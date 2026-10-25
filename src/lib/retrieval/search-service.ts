@@ -10,10 +10,13 @@ import type { SearchRequest, SearchResult } from "./search-contract";
 import type { SearchHistory } from "./search-history";
 import type { Evidence, RetrievalScope } from "./types";
 import type { VectorStore } from "./vector-store";
+import { questionIntent } from "./question-intent";
+import { sourceCoverage, type CoverageSelection } from "./source-coverage";
+import { retrievalConfig } from "./config";
 
 interface SearchDependencies {
   history: SearchHistory;
-  knowledge: LexicalSearchProvider & { getSource(scope: RetrievalScope, id: string): Promise<Evidence | null> };
+  knowledge: LexicalSearchProvider & { getSource(scope: RetrievalScope, id: string): Promise<Evidence | null>; coverageDocuments(scope: RetrievalScope): Promise<CoverageSelection> };
   vectors: VectorStore;
   embedding(): EmbeddingProvider | null;
   refreshIndexVersions(scope: RetrievalScope): Promise<void>;
@@ -29,6 +32,7 @@ export interface PreparedSearch {
   input: SearchRequest;
   rewrittenQuery: string;
   selectedDocumentIds?: string[];
+  coverageSelection?: CoverageSelection;
 }
 
 export class SearchService {
@@ -59,7 +63,6 @@ export class SearchService {
   // Prepare before opening SSE so invalid clarification requests keep their HTTP errors.
   async prepare(userId: string, input: SearchRequest): Promise<PreparedSearch> {
     const scope: RetrievalScope = { userId, workspaceId: input.workspaceId, ...(input.documentIds ? { documentIds: input.documentIds } : {}) };
-    await this.dependencies.refreshIndexVersions(scope);
     let rewrittenQuery = input.query;
     let selectedDocumentIds: string[] | undefined = input.documentIds;
     if ((input.clarificationOption !== undefined || input.compareAll) && !input.previousRunId) {
@@ -84,21 +87,22 @@ export class SearchService {
         selectedDocumentIds = input.documentIds ?? prior.result.selectedDocumentIds;
       }
     }
-    return { scope: { ...scope, ...(selectedDocumentIds ? { documentIds: selectedDocumentIds } : {}) }, input, rewrittenQuery, selectedDocumentIds };
+    if (input.documentIds && selectedDocumentIds) selectedDocumentIds = selectedDocumentIds.filter(id => input.documentIds!.includes(id));
+    const resolvedScope = { ...scope, ...(selectedDocumentIds ? { documentIds: [...new Set(selectedDocumentIds)] } : {}) };
+    await this.dependencies.refreshIndexVersions(resolvedScope);
+    const coverageSelection = selectedDocumentIds || questionIntent(rewrittenQuery) === "multi_source" ? await this.dependencies.knowledge.coverageDocuments(resolvedScope) : undefined;
+    if (selectedDocumentIds && (!selectedDocumentIds.length || selectedDocumentIds.some(id => !coverageSelection?.documents.some(d => d.id === id)))) throw new WorkspaceError("NOT_FOUND", "部分选定资料已不可用，请重新选择。", 404);
+    return { scope: resolvedScope, input, rewrittenQuery, selectedDocumentIds, coverageSelection };
   }
 
   async execute(prepared: PreparedSearch, signal: AbortSignal, onStage: (stage: string) => void): Promise<SearchResult> {
-    const { scope, input, rewrittenQuery, selectedDocumentIds } = prepared;
+    const { scope, input, rewrittenQuery, selectedDocumentIds, coverageSelection } = prepared;
     const dependencies = this.dependencies;
     const started = performance.now();
     const embedding = dependencies.embedding();
     const engine = new RetrievalEngine(embedding, dependencies.vectors, dependencies.knowledge,
       dependencies.rerankEnabled() ? new DeterministicReranker() : null);
     const retrieved = await engine.retrieve(scope, rewrittenQuery, onStage, { mode: input.mode });
-    if (selectedDocumentIds) {
-      retrieved.evidence = retrieved.evidence.filter(source => selectedDocumentIds.includes(source.documentId));
-      retrieved.nearest = retrieved.nearest.filter(source => selectedDocumentIds.includes(source.documentId));
-    }
     const provider = dependencies.provider();
     const llmStarted = performance.now();
     if (input.mode === "ask" && retrieved.evidence.length) onStage("正在生成回答");
@@ -126,6 +130,11 @@ export class SearchService {
       };
     }
     if (selectedDocumentIds) result.selectedDocumentIds = selectedDocumentIds;
+    if (coverageSelection && questionIntent(rewrittenQuery) === "multi_source") {
+      const eligible = retrieved.fused.filter(e => (e.lexicalCoverage ?? 0) >= retrievalConfig.minimumLexicalCoverage || (e.semanticScore ?? 0) >= retrievalConfig.minimumCosine);
+      result.coverage = sourceCoverage(coverageSelection, eligible, grounded.sources, input.mode === "ask" ? grounded.answer?.citations.map(c => c.chunkId) ?? [] : undefined);
+      if (input.mode === "ask" && !["answered", "conflicting"].includes(result.answerState ?? "")) result.coverage.complete = false;
+    }
     const publicError = ApplicationLogSchema.shape.error_code.safeParse("errorCode" in grounded ? grounded.errorCode : null);
     const errorCode = publicError.success ? publicError.data : grounded.unavailable ? "UNAVAILABLE" : null;
     if (errorCode) result.answerErrorCode = errorCode;

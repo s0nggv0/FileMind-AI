@@ -3,6 +3,7 @@ export const retrievalConfig = {
   chunkTargetTokens: 800, chunkMaxTokens: 1000, overlapTokens: 100,
   vectorTopK: 20, lexicalTopK: 20, rrfK: 60, candidateLimit: 15, evidenceLimit: 7,
   minimumCosine: 0.35, minimumLexicalCoverage: 0.2, contextMaxCharacters: 24000,
+  coverageDocumentLimit: 30,
 };
 export function indexingConfig(env: Record<string, string | undefined>) {
   const integer = (value: string | undefined, fallback: number, max: number) => {
