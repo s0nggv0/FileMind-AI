@@ -7,6 +7,7 @@ import { runTenantQuery, runTenantTransaction } from "../src/lib/workspace/tenan
 import { PostgresKnowledgeRepository } from "../src/lib/retrieval/postgres-knowledge";
 import { PortableVectorStore } from "../src/lib/retrieval/portable-vector-store";
 import { MockEmbeddingProvider } from "../src/lib/retrieval/embedding-provider";
+import { prepareDocument } from "../src/lib/retrieval/prepare-document";
 import { IndexingPipeline } from "../src/lib/retrieval/indexing";
 import { cosineSimilarity } from "../src/lib/retrieval/vector-store";
 import { RetrievalEngine } from "../src/lib/retrieval/engine";
@@ -87,6 +88,13 @@ test("real SQL index, cached embeddings, lexical matching, RLS, stale invalidati
     assert.deepEqual((await knowledge.lexicalSearch({userId:owner},"数据库索引")).map(c=>c.id),previous);
     assert.equal((await tenant.query(owner,"select index_status from filemind.documents where id=$1",[id])).rows[0] && (await db.query<{index_status:string}>("select index_status from filemind.documents where id=$1",[id])).rows[0].index_status,"ready");
     await new IndexingPipeline(knowledge,vectors,provider,{}, {checkpoint:async stage=>{if(stage==="before_publish")assert.deepEqual((await knowledge.lexicalSearch({userId:owner},"数据库索引")).map(c=>c.id),previous);}}).indexDocument(doc);
+    await tenant.query(owner,"update filemind.documents set index_build_status='interrupted' where user_id=$1 and id=$2",[owner,id]);
+    let preparedCount=0;
+    const prepare=()=>prepareDocument(tenant,{userId:owner},id,async()=>{preparedCount++;return pipeline.indexLibrary({userId:owner},id);});
+    await Promise.all([prepare(),prepare()]);
+    assert.equal(preparedCount,1);
+    await assert.rejects(prepareDocument(tenant,{userId:attacker},id,async()=>{throw new Error("Must not run");}),/无法确认/);
+    await assert.rejects(prepareDocument(tenant,{userId:owner,workspaceId:crypto.randomUUID()},id,async()=>{throw new Error("Must not run");}),/无法确认/);
     const failingDatabase:TransactionalTenantDatabase={...tenant,transaction:(u,work,read)=>tenant.transaction(u,tx=>work({query:async(s,p)=>{
       if(s.startsWith("insert into filemind.chunk_embeddings"))throw new Error("Simulated publication database failure");
       return tx.query(s,p);

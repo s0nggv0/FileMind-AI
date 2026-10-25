@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { ImageSourceView } from "@/components/knowledge/image-source-view";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { LibraryReadiness } from "@/components/knowledge/library-readiness";
-import type { ReadinessDocument } from "@/lib/retrieval/readiness";
+import { readiness, type ReadinessDocument } from "@/lib/retrieval/readiness";
 import { prepareSearch } from "@/lib/retrieval/prepare-search";
 import { stateLabel, systemMessage } from "@/lib/ui-labels";
 import type { SearchResult } from "@/lib/retrieval/search-contract";
@@ -37,8 +37,9 @@ export function KnowledgeSearch({ persistent, mock, initialWorkspace, initialDoc
   async function indexLibrary() {
     setIndexing(true); setIndexMessage("");
     try {
-      const { results, processing } = await prepareSearch({ workspaceId, documentIds });
-      const failed = results.filter(r => r.status === "failed").length;
+      const { results, processing, documents: refreshed } = await prepareSearch({ workspaceId, documentIds });
+      setDocuments(refreshed);
+      const failed = readiness(refreshed).retryable;
       setIndexMessage(failed ? `${failed} 份资料尚未准备完成，已有结果保留。请核对上方可搜索数量后重试。` : results.length ? `本次已准备 ${results.length} 份资料，其余已就绪或正在处理的资料未重复处理。` : processing ? `${processing} 份资料正在准备，请稍后查看搜索准备状态。` : "当前范围内暂无需要准备的资料。");
     } catch (e) { setIndexMessage(e instanceof Error ? e.message : "暂时无法建立索引，请稍后重试。"); }
     finally { setIndexing(false); }

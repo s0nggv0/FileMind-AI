@@ -28,7 +28,7 @@ for (const width of [390,1440]) test(`search preparation stays within the select
   await expect(page.getByText(/已保存 3 份/)).toBeVisible();
   await page.getByRole("button",{name:"准备搜索",exact:true}).click();
   await expect(page.getByText(/本次已准备 1 份资料/)).toBeVisible();
-  expect(posted).toEqual([{documentId:pending}]);
+  expect(posted).toEqual([{documentId:pending,unfinishedOnly:true}]);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   await page.screenshot({path:`artifacts/product-optimization-audit/fixed-index-scope-${width}.png`,fullPage:true});
   documents[2].status="ready";documents[2].buildStatus="ready";documents[2].chunks=1;
@@ -39,5 +39,5 @@ for (const width of [390,1440]) test(`search preparation stays within the select
   await expect(page.getByText(/已保存 4 份/)).toBeVisible();
   await page.getByRole("button",{name:"准备或重试未完成资料",exact:true}).click();
   await expect.poll(()=>posted.length).toBe(2);
-  expect(posted[1]).toEqual({documentId:replacement,workspaceId:batch});
+  expect(posted[1]).toEqual({documentId:replacement,unfinishedOnly:true,workspaceId:batch});
 });
