@@ -3,7 +3,7 @@ export interface ReadinessDocument { id: string; workspaceId?: string; name: str
 export function documentReadiness(document: ReadinessDocument) {
   const searchable = document.chunks > 0 && ["ready", "failed"].includes(document.status);
   const semantic = searchable && document.status === "ready";
-  const processing = ["chunking", "embedding"].includes(document.buildStatus ?? "") ||
+  const processing = ["chunking", "embedding"].includes(document.buildStatus ?? "") || ["chunking", "embedding"].includes(document.status) ||
     [document.ocrStatus, document.visionStatus].some(status => status === "running" || status === "processing");
   const replacementFailed = ["failed", "interrupted"].includes(document.buildStatus ?? "");
   const partialCapabilities = document.fileType === "image" && (document.ocrStatus !== "ready" || document.visionStatus !== "ready");

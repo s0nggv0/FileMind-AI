@@ -9,6 +9,7 @@ import type { DocumentChunk } from "./types";
 import { embeddingCacheKey, validateVector, type EmbeddingModelInfo, type EmbeddingResult } from "./embedding-provider";
 import type { OperationContext } from "../reliability/operation-journal";
 import type { CoverageSelection } from "./source-coverage";
+import { IndexStatusRepository } from "./index-status";
 const nullableNumber = z.number().int().nullable();
 export const EvidenceSchema = z.object({
   documentHash: z.string().nullable().optional(),
@@ -87,13 +88,8 @@ export class PostgresKnowledgeRepository {
     return z.array(EvidenceSchema).parse(result.rows);
   }
   async coverageDocuments(scope: RetrievalScope): Promise<CoverageSelection> {
-    const result = await this.db.query(scope.userId, `select d.id,d.display_name as name,d.index_status as status,
-      (select count(*)::integer from filemind.document_chunks c where c.user_id=$1 and c.document_id=d.id) as chunks,
-      count(*) over()::integer as total from filemind.documents d
-      where d.user_id=$1 and ($2::uuid is null or d.workspace_id=$2) and ($3::uuid[] is null or d.id=any($3::uuid[]))
-      order by d.id limit $4`, [scope.userId, scope.workspaceId ?? null, scope.documentIds ?? null, retrievalConfig.coverageDocumentLimit]);
-    const documents = z.array(z.object({ id: z.uuid(), name: z.string(), status: z.string(), chunks: z.number(), total: z.number() })).parse(result.rows);
-    return { documents, total: documents[0]?.total ?? 0 };
+    const result = await new IndexStatusRepository(this.db).page(scope, { limit: retrievalConfig.coverageDocumentLimit });
+    return { documents: result.documents, total: result.summary.total };
   }
   async getSource(scope: RetrievalScope, chunkId: string) {
     const result = await this.db.query(scope.userId, `select ${evidenceColumns},0::float as score from filemind.document_chunks c join filemind.documents d on d.id=c.document_id and d.user_id=c.user_id where c.user_id=$1 and c.id=$2 and ($3::uuid is null or c.workspace_id=$3)`, [scope.userId, chunkId, scope.workspaceId ?? null]);

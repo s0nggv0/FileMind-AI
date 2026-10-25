@@ -48,7 +48,7 @@ export class OperationJournal {
     if (this.db.withOperationLock) return this.db.withOperationLock(lockKey, action, tryOnly);
     // Offline PGlite adapters are single-process; production supplies a physical
     // PostgreSQL session lock, which is released when the process/connection dies.
-    return withPathMutex(lockKey, () => action(new AbortController().signal));
+    return withPathMutex(lockKey, () => action(new AbortController().signal), tryOnly);
   }
   async run<T>(userId: string, type: OperationType, resourceId: string | null, payload: OperationPayload,
     work: (context: OperationContext) => Promise<T>, rollback?: (row: JournalRow) => Promise<void>) {

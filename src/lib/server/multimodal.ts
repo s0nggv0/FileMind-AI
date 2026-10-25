@@ -7,7 +7,7 @@ import { getFileStorage } from "./file-storage";
 import { KimiVisionProvider } from "../multimodal/kimi-vision";
 import { PortableOCRProvider } from "../multimodal/portable-ocr";
 import { MultimodalPipeline, mergeKnowledge } from "../multimodal/pipeline";
-import { MultimodalRepository } from "../multimodal/repository";
+import { MultimodalRepository, MultimodalRecordSchema } from "../multimodal/repository";
 import { validateImage } from "../multimodal/image-validation";
 import { MULTIMODAL_INDEX_VERSION, VISION_PROMPT_VERSION } from "../multimodal/config";
 import type { WorkspaceSnapshot } from "../workspace/schemas";
@@ -44,15 +44,17 @@ export async function analyzeWorkspaceImage(userId: string, snapshot: WorkspaceS
 }
 export async function refreshMultimodalVersions(scope: RetrievalScope) {
   const vision = await visionProvider(); const info = vision?.getModelInfo();
-  const result = await database.query(scope.userId, "select document_id,analysis from filemind.multimodal_analysis where user_id=$1 and ($2::uuid is null or workspace_id=$2)", [scope.userId, scope.workspaceId ?? null]);
-  for (const row of result.rows as { document_id: string; analysis: { analysisVersion?: string; provider?: string; model?: string; visionCacheKey?: string } }[]) {
-    const record = await multimodalRepository.get(scope, row.document_id); if (!record) continue;
-    const { imageCacheKey } = await import("../multimodal/pipeline");
-    const source = await imageSource(scope, row.document_id);
-    const ocrInfo = process.env.OCR_ENGINE === "disabled" ? { engine: "disabled", version: "none" } : new PortableOCRProvider().getEngineInfo();
+  const result = await database.query(scope.userId, "select a.document_id,a.analysis,d.content_hash from filemind.multimodal_analysis a join filemind.documents d on d.id=a.document_id and d.user_id=a.user_id where a.user_id=$1 and ($2::uuid is null or a.workspace_id=$2) and ($3::uuid[] is null or d.id=any($3::uuid[]))", [scope.userId, scope.workspaceId ?? null, scope.documentIds ?? null]);
+  const { imageCacheKey } = await import("../multimodal/pipeline");
+  const ocrInfo = process.env.OCR_ENGINE === "disabled" ? { engine: "disabled", version: "none" } : new PortableOCRProvider().getEngineInfo();
+  const stale: string[] = [];
+  for (const row of result.rows as { document_id: string; analysis: unknown; content_hash: string }[]) {
+    const record = MultimodalRecordSchema.parse(row.analysis);
+    const source = { content_hash: row.content_hash };
     const changed = record.analysisVersion !== MULTIMODAL_INDEX_VERSION || (info && record.visionCacheKey !== imageCacheKey(source.content_hash, info.provider, info.model, VISION_PROMPT_VERSION)) || record.ocrCacheKey !== imageCacheKey(source.content_hash, ocrInfo.engine, ocrInfo.version, "ocr-v1");
-    if (changed) await database.query(scope.userId, "update filemind.documents set index_status='stale',vision_status='stale' where user_id=$1 and id=$2 and index_status='ready'", [scope.userId, row.document_id]);
+    if (changed) stale.push(row.document_id);
   }
+  if (stale.length) await database.query(scope.userId, "update filemind.documents set index_status='stale',vision_status='stale' where user_id=$1 and id=any($2::uuid[]) and index_status='ready'", [scope.userId, stale]);
 }
 export async function prepareImageIndexes(scope: RetrievalScope, documentId?: string) {
   return recoveryService().journal.lock(scope.userId,"storage",async leaseSignal=>{

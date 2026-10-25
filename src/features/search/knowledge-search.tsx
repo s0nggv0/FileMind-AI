@@ -7,8 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { ImageSourceView } from "@/components/knowledge/image-source-view";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { LibraryReadiness } from "@/components/knowledge/library-readiness";
-import { readiness, type ReadinessDocument } from "@/lib/retrieval/readiness";
-import { prepareSearch } from "@/lib/retrieval/prepare-search";
+import type { ReadinessDocument } from "@/lib/retrieval/readiness";
+import { useSearchPreparation } from "@/lib/retrieval/use-search-preparation";
 import { stateLabel, systemMessage } from "@/lib/ui-labels";
 import type { SearchResult } from "@/lib/retrieval/search-contract";
 import type { RAGSource } from "@/lib/retrieval/rag";
@@ -23,7 +23,10 @@ export function KnowledgeSearch({ persistent, mock, initialWorkspace, initialDoc
   const [busy, setBusy] = useState(false); const [error, setError] = useState("");
   const [recent, setRecent] = useState<{ id: string; query: string; mode: "ask" | "find" }[]>([]);
   const [selected, setSelected] = useState<RAGSource | null>(null); const [source, setSource] = useState<Evidence | null>(null); const [sourceError, setSourceError] = useState("");
-  const [indexing, setIndexing] = useState(false); const [indexMessage, setIndexMessage] = useState("");
+  const preparation = useSearchPreparation({ workspaceId, documentIds });
+  const indexing = preparation.busy;
+  const [indexMessage, setIndexMessage] = useState<{ scope: string; text: string } | null>(null);
+  const preparationScope = JSON.stringify([workspaceId, documentIds]);
   const controller = useRef<AbortController | null>(null);
   const sourceController = useRef<AbortController | null>(null);
   useEffect(() => {
@@ -35,15 +38,14 @@ export function KnowledgeSearch({ persistent, mock, initialWorkspace, initialDoc
     return () => { abort.abort(); controller.current?.abort(); sourceController.current?.abort(); };
   }, []);
   async function indexLibrary() {
-    setIndexing(true); setIndexMessage("");
-    try {
-      const { results, processing, documents: refreshed } = await prepareSearch({ workspaceId, documentIds });
-      setDocuments(refreshed);
-      const failed = readiness(refreshed).retryable;
-      setIndexMessage(failed ? `${failed} 份资料尚未准备完成，已有结果保留。请核对上方可搜索数量后重试。` : results.length ? `本次已准备 ${results.length} 份资料，其余已就绪或正在处理的资料未重复处理。` : processing ? `${processing} 份资料正在准备，请稍后查看搜索准备状态。` : "当前范围内暂无需要准备的资料。");
-    } catch (e) { setIndexMessage(e instanceof Error ? e.message : "暂时无法建立索引，请稍后重试。"); }
-    finally { setIndexing(false); }
+    setIndexMessage(null);
+    const outcome = await preparation.run();
+    if (!outcome) return;
+    const { results, processing, summary } = outcome;
+    const failed = summary.retryable;
+    setIndexMessage({ scope: preparationScope, text: failed ? `${failed} 份资料尚未准备完成，已有结果保留。请核对上方可搜索数量后重试。` : results.length ? `本次已准备 ${results.length} 份资料，其余已就绪或正在处理的资料未重复处理。` : processing ? `${processing} 份资料正在准备，请稍后查看搜索准备状态。` : "当前范围内暂无需要准备的资料。" });
   }
+
   async function openHistory(id: string) {
     controller.current?.abort(); const abort = new AbortController(); controller.current = abort; setError(""); setBusy(true);
     try {
@@ -102,7 +104,7 @@ export function KnowledgeSearch({ persistent, mock, initialWorkspace, initialDoc
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t pt-4"><div className="flex gap-1" role="group" aria-label="搜索方式">{(["ask", "find"] as const).map(value => <Button key={value} type="button" variant={mode === value ? "secondary" : "ghost"} size="sm" aria-pressed={mode === value} onClick={() => setMode(value)}>{value === "ask" ? "问答" : "查找资料"}</Button>)}</div><Button type="submit" disabled={!query.trim() || busy || indexing}><Search size={15} />{busy ? "搜索中" : "搜索"}</Button></div>
       </form>
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground"><span>{mode === "ask" ? "基于原文回答 · 可验证引用" : "查找文件与段落 · 不生成回答"} · <Link href="/settings#help" className="inline-flex min-h-11 items-center underline">为什么搜不到？</Link></span>{persistent && <Button size="sm" variant="ghost" disabled={indexing || busy} onClick={() => void indexLibrary()}>{indexing ? <Loader2 size={14} className="animate-spin" /> : <RotateCw size={14} />} {indexing ? "正在准备搜索…" : "准备搜索"}</Button>}</div>
-      {indexMessage && <p role="status" className="mt-3 text-sm text-muted-foreground">{indexMessage}</p>}
+      {(preparation.error || indexMessage?.scope === preparationScope) && <p role="status" className="mt-3 text-sm text-muted-foreground">{preparation.error || indexMessage?.text}</p>}
       {!result && !busy && <div className="mt-7 space-y-5"><div><h3 className="text-xs text-muted-foreground">示例问法 · 不代表资料库已包含这些内容</h3><div className="mt-3 flex flex-wrap gap-2">{suggestions.map(s => <button key={s} type="button" onClick={() => setQuery(s)} className="min-h-11 rounded-lg border px-3 py-2 text-left text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">{s}</button>)}</div></div>{recent.length > 0 && <div><h3 className="text-xs text-muted-foreground">最近搜索</h3><div className="mt-2 divide-y">{recent.map(r => <button key={r.id} type="button" onClick={() => void openHistory(r.id)} className="flex min-h-11 w-full items-center justify-between gap-3 py-3 text-left text-sm">{r.query}<ArrowUpRight size={14} className="shrink-0 text-muted-foreground" /></button>)}</div></div>}</div>}
     </section>
     {error && <p role="alert" className="mx-auto max-w-3xl rounded-lg border border-destructive/30 p-4 text-sm text-destructive">{error}</p>}

@@ -18,7 +18,7 @@ export class RecoveryService {
       const prefix = `${userId}:`;
       if (!key.startsWith(prefix)) throw new Error("FOREIGN_RECOVERY_LOCK");
       return this.journal.lock(userId, key.slice(prefix.length), work, tryOnly);
-    }, userId, { storageRoot: this.storageRoot });
+    }, userId, { storageRoot: this.storageRoot, skipQueued: true });
   }
   async rollback(row: JournalRow) {
     const ids = [...(row.payload.quarantineIds ?? [])];
