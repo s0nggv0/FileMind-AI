@@ -132,7 +132,7 @@ export class SearchService {
     if (selectedDocumentIds) result.selectedDocumentIds = selectedDocumentIds;
     if (coverageSelection && questionIntent(rewrittenQuery) === "multi_source") {
       const eligible = retrieved.fused.filter(e => (e.lexicalCoverage ?? 0) >= retrievalConfig.minimumLexicalCoverage || (e.semanticScore ?? 0) >= retrievalConfig.minimumCosine);
-      result.coverage = sourceCoverage(coverageSelection, eligible, grounded.sources, input.mode === "ask" ? grounded.answer?.citations.map(c => c.chunkId) ?? [] : undefined);
+      result.coverage = sourceCoverage(coverageSelection, eligible, grounded.sources, input.mode === "ask" ? grounded.answer?.citations.map(c => c.chunkId) ?? [] : undefined, "coverageGaps" in grounded ? grounded.coverageGaps : undefined);
       if (input.mode === "ask" && !["answered", "conflicting"].includes(result.answerState ?? "")) result.coverage.complete = false;
     }
     const publicError = ApplicationLogSchema.shape.error_code.safeParse("errorCode" in grounded ? grounded.errorCode : null);

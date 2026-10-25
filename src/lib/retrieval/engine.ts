@@ -20,6 +20,9 @@ export class RetrievalEngine {
     const accessible = (e: Evidence) => e.userId === scope.userId && (!scope.workspaceId || e.workspaceId === scope.workspaceId) && (!scope.documentIds || scope.documentIds.includes(e.documentId));
     const profile = new QueryAnalyzer().analyze(normalized);
     let route = new RetrievalRouter().route(profile, !!this.embeddings);
+    if (multiSource) route = this.embeddings
+      ? { strategy: "VECTOR_WITH_LEXICAL_BOOST", reason: "Explicit comparison recalls bounded candidates across documents in both channels." }
+      : { strategy: "FALLBACK", reason: "Explicit comparison recalls bounded lexical candidates across documents." };
     if (options.mode === "find" && route.strategy === "VECTOR_ONLY") route = { strategy: "VECTOR_WITH_LEXICAL_BOOST", reason: "Passage lookup includes literal text matches as well as semantic candidates." };
     const latency = { queryEmbedding: 0, vector: 0, lexical: 0, rerank: 0 };
     let semanticUnavailable = !this.embeddings;

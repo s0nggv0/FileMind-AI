@@ -74,6 +74,7 @@ export async function generateGroundedAnswer(query: string, evidence: Evidence[]
     signal.throwIfAborted();
     stage="verification"; onStage?.("Checking question scope and source differences");
     const answerContext = await verifyAnswerContext(query, sources, provider, signal);
+    const coverageGaps = (answerContext.missingSourceFacts ?? []).map(gap => ({ documentId: sources.find(s => s.sourceId === gap.sourceId)!.documentId, detail: gap.detail }));
     if (answerContext.clarification.required) {
       // Recheck tenant ownership and freshness before publishing selectable IDs.
       for (const s of sources) { const current = await getSource(scope, s.id); if (!current || current.userId !== scope.userId || current.documentId !== s.documentId || current.workspaceId !== s.workspaceId || current.contentHash !== s.contentHash || current.content !== s.content || current.chunkVersion !== s.chunkVersion) throw new CitationValidationError("EXPIRED_SOURCE"); }
@@ -96,7 +97,7 @@ export async function generateGroundedAnswer(query: string, evidence: Evidence[]
       const finalAssessment=evaluator.evaluate(cited,object.evidenceDecision??{supported:!object.insufficientEvidence,missingInformation:[]});
       if(object.insufficientEvidence || !finalAssessment.sufficient) {
         if (answerContext.conflicts.length && attempt === 0) { correction="Verified source differences support an attributed conflict answer. Explain both values with citations instead of treating disagreement as missing evidence. Answer only the supported aspects."; continue; }
-        return {answer:refusal(),sources,unavailable:false,repaired:attempt===1,assessment:finalAssessment,verificationAttempts};
+        return {answer:refusal(),sources,unavailable:false,repaired:attempt===1,assessment:finalAssessment,verificationAttempts,coverageGaps};
       }
       stage="verification";
       const verification=await new AnswerVerifier(provider).verify(query,object,sources,signal,onStage,answerContext.conflicts); verificationAttempts.push(verification);
@@ -106,7 +107,7 @@ export async function generateGroundedAnswer(query: string, evidence: Evidence[]
           repairFeedback={priorAnswer:object.answer,failedClaims:verification.claims.filter(c=>!c.cited||!c.numericSupport||c.status!=="supported").slice(0,20).map(c=>({text:c.text.slice(0,300),status:c.status,cited:c.cited,numericSupport:c.numericSupport,supportingSourceIds:c.supportingSourceIds,contradictingSourceIds:c.contradictingSourceIds})),conflicts:verification.conflicts};
           continue;
         }
-        return {answer:refusal(),sources,unavailable:false,repaired:true,assessment:finalAssessment,verification,verificationAttempts,errorCode:"VERIFICATION_REJECTED"};
+        return {answer:refusal(),sources,unavailable:false,repaired:true,assessment:finalAssessment,verification,verificationAttempts,errorCode:"VERIFICATION_REJECTED",coverageGaps};
       }
       // Evidence may have changed during the verifier calls. Revalidate just
       // before releasing the final answer, and never send model drafts to UI.
@@ -115,7 +116,7 @@ export async function generateGroundedAnswer(query: string, evidence: Evidence[]
       // Only conflicts independently confirmed by the release verifier survive.
       final.conflict = { detected: verification.conflicts.length > 0, claims: verification.conflicts.map(c => ({ topic: c.topic, sourceIds: c.sourceIds, values: c.sourceIds.map(id => answerContext.conflicts.flatMap(v=>v.values).find(v=>v.sourceId===id)?.value ?? sources.find(s=>s.sourceId===id)!.content.slice(0,300)) })) };
       final.answerState = final.conflict.detected ? "conflicting" : "answered";
-      return {answer:final,sources,unavailable:false,repaired:attempt===1,assessment:finalAssessment,verification,verificationAttempts};
+      return {answer:final,sources,unavailable:false,repaired:attempt===1,assessment:finalAssessment,verification,verificationAttempts,coverageGaps};
     }
     throw new Error("Answer retry budget exhausted");
   } catch (error) { return { answer: null, sources, unavailable: true, errorCode:error instanceof CitationValidationError?"CITATION_INVALID":error instanceof AnswerVerificationError?error.code:stage==="verification"&&error instanceof z.ZodError?"VERIFIER_INVALID":normalizeAIError(error,provider.name).code, validationReason: error instanceof CitationValidationError ? error.code : undefined,verificationAttempts }; }
