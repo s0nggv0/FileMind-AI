@@ -51,7 +51,7 @@ export class SearchService {
     const saved = await this.dependencies.history.get({ userId }, id);
     if (!saved) throw new WorkspaceError("NOT_FOUND", "搜索记录已不可用。", 404);
     const result = { ...saved.result };
-    if (result.mode === "ask" && result.answer && !result.verification) {
+    if (result.mode === "ask" && !result.verification && (result.answer || !result.answerUnavailable)) {
       result.answer = null;
       result.issues = [...new Set([...(result.issues ?? []), "HISTORY_UNVERIFIED" as const])];
     }

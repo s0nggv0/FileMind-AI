@@ -276,6 +276,10 @@ test("outcomes distinguish unfinished scope, empty recall, missing facts, reject
   const absent = await run();
   assert.ok(absent.issues?.includes("MISSING_REQUESTED_FACTS"));
   assert.equal(absent.verification?.status, "no_answer");
+  f.setProvider(scriptedAnswer(() => ({ ...missingDraft, evidenceDecision: { supported: false, missingInformation: [] } })));
+  const vagueRefusal = await run();
+  assert.ok(vagueRefusal.issues?.includes("INSUFFICIENT_EVIDENCE"));
+  assert.equal(vagueRefusal.issues?.includes("MISSING_REQUESTED_FACTS"), false, "An unspecified refusal cannot establish that requested facts are absent");
   f.setProvider(scriptedAnswer(() => factDraft(72)));
   const rejected = await run();
   assert.ok(rejected.issues?.includes("VERIFICATION_FAILED"));
@@ -340,4 +344,5 @@ test("legacy history never gains factual verification, while explicit old verifi
   const oldRefusal = { ...legacy, verification: { status: "no_answer" as const, version: "old" } };
   assert.ok(searchIssues(oldRefusal).includes("INSUFFICIENT_EVIDENCE"));
   assert.equal(searchIssues(oldRefusal).includes("MISSING_REQUESTED_FACTS"), false);
+  assert.ok(searchIssues({ ...legacy, answer: null }).includes("HISTORY_UNVERIFIED"));
 });
