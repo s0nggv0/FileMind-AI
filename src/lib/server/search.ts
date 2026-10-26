@@ -7,10 +7,12 @@ import { PostgresSearchHistory } from "../retrieval/postgres-search-history";
 import { SearchService } from "../retrieval/search-service";
 import { database } from "./database";
 import { configuredEmbedding, knowledgeRepository, offlineRAGProvider, refreshIndexVersions, vectorStore } from "./knowledge";
+import { IndexStatusRepository } from "../retrieval/index-status";
 
 export const searchService = new SearchService({
   history: new PostgresSearchHistory(database), knowledge: knowledgeRepository, vectors: vectorStore,
   embedding: configuredEmbedding, refreshIndexVersions, developmentControls, realAIRequired,
+  readiness: async scope => (await new IndexStatusRepository(database).page(scope, { limit: 1 })).summary,
   rerankEnabled: () => indexingConfig(process.env).rerankEnabled,
   provider: () => {
     if (!realAIRequired()) return offlineRAGProvider();

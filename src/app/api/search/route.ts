@@ -5,6 +5,13 @@ import { persistenceConfigured } from "@/lib/server/database";
 import { searchService } from "@/lib/server/search";
 import { WorkspaceError } from "@/lib/workspace/authorization";
 import { SearchRequestSchema } from "@/lib/retrieval/search-contract";
+import { SearchFailure } from "@/lib/retrieval/search-failure";
+
+function searchError(error: unknown) {
+  return Response.json({ reason: error instanceof SearchFailure ? error.reason : "SEARCH_UNAVAILABLE" }, {
+    status: error instanceof SearchFailure ? error.status : apiError(error).status,
+  });
+}
 
 export async function GET(request: Request) {
   try {
@@ -24,7 +31,7 @@ export async function GET(request: Request) {
       return Response.json(await searchService.getRun(userId, z.uuid().parse(url.searchParams.get("runId"))), { headers });
     }
     return Response.json({ recent: await searchService.listRecent(userId) }, { headers });
-  } catch (error) { return apiError(error); }
+  } catch (error) { return searchError(error); }
 }
 
 export async function POST(request: Request) {
@@ -49,12 +56,12 @@ export async function POST(request: Request) {
         try {
           const result = await searchService.execute(prepared, request.signal, stage => send("stage", stage));
           send("result", result);
-        } catch { send("error", "搜索暂时不可用，资料仍然保留。"); }
+        } catch { send("error", { reason: "SEARCH_UNAVAILABLE" }); }
         finally { if (!closed) { closed = true; controller.close(); } }
       },
     });
     return new Response(stream, {
       headers: { "content-type": "text/event-stream", "cache-control": "no-store", "x-accel-buffering": "no" },
     });
-  } catch (error) { return apiError(error); }
+  } catch (error) { return searchError(error); }
 }
