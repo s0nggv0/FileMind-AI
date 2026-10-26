@@ -49,7 +49,7 @@ test("personal search: real stored chunks, ask/find, source drawer, follow-up, f
     await page.getByRole("button", { name: "查找资料", exact: true }).click(); await page.getByLabel("向资料提问", { exact: true }).fill("数据库索引优化"); await page.getByRole("button", { name: "搜索", exact: true }).click();
     await expect(page.getByRole("heading", { name: "AI 回答" })).toHaveCount(0); await expect(page.getByRole("button", { name: /database-indexes.txt/ }).first()).toBeVisible();
     await page.getByRole("button", { name: "问答", exact: true }).click(); await page.getByLabel("向资料提问", { exact: true }).fill("我的资料里量子纠缠有哪些解释？"); await page.getByRole("button", { name: "搜索", exact: true }).click();
-    await expect(page.getByText("我没有在你的资料中找到足够依据回答这个问题。", { exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "没有召回足够相关的内容", exact: true })).toBeVisible();
     await page.setViewportSize({ width: 390, height: 844 }); await page.screenshot({ path: "artifacts/rag-mobile.png", fullPage: true });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     const response = await context.request.post("/api/search", { headers: { origin: "http://127.0.0.1:3081" }, data: { query: exactQuery, mode: "ask" } });
@@ -57,10 +57,10 @@ test("personal search: real stored chunks, ask/find, source drawer, follow-up, f
     const successful = events.find(e => e.type === "result").data;
     await page.route("**/api/search", async route => {
       if (route.request().method() !== "POST") return route.continue();
-      await route.fulfill({ status: 200, contentType: "text/event-stream", body: `data: ${JSON.stringify({ type: "result", data: { ...successful, semanticUnavailable: true, answerUnavailable: true, answer: null } })}\n\n` });
+      await route.fulfill({ status: 200, contentType: "text/event-stream", body: `data: ${JSON.stringify({ type: "result", data: { ...successful, issues: ["ANSWER_SERVICE_UNAVAILABLE", "SEMANTIC_UNAVAILABLE"], semanticUnavailable: true, answerUnavailable: true, answer: null } })}\n\n` });
     });
     await page.getByLabel("向资料提问", { exact: true }).fill(exactQuery); await page.getByRole("button", { name: "搜索", exact: true }).click();
-    await expect(page.getByText(/语义搜索暂时不可用/)).toBeVisible(); await expect(page.getByText(/AI 回答的生成或依据验证暂时不可用/)).toBeVisible();
+    await expect(page.getByText(/语义搜索暂时不可用/)).toBeVisible(); await expect(page.getByRole("heading", { name: "回答生成或验证服务暂不可用", exact: true })).toBeVisible();
     const outsider = await context.browser()!.newContext();
     try { expect((await outsider.request.get(`http://127.0.0.1:3081/api/search?chunkId=${successful.sources[0].id}`)).status()).toBe(404); }
     finally { await outsider.close(); }
