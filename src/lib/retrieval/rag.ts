@@ -101,7 +101,7 @@ export async function generateGroundedAnswer(query: string, evidence: Evidence[]
       if(object.insufficientEvidence || !finalAssessment.sufficient) {
         if (answerContext.conflicts.length && attempt === 0) { correction="Verified source differences support an attributed conflict answer. Explain both values with citations instead of treating disagreement as missing evidence. Answer only the supported aspects."; continue; }
         const reason: SearchIssue = rejectedDraft ? "VERIFICATION_FAILED" :
-          object.insufficientEvidence || object.evidenceDecision?.supported === false || object.evidenceDecision?.missingInformation.length ? "MISSING_REQUESTED_FACTS" : "INSUFFICIENT_EVIDENCE";
+          object.evidenceDecision?.missingInformation.length ? "MISSING_REQUESTED_FACTS" : "INSUFFICIENT_EVIDENCE";
         return {answer:refusal(),sources,unavailable:false,repaired:attempt===1,assessment:finalAssessment,verificationAttempts,coverageGaps,reason};
       }
       stage="verification";

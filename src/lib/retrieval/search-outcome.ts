@@ -11,7 +11,7 @@ export type SearchIssue = z.infer<typeof SearchIssueSchema>;
 export type SearchRecovery = "prepare" | "edit" | "sources" | "retry";
 
 export const searchIssueCopy: Record<SearchIssue, { title: string; description: string; actions: SearchRecovery[] }> = {
-  PREPARATION_INCOMPLETE: { title: "部分资料尚未准备完成", description: "当前范围内有资料尚不可按内容搜索，本次结果可能不完整。可以先准备未完成资料，完成后再手动搜索。", actions: ["prepare", "retry"] },
+  PREPARATION_INCOMPLETE: { title: "部分资料尚未准备完成", description: "本次搜索时，范围内有资料尚不可按内容搜索，结果可能不完整。可以先准备未完成资料，完成后再手动搜索。", actions: ["prepare", "retry"] },
   NO_RELEVANT_CONTENT: { title: "没有召回足够相关的内容", description: "本次在当前范围内未找到可用于回答的相关片段。可以补充资料中的名称、关键词，或调整问题；这不代表全部原文都没有答案。", actions: ["edit", "sources", "retry"] },
   MISSING_REQUESTED_FACTS: { title: "相关内容缺少问题要求的事实", description: "已找到相关内容，但本次证据不足以支持问题要求的事实。可以查看原文，或把问题改为资料中已说明的内容。", actions: ["sources", "edit"] },
   VERIFICATION_FAILED: { title: "生成回答未通过事实验证", description: "本次生成内容未能全部通过原文依据检查，因此未展示回答。这不能说明资料中没有答案；相关片段仍可核对。", actions: ["sources", "retry", "edit"] },
@@ -30,7 +30,7 @@ export function searchIssues(result: SearchResult): SearchIssue[] {
   }));
   // Old records must not acquire new factual conclusions or a verified status.
   if (result.mode === "ask") {
-    if (!result.verification && result.answer) issues.add("HISTORY_UNVERIFIED");
+    if (!result.verification && (result.answer || !result.answerUnavailable)) issues.add("HISTORY_UNVERIFIED");
     else if (result.issues === undefined) {
       if (result.verification?.status === "rejected") issues.add("VERIFICATION_FAILED");
       else if (result.verification?.status === "unavailable" || result.answerUnavailable) issues.add("ANSWER_SERVICE_UNAVAILABLE");
