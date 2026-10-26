@@ -10,6 +10,7 @@ import { readModelConfig } from "../../src/lib/ai/models";
 import { DashScopeEmbeddingProvider } from "../../src/lib/retrieval/dashscope-provider";
 import { PostgresSearchHistory } from "../../src/lib/retrieval/postgres-search-history";
 import { SearchService } from "../../src/lib/retrieval/search-service";
+import { IndexStatusRepository } from "../../src/lib/retrieval/index-status";
 import { contentHash } from "../../src/lib/retrieval/chunker";
 import { lexicalTokens } from "../../src/lib/retrieval/lexical-tokens";
 import type { EmbeddingResult } from "../../src/lib/retrieval/embedding-provider";
@@ -52,7 +53,7 @@ async function main() {
     }
     for(let i=0;i<30;i++)await chunk(ids[0],i,texts[0],vectors[0]);await chunk(ids[1],0,texts[1],vectors[1]);
     const ready=()=>f.db.query("update filemind.documents set index_status='ready',embedding_provider=$1,embedding_model=$2,chunk_version='chunk-v1'",[info.provider,info.model]);await ready();
-    const service=new SearchService({history:new PostgresSearchHistory(f.tenant),knowledge:f.knowledge,vectors:f.vectors,embedding:()=>embeddings,refreshIndexVersions:async()=>{},provider:()=>provider,realAIRequired:()=>true,developmentControls:()=>false,rerankEnabled:()=>false,log:async()=>true});
+    const service=new SearchService({history:new PostgresSearchHistory(f.tenant),knowledge:f.knowledge,vectors:f.vectors,embedding:()=>embeddings,refreshIndexVersions:async()=>{},readiness:async scope=>(await new IndexStatusRepository(f.tenant).page(scope,{limit:1})).summary,provider:()=>provider,realAIRequired:()=>true,developmentControls:()=>false,rerankEnabled:()=>false,log:async()=>true});
     const input={query:"比较合成织叶方案甲与方案乙各自的通过线，分别引用双方。",mode:"ask" as const,workspaceId:workspace.id,documentIds:ids};
     if(!missingOnly) {
     const first=await service.execute(await service.prepare(userId,input),AbortSignal.timeout(240000),()=>{});

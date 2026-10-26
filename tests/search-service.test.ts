@@ -12,6 +12,8 @@ import { PGlite } from "@electric-sql/pglite";
 import { applyMigrations } from "../scripts/database/migrate-database.mjs";
 import { PostgresSearchHistory } from "../src/lib/retrieval/postgres-search-history";
 import { runTenantQuery } from "../src/lib/workspace/tenant-query";
+import { readiness, type ReadinessDocument } from "../src/lib/retrieval/readiness";
+import { hasVerifiedAnswer, searchIssues } from "../src/lib/retrieval/search-outcome";
 
 const userId = crypto.randomUUID(), workspaceId = crypto.randomUUID();
 const sample = (): Evidence => ({
@@ -29,7 +31,8 @@ const vectors: VectorStore = {
 function fixture(evidence = [sample()]) {
   const runs = new Map<string, SavedSearch>();
   const writes: { scope: RetrievalScope; result: SearchResult; diagnostics: SearchDiagnostics }[] = [];
-  const reads: RetrievalScope[] = [], refreshes: RetrievalScope[] = [], queries: string[] = [];
+  const reads: RetrievalScope[] = [], refreshes: RetrievalScope[] = [], readinessReads: RetrievalScope[] = [], queries: string[] = [];
+  let preparationDocuments: ReadinessDocument[] = evidence.map(s => ({ id: s.documentId, workspaceId: s.workspaceId, name: s.documentName, status: "ready", chunks: 1 }));
   const history: SearchHistory = {
     async get(scope, id) { reads.push(scope); return scope.userId === userId && (!scope.workspaceId || scope.workspaceId === workspaceId) ? runs.get(id) : undefined; },
     async list() { return []; },
@@ -39,6 +42,7 @@ function fixture(evidence = [sample()]) {
   const service = new SearchService({
     history, vectors, embedding: () => null, rerankEnabled: () => false,
     refreshIndexVersions: async scope => { refreshes.push(scope); },
+    readiness: async scope => { readinessReads.push(scope); return readiness(preparationDocuments.filter(d => (!scope.workspaceId || d.workspaceId === scope.workspaceId) && (!scope.documentIds || scope.documentIds.includes(d.id)))); },
     provider: () => provider, realAIRequired: () => true, developmentControls: () => debug,
     log: async () => true,
     knowledge: {
@@ -50,7 +54,8 @@ function fixture(evidence = [sample()]) {
       async getSource(scope, id) { return evidence.find(source => source.id === id && source.userId === scope.userId) ?? null; },
     },
   });
-  return { service, runs, reads, writes, refreshes, queries, evidence,
+  return { service, runs, reads, writes, refreshes, readinessReads, queries, evidence,
+    setReadiness: (documents: ReadinessDocument[]) => { preparationDocuments = documents; },
     setDebug: (value: boolean) => { debug = value; }, setProvider: (value: AIProvider) => { provider = value; } };
 }
 const missing = (error: unknown) => error instanceof WorkspaceError && error.code === "NOT_FOUND" && error.status === 404;
@@ -242,4 +247,97 @@ test("citing a truthful absence does not turn missing requested facts into compl
   assert.equal(result.verification?.status,"verified");assert.equal(result.answer!.citations.length,2);
   assert.equal(result.coverage?.evidenceDocumentIds.length,2);assert.equal(result.coverage?.citedDocumentIds.length,2);
   assert.equal(result.coverage?.complete,false);assert.ok(result.coverage?.uncovered.some(g=>g.documentId===b.documentId&&g.reason==="missing_facts"));
+  assert.ok(result.issues?.includes("MISSING_REQUESTED_FACTS"));
+});
+
+function scriptedAnswer(draft: (attempt: number) => unknown, judge?: (task: string, value: unknown) => unknown): AIProvider {
+  let attempts = 0;
+  return { name: "outcome-fixture", models: { main: "fixture", small: "fixture" }, async generateObject(input) {
+    const task = JSON.parse(input.prompt).task;
+    const verified = verifierFixtureResponse(input.prompt);
+    const value = verified ? (judge ? judge(task, verified) : verified) : draft(++attempts);
+    return { object: input.schema.parse(value), usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 } };
+  } } as AIProvider;
+}
+const missingDraft = { statements: [], confidence: "low", insufficientEvidence: true, evidenceDecision: { supported: false, missingInformation: ["requested value"] } };
+const factDraft = (hours: number) => ({ statements: [{ text: `Retention is ${hours} hours.`, sourceIds: ["S1"] }], confidence: "high", insufficientEvidence: false, evidenceDecision: { supported: true, missingInformation: [] } });
+
+test("outcomes distinguish unfinished scope, empty recall, missing facts, rejected facts and service outage", async () => {
+  const f = fixture();
+  const input = { query: "Retention?", mode: "ask" as const, workspaceId, documentIds: [f.evidence[0].documentId] };
+  const run = async () => f.service.execute(await f.service.prepare(userId, input), new AbortController().signal, () => {});
+  f.setReadiness([{ id: input.documentIds[0], workspaceId, name: "pending", status: "stale", chunks: 0 }]);
+  const pending = await run();
+  assert.ok(pending.issues?.includes("PREPARATION_INCOMPLETE"));
+  assert.ok(pending.issues?.includes("ANSWER_SERVICE_UNAVAILABLE"));
+  assert.deepEqual(f.readinessReads.at(-1), { userId, workspaceId, documentIds: input.documentIds });
+  f.setReadiness([{ id: input.documentIds[0], workspaceId, name: "ready", status: "ready", chunks: 1 }]);
+  f.setProvider(scriptedAnswer(() => missingDraft));
+  const absent = await run();
+  assert.ok(absent.issues?.includes("MISSING_REQUESTED_FACTS"));
+  assert.equal(absent.verification?.status, "no_answer");
+  f.setProvider(scriptedAnswer(() => factDraft(72)));
+  const rejected = await run();
+  assert.ok(rejected.issues?.includes("VERIFICATION_FAILED"));
+  assert.equal(rejected.verification?.status, "rejected");
+  assert.equal(rejected.issues?.includes("MISSING_REQUESTED_FACTS"), false);
+  assert.equal(rejected.sources.length, 1);
+  assert.equal(JSON.stringify(rejected).includes("72 hours"), false, "No unverified draft crosses the public boundary");
+  f.setProvider(scriptedAnswer(attempt => attempt === 1 ? factDraft(72) : missingDraft));
+  const repairedRefusal = await run();
+  assert.ok(repairedRefusal.issues?.includes("VERIFICATION_FAILED"), "A refusal after a failed draft cannot erase the factual rejection");
+  assert.equal(repairedRefusal.verification?.status, "rejected");
+  const secret = "sk-private-fixture internal stack";
+  for (const p of [scriptedAnswer(() => { throw new Error(secret); }), scriptedAnswer(() => factDraft(6), () => { throw new Error(secret); })]) {
+    f.setProvider(p);
+    const unavailable = await run();
+    assert.ok(unavailable.issues?.includes("ANSWER_SERVICE_UNAVAILABLE"));
+    assert.equal(unavailable.verification?.status, "unavailable");
+    assert.equal(unavailable.answer, null);
+    assert.equal(unavailable.sources.length, 1);
+    assert.equal(JSON.stringify(unavailable).includes(secret), false);
+  }
+  const empty = fixture([]); let modelCalls = 0;
+  empty.setProvider(scriptedAnswer(() => { modelCalls++; return factDraft(6); }));
+  const notFound = await empty.service.execute(await empty.service.prepare(userId, { query: "Unrelated?", mode: "ask", workspaceId }), new AbortController().signal, () => {});
+  assert.ok(notFound.issues?.includes("NO_RELEVANT_CONTENT"));
+  assert.equal(notFound.issues?.includes("MISSING_REQUESTED_FACTS"), false);
+  assert.equal(modelCalls, 0);
+});
+
+test("source changes during verification and history loads have a stable reason without generating again", async () => {
+  const f = fixture();
+  f.setProvider(scriptedAnswer(() => factDraft(6), (task, value) => {
+    if (task === "check_evidence_support") f.evidence[0].content = "Changed source";
+    return value;
+  }));
+  const result = await f.service.execute(await f.service.prepare(userId, { query: "Retention?", mode: "ask", workspaceId }), new AbortController().signal, () => {});
+  assert.ok(result.issues?.includes("SOURCES_CHANGED")); assert.equal(result.answer, null);
+  assert.equal(searchIssues(result).includes("ANSWER_SERVICE_UNAVAILABLE"), false);
+  const calls = f.queries.length;
+  const historical = await f.service.getRun(userId, result.id);
+  assert.ok(historical.issues?.includes("SOURCES_CHANGED"));
+  assert.equal(f.queries.length, calls);
+  await assert.rejects(f.service.getSource(userId, crypto.randomUUID()), error => !!error && typeof error === "object" && "reason" in error && error.reason === "SOURCES_CHANGED");
+});
+
+test("legacy history never gains factual verification, while explicit old verification and saved sources survive", async () => {
+  const f = fixture();
+  const found = await f.service.execute(await f.service.prepare(userId, { query: "Retention?", mode: "find", workspaceId, documentIds: [f.evidence[0].documentId] }), new AbortController().signal, () => {});
+  const legacy: SearchResult = { ...found, mode: "ask", issues: undefined, answer: { answer: "LEGACY UNVERIFIED", citations: [], confidence: "high", insufficientEvidence: true } };
+  f.runs.set(legacy.id, { query: legacy.query, result: legacy });
+  assert.equal(hasVerifiedAnswer(legacy), false);
+  assert.ok(searchIssues(legacy).includes("HISTORY_UNVERIFIED"));
+  const saved = await f.service.getRun(userId, legacy.id);
+  assert.equal(saved.answer, null); assert.equal(saved.verification, undefined);
+  assert.ok(saved.issues?.includes("HISTORY_UNVERIFIED"));
+  assert.deepEqual(saved.selectedDocumentIds, found.selectedDocumentIds);
+  assert.deepEqual(saved.sources, legacy.sources);
+  assert.equal(f.runs.get(legacy.id)?.result.answer?.answer, "LEGACY UNVERIFIED", "Read compatibility must not rewrite stored history");
+  const oldVerified = { ...legacy, answer: { ...legacy.answer!, insufficientEvidence: false }, verification: { status: "verified" as const, version: "old-explicit-verifier" } };
+  assert.equal(hasVerifiedAnswer(oldVerified), true);
+  assert.equal(searchIssues(oldVerified).includes("HISTORY_UNVERIFIED"), false);
+  const oldRefusal = { ...legacy, verification: { status: "no_answer" as const, version: "old" } };
+  assert.ok(searchIssues(oldRefusal).includes("INSUFFICIENT_EVIDENCE"));
+  assert.equal(searchIssues(oldRefusal).includes("MISSING_REQUESTED_FACTS"), false);
 });

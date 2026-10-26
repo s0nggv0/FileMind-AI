@@ -13,6 +13,8 @@ import type { VectorStore } from "./vector-store";
 import { questionIntent } from "./question-intent";
 import { sourceCoverage, type CoverageSelection } from "./source-coverage";
 import { retrievalConfig } from "./config";
+import type { readiness } from "./readiness";
+import { SearchFailure } from "./search-failure";
 
 interface SearchDependencies {
   history: SearchHistory;
@@ -20,6 +22,7 @@ interface SearchDependencies {
   vectors: VectorStore;
   embedding(): EmbeddingProvider | null;
   refreshIndexVersions(scope: RetrievalScope): Promise<void>;
+  readiness(scope: RetrievalScope): Promise<ReturnType<typeof readiness>>;
   provider(): AIProvider | null;
   realAIRequired(): boolean;
   developmentControls(): boolean;
@@ -40,7 +43,7 @@ export class SearchService {
 
   async getSource(userId: string, id: string) {
     const source = await this.dependencies.knowledge.getSource({ userId }, id);
-    if (!source) throw new WorkspaceError("NOT_FOUND", "来源已不可用，请重新搜索。", 404);
+    if (!source) throw new SearchFailure("SOURCES_CHANGED");
     return source;
   }
 
@@ -48,9 +51,16 @@ export class SearchService {
     const saved = await this.dependencies.history.get({ userId }, id);
     if (!saved) throw new WorkspaceError("NOT_FOUND", "搜索记录已不可用。", 404);
     const result = { ...saved.result };
+    if (result.mode === "ask" && result.answer && !result.verification) {
+      result.answer = null;
+      result.issues = [...new Set([...(result.issues ?? []), "HISTORY_UNVERIFIED" as const])];
+    }
     const sources = [...result.sources, ...result.nearest];
     const current = await Promise.all(sources.map(s => this.dependencies.knowledge.getSource({ userId }, s.id)));
-    if (sources.some((s, i) => !current[i] || current[i]!.content !== s.content || current[i]!.contentHash !== s.contentHash || current[i]!.chunkVersion !== s.chunkVersion)) result.historyWarning = "部分历史来源已变更或不可用。下面保留的是当时的结果，请重新搜索以核对当前资料。";
+    if (sources.some((s, i) => !current[i] || current[i]!.content !== s.content || current[i]!.contentHash !== s.contentHash || current[i]!.chunkVersion !== s.chunkVersion)) {
+      result.historyWarning = "部分历史来源已变更或不可用。下面保留的是当时的结果，请重新搜索以核对当前资料。";
+      result.issues = [...new Set([...(result.issues ?? []), "SOURCES_CHANGED" as const])];
+    }
     else if (sources.some((s, i) => current[i]!.documentName !== s.documentName || (s.documentUpdatedAt && current[i]!.documentUpdatedAt !== s.documentUpdatedAt))) result.historyWarning = "来源信息已更新。下面是当时保存的结果，可重新搜索查看最新资料。";
     if (!this.dependencies.developmentControls()) delete result.debug;
     return result;
@@ -91,7 +101,7 @@ export class SearchService {
     const resolvedScope = { ...scope, ...(selectedDocumentIds ? { documentIds: [...new Set(selectedDocumentIds)] } : {}) };
     await this.dependencies.refreshIndexVersions(resolvedScope);
     const coverageSelection = selectedDocumentIds || questionIntent(rewrittenQuery) === "multi_source" ? await this.dependencies.knowledge.coverageDocuments(resolvedScope) : undefined;
-    if (selectedDocumentIds && (!selectedDocumentIds.length || selectedDocumentIds.some(id => !coverageSelection?.documents.some(d => d.id === id)))) throw new WorkspaceError("NOT_FOUND", "部分选定资料已不可用，请重新选择。", 404);
+    if (selectedDocumentIds && (!selectedDocumentIds.length || selectedDocumentIds.some(id => !coverageSelection?.documents.some(d => d.id === id)))) throw new SearchFailure("SOURCES_CHANGED");
     return { scope: resolvedScope, input, rewrittenQuery, selectedDocumentIds, coverageSelection };
   }
 
@@ -99,6 +109,8 @@ export class SearchService {
     const { scope, input, rewrittenQuery, selectedDocumentIds, coverageSelection } = prepared;
     const dependencies = this.dependencies;
     const started = performance.now();
+    const preparation = await dependencies.readiness(scope);
+    signal.throwIfAborted();
     const embedding = dependencies.embedding();
     const engine = new RetrievalEngine(embedding, dependencies.vectors, dependencies.knowledge,
       dependencies.rerankEnabled() ? new DeterministicReranker() : null);
@@ -117,13 +129,19 @@ export class SearchService {
       answer: grounded.answer, sources: grounded.sources, nearest: buildRAGContext(retrieved.nearest).sources,
       semanticUnavailable: retrieved.semanticUnavailable, answerUnavailable: grounded.unavailable,
       mock: retrieved.mock || !dependencies.realAIRequired(), evidenceCount: grounded.sources.length, candidateCount: retrieved.fused.length,
+      issues: [],
     };
+    if (preparation.total > preparation.searchable) result.issues!.push("PREPARATION_INCOMPLETE");
+    if (!retrieved.evidence.length) result.issues!.push("NO_RELEVANT_CONTENT");
+    if ("reason" in grounded && grounded.reason && !result.issues!.includes(grounded.reason)) result.issues!.push(grounded.reason);
+    if (retrieved.semanticUnavailable) result.issues!.push("SEMANTIC_UNAVAILABLE");
     const verified = "verification" in grounded ? grounded.verification : undefined;
     if (input.mode === "ask") {
       result.answerState = grounded.unavailable ? "error" : grounded.answer?.answerState ?? "no_answer";
       result.verification = {
         version: VERIFIER_VERSION,
-        status: grounded.unavailable ? "unavailable"
+        status: "reason" in grounded && grounded.reason === "VERIFICATION_FAILED" ? "rejected"
+          : grounded.unavailable ? "unavailable"
           : result.answerState === "needs_clarification" ? "needs_clarification"
           : result.answerState === "no_answer" ? "no_answer"
           : verified?.accepted ? (verified.conflicts.length ? "conflict" : "verified") : "rejected",
@@ -134,6 +152,7 @@ export class SearchService {
       const eligible = retrieved.fused.filter(e => (e.lexicalCoverage ?? 0) >= retrievalConfig.minimumLexicalCoverage || (e.semanticScore ?? 0) >= retrievalConfig.minimumCosine);
       result.coverage = sourceCoverage(coverageSelection, eligible, grounded.sources, input.mode === "ask" ? grounded.answer?.citations.map(c => c.chunkId) ?? [] : undefined, "coverageGaps" in grounded ? grounded.coverageGaps : undefined);
       if (input.mode === "ask" && !["answered", "conflicting"].includes(result.answerState ?? "")) result.coverage.complete = false;
+      if (result.coverage.uncovered.some(item => item.reason === "missing_facts") && !result.issues!.includes("MISSING_REQUESTED_FACTS")) result.issues!.push("MISSING_REQUESTED_FACTS");
     }
     const publicError = ApplicationLogSchema.shape.error_code.safeParse("errorCode" in grounded ? grounded.errorCode : null);
     const errorCode = publicError.success ? publicError.data : grounded.unavailable ? "UNAVAILABLE" : null;
