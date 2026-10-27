@@ -11,6 +11,7 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
+    "check:unused": "tsc --noEmit --noUnusedLocals --noUnusedParameters",
     "db:migrate": "node scripts/database/migrate-database.mjs",
     "portable:start": "node scripts/portable-start.mjs",
     "portable:prepare": "node scripts/build/prepare-portable.mjs",
