@@ -25,6 +25,7 @@ export interface Passage { chunkId: string; documentId: string; documentHash: st
 export interface Claim { text: string; sourceIds: string[] }
 export interface Observation {
   questionId: string; attempt: number; status: "answered" | "refused" | "verification-rejected" | "service-failure" | "stopped";
+  origin?: { run: string; commit: string; sourceHash: string; fingerprint: string; startedAt: string };
   retrieved: Passage[]; claims: Claim[];
   citations: { sourceId: string; chunkId: string; documentId: string }[];
   sourceMap: Record<string, string>; reason: string | null;
