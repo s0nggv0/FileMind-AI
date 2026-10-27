@@ -4,7 +4,8 @@ import Link from "next/link";
 import { ArrowUpRight, FileText, Loader2, Search, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ImageSourceView } from "@/components/knowledge/image-source-view";
+import { CitationReading } from "@/components/knowledge/citation-reader";
+import { citationAnchor } from "@/lib/retrieval/citation-contract";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { LibraryReadiness } from "@/components/knowledge/library-readiness";
 import type { ReadinessDocument } from "@/lib/retrieval/readiness";
@@ -14,7 +15,6 @@ import type { SearchResult } from "@/lib/retrieval/search-contract";
 import { hasVerifiedAnswer, searchIssues, SearchIssueSchema, type SearchIssue } from "@/lib/retrieval/search-outcome";
 import { PreviousSearchResult, SearchRecovery } from "./search-recovery";
 import type { RAGSource } from "@/lib/retrieval/rag";
-import type { Evidence } from "@/lib/retrieval/types";
 const suggestions = ["我哪些资料讲过 Transformer 的 Query、Key、Value？", "找出与数据库索引优化相关的资料", "哪些资料讲过注意力机制？"];
 const successfulResult = (data: SearchResult) => hasVerifiedAnswer(data) || data.mode === "find" && data.sources.length > 0;
 export function KnowledgeSearch({ persistent, mock, initialWorkspace, initialDocument, initialDocuments, initialQuery = "", initialMode = "ask" }: { persistent: boolean; mock: boolean; initialWorkspace?: string; initialDocument?: string; initialDocuments?: string[]; initialQuery?: string; initialMode?: "ask" | "find" }) {
@@ -27,20 +27,21 @@ export function KnowledgeSearch({ persistent, mock, initialWorkspace, initialDoc
   const [failure, setFailure] = useState<SearchIssue | null>(null);
   const [retainedSuccess, setRetainedSuccess] = useState<SearchResult | null>(null);
   const [recent, setRecent] = useState<{ id: string; query: string; mode: "ask" | "find" }[]>([]);
-  const [selected, setSelected] = useState<RAGSource | null>(null); const [source, setSource] = useState<Evidence | null>(null); const [sourceError, setSourceError] = useState("");
+  const [selected, setSelected] = useState<RAGSource | null>(null);
+  const [selectedRunId, setSelectedRunId] = useState<string | undefined>();
   const preparation = useSearchPreparation({ workspaceId, documentIds });
   const indexing = preparation.busy;
   const [indexMessage, setIndexMessage] = useState<{ scope: string; text: string } | null>(null);
   const preparationScope = JSON.stringify([workspaceId, documentIds]);
   const controller = useRef<AbortController | null>(null);
-  const sourceController = useRef<AbortController | null>(null);
+  const restoredCitation = useRef("");
   useEffect(() => {
     const abort = new AbortController();
     void fetch("/api/search", { signal: abort.signal }).then(r => r.json()).then(data => setRecent(data.recent ?? [])).catch(() => {});
     const params = new URLSearchParams(window.location.search);
     const runId = params.get("run");
     if (runId) void fetch(`/api/search?runId=${encodeURIComponent(runId)}`, { signal: abort.signal }).then(async r => { if (!r.ok) throw new Error("这条搜索记录已不可用，请重新搜索。"); return r.json(); }).then((data: SearchResult) => { setResult(data); setQuery(data.query); setMode(data.mode); setWorkspaceId(data.workspaceId); setDocumentIds(data.selectedDocumentIds); }).catch(e => { if (!abort.signal.aborted) setError(e.message); });
-    return () => { abort.abort(); controller.current?.abort(); sourceController.current?.abort(); };
+    return () => { abort.abort(); controller.current?.abort(); };
   }, []);
   async function indexLibrary() {
     setIndexMessage(null);
@@ -93,12 +94,17 @@ export function KnowledgeSearch({ persistent, mock, initialWorkspace, initialDoc
     } catch { if (!abort.signal.aborted) setFailure("SEARCH_UNAVAILABLE"); }
     finally { if (controller.current === abort) { setBusy(false); setStage(""); } }
   }
-  async function preview(item: RAGSource) {
-    sourceController.current?.abort(); const abort = new AbortController(); sourceController.current = abort;
-    setSelected(item); setSource(null); setSourceError("");
-    try { const response = await fetch(`/api/search?chunkId=${item.id}`, { signal: abort.signal }); const data = await response.json(); if (!response.ok) { const reason = SearchIssueSchema.safeParse(data.reason); setSourceError(reason.success && reason.data === "SOURCES_CHANGED" ? "来源已经变化或失效。已保存的片段仍保留，请关闭此面板后在当前范围重新搜索。" : "来源暂时无法加载。已保存的片段仍保留，可以手动重试。"); return; } if (!abort.signal.aborted) setSource(data); }
-    catch { if (!abort.signal.aborted) setSourceError("来源暂时无法加载。已保存的片段仍保留，可以手动重试。"); }
+  function preview(item: RAGSource, runId = result?.id) {
+    setSelected(item); setSelectedRunId(runId);
   }
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search), chunkId = params.get("focusChunk");
+    if (!result || !chunkId || !result.sources.some(source => source.id === chunkId)) return;
+    const key = `${result.id}:${chunkId}`;
+    if (restoredCitation.current === key) return;
+    const button = document.querySelector<HTMLButtonElement>(`[data-citation-chunk="${chunkId}"]`);
+    if (button) { restoredCitation.current = key; button.focus({ preventScroll: true }); button.scrollIntoView({ block: "center" }); }
+  }, [result]);
   const shownSources = result?.sources.length ? result.sources : result?.nearest ?? [];
   const nearestOnly = result && !result.sources.length;
   const issues = [...new Set([...(failure ? [failure] : []), ...(result ? searchIssues(result) : [])])];
@@ -136,15 +142,15 @@ export function KnowledgeSearch({ persistent, mock, initialWorkspace, initialDoc
         {result.mode === "ask" && hasVerifiedAnswer(result) && <article><h3 className="text-sm font-semibold">AI 回答</h3><p className="mt-4 whitespace-pre-wrap text-base leading-8">{result.answer!.answer.split(/(\[S\d+\])/g).map((part, i) => {
           const match = /^\[S(\d+)\]$/.exec(part); if (!match) return <span key={i}>{part}</span>;
           const item = result.sources.find(s => s.sourceId === `S${match[1]}`); if (!item) return null;
-          return <button key={i} type="button" aria-label={`引用 ${match[1]}`} title={`${item.documentName} · ${item.location}\n${item.content.slice(0, 240)}`} onClick={() => void preview(item)} className="mx-1 inline-flex min-h-11 min-w-11 items-center justify-center rounded-md bg-primary/10 px-1.5 text-sm font-medium text-primary">[{match[1]}]</button>;
+          return <button key={i} type="button" aria-label={`引用 ${match[1]}`} data-citation-chunk={item.id} title={`${item.documentName} · ${item.location}\n${item.content.slice(0, 240)}`} onClick={() => void preview(item)} className="mx-1 inline-flex min-h-11 min-w-11 items-center justify-center rounded-md bg-primary/10 px-1.5 text-sm font-medium text-primary">[{match[1]}]</button>;
         })}</p></article>}
-        {retainedSuccess && <PreviousSearchResult result={retainedSuccess} onPreview={item => void preview(item)} />}
-        <article id="search-passages" tabIndex={-1}><h3 className="text-sm font-semibold">{nearestOnly ? "最接近的段落" : "相关资料"}</h3>{nearestOnly && <p className="mt-2 text-xs leading-6 text-muted-foreground">这些是最接近的段落，尚不足以作为回答依据。</p>}<div className="mt-3 divide-y">{shownSources.map((s, i) => <button key={s.id} type="button" onClick={() => void preview(s)} className="flex w-full gap-3 py-5 text-left"><FileText size={18} className="mt-1 shrink-0 text-muted-foreground" /><span className="min-w-0 flex-1"><span className="block break-words text-sm font-medium">{s.documentName}</span><span className="mt-1 block text-xs text-muted-foreground">{s.fileType === "image" ? "图片" : s.fileType.toUpperCase()} · {s.location} · 排序 #{i + 1}</span><span className="mt-3 line-clamp-3 whitespace-pre-wrap text-sm leading-7 text-muted-foreground">{s.content}</span></span></button>)}</div>{!shownSources.length && <p className="mt-4 text-sm leading-7 text-muted-foreground">当前范围没有可展示的匹配片段。可以调整问题后重试。</p>}</article>
+        {retainedSuccess && <PreviousSearchResult result={retainedSuccess} onPreview={item => preview(item, retainedSuccess.id)} />}
+        <article id="search-passages" tabIndex={-1}><h3 className="text-sm font-semibold">{nearestOnly ? "最接近的段落" : "相关资料"}</h3>{nearestOnly && <p className="mt-2 text-xs leading-6 text-muted-foreground">这些是最接近的段落，尚不足以作为回答依据。</p>}<div className="mt-3 divide-y">{shownSources.map((s, i) => <button key={s.id} type="button" data-citation-chunk={s.id} onClick={() => void preview(s)} className="flex w-full gap-3 py-5 text-left"><FileText size={18} className="mt-1 shrink-0 text-muted-foreground" /><span className="min-w-0 flex-1"><span className="block break-words text-sm font-medium">{s.documentName}</span><span className="mt-1 block text-xs text-muted-foreground">{s.fileType === "image" ? "图片" : s.fileType.toUpperCase()} · {s.location} · 排序 #{i + 1}</span><span className="mt-3 line-clamp-3 whitespace-pre-wrap text-sm leading-7 text-muted-foreground">{s.content}</span></span></button>)}</div>{!shownSources.length && <p className="mt-4 text-sm leading-7 text-muted-foreground">当前范围没有可展示的匹配片段。可以调整问题后重试。</p>}</article>
         <p className="text-xs text-muted-foreground">{result.candidateCount} 个候选段落 · {result.evidenceCount} 个证据段落{result.answer && !result.answer.insufficientEvidence && ` · 依据支持程度： ${stateLabel(result.answer.confidence)}（依据支持程度，不是准确率）`}</p>
         {result.debug && <details className="rounded-lg border p-4"><summary className="cursor-pointer text-xs text-muted-foreground">检索调试信息</summary><pre className="mt-4 overflow-x-auto whitespace-pre-wrap break-all font-mono text-xs">{JSON.stringify({ query: result.rewrittenQuery, ...result.debug, evidence: result.sources.map(s => ({ id: s.id, location: s.location })) }, null, 2)}</pre></details>}
       </div>
       <aside className="min-w-0 border-t pt-6 lg:border-t-0 lg:border-l lg:pl-6 lg:pt-0"><h3 className="text-sm font-semibold">{nearestOnly ? "最接近的来源" : "来源"}</h3><div className="mt-3 divide-y">{shownSources.map((s, i) => <button key={s.id} type="button" title={s.content.slice(0, 240)} onClick={() => void preview(s)} className="flex w-full gap-3 py-4 text-left"><span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-xs text-primary">{i + 1}</span><span className="min-w-0"><span className="block break-words text-sm font-medium">{s.documentName}</span><span className="mt-2 block text-xs text-muted-foreground">{s.location}</span></span></button>)}</div></aside>
     </section>}
-    <Dialog open={selected !== null} onOpenChange={open => { if (!open) { setSelected(null); setSource(null); } }}><DialogContent className="top-0 right-0 left-auto h-dvh w-full max-w-xl translate-x-0 translate-y-0 overflow-y-auto rounded-none sm:max-w-xl"><DialogHeader><DialogTitle className="break-words pr-5 text-base leading-7">{selected?.documentName}</DialogTitle><DialogDescription>资料来源 ·  {selected?.location}</DialogDescription></DialogHeader>{sourceError && <div role="alert" className="space-y-3"><p className="text-sm text-destructive">{sourceError}</p><Button variant="outline" size="sm" onClick={() => { if (selected) void preview(selected); }}>重试加载来源</Button></div>}{!source && !sourceError && <p role="status" className="text-sm text-muted-foreground">正在加载原始来源…</p>}{source?.fileType === "image" && <ImageSourceView key={source.documentId} documentId={source.documentId} evidence={source} />}{source && source.fileType !== "image" && <div className="space-y-6"><div><h3 className="text-xs font-medium text-muted-foreground">提取原文</h3><mark className="mt-3 block whitespace-pre-wrap break-words rounded-lg bg-accent p-4 text-sm leading-8 text-foreground">{source.content}</mark></div><div><h3 className="text-xs font-medium text-muted-foreground">AI 摘要</h3><p className="mt-2 text-sm leading-7">{source.summary || "尚无文档摘要。"}</p></div><div className="flex flex-wrap gap-2">{source.tags.map(t => <Badge variant="secondary" key={t}>{t}</Badge>)}</div><div className="flex flex-wrap gap-3 border-t pt-5">{["missing","not_stored"].includes(source.storageStatus??"") ? <p role="status" className="text-sm leading-7 text-muted-foreground">原文件不可用 · 仍可核对提取正文</p> : <Button asChild variant="outline" size="sm"><a href={`/api/documents/${source.documentId}/original`} target="_blank" rel="noopener noreferrer">打开原文件 <ArrowUpRight size={14} /></a></Button>}<Button asChild variant="outline" size="sm"><Link href={`/library?source=workspace&document=${source.documentId}`}>打开资料 <ArrowUpRight size={14} /></Link></Button><Button asChild variant="ghost" size="sm"><Link href="/graph?source=workspace">查看相关知识</Link></Button></div></div>}</DialogContent></Dialog>
+    <Dialog open={selected !== null} onOpenChange={open => { if (!open) setSelected(null); }}><DialogContent className="top-0 right-0 left-auto h-dvh w-full max-w-xl translate-x-0 translate-y-0 overflow-y-auto rounded-none sm:max-w-xl"><DialogHeader><DialogTitle className="break-words pr-5 text-base leading-7">{selected?.documentName}</DialogTitle><DialogDescription>资料来源 · 核对引用、前后文与提取全文</DialogDescription></DialogHeader>{selected && <CitationReading key={`${selectedRunId}:${selected.id}`} anchor={citationAnchor(selected)} savedSource={selected} runId={selectedRunId} onBack={() => setSelected(null)} />}</DialogContent></Dialog>
   </div>;
 }
