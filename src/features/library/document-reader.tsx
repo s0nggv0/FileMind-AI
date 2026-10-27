@@ -5,15 +5,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { categoryLabel } from "@/lib/ui-labels";
 import type { ReadableDocument } from "@/lib/workspace/document-reader";
-export function DocumentReading({ documentId, onSaved }: { documentId: string; onSaved: (document: ReadableDocument) => void }) {
+export function DocumentReading({ documentId, onSaved, initialDetail }: { documentId: string; onSaved: (document: ReadableDocument) => void; initialDetail?: ReadableDocument }) {
   const router = useRouter();
-  const [detail, setDetail] = useState<ReadableDocument | null>(null);
-  const [category, setCategory] = useState(""); const [tags, setTags] = useState(""); const [error, setError] = useState(""); const [message, setMessage] = useState(""); const [busy, setBusy] = useState(false); const [retry, setRetry] = useState(0);
+  const [detail, setDetail] = useState<ReadableDocument | null>(initialDetail ?? null);
+  const [category, setCategory] = useState(initialDetail ? categoryLabel(initialDetail.category ?? "Uncategorized") : ""); const [tags, setTags] = useState(initialDetail?.tags.join("，") ?? ""); const [error, setError] = useState(""); const [message, setMessage] = useState(""); const [busy, setBusy] = useState(false); const [retry, setRetry] = useState(0);
   useEffect(() => {
     const abort = new AbortController();
+    if (initialDetail && !retry) return () => abort.abort();
     void fetch(`/api/documents/${documentId}`, { signal: abort.signal }).then(async r => { if (!r.ok) throw new Error("无法加载资料，请重新打开详情或重试。"); return r.json(); }).then((data: ReadableDocument) => { setDetail(data); setCategory(categoryLabel(data.category ?? "Uncategorized")); setTags(data.tags.join("，")); }).catch(e => { if (!abort.signal.aborted) setError(e.message); });
     return () => abort.abort();
-  }, [documentId, retry]);
+  }, [documentId, retry, initialDetail]);
   async function save() {
     if (!detail) return; setBusy(true); setError(""); setMessage("");
     try {
