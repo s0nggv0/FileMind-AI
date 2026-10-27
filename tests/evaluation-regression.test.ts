@@ -61,6 +61,9 @@ test("false refusal, verifier rejection and outage never become correct refusals
   assert.ok(judge(data, data.questions.find(q => q.id === row.questionId)!, row).failures.includes("false-refusal"));
   const missing = observation("missing-fact"); missing.status = "service-failure";
   assert.equal(summarize(data, [missing]).automatedRuleJudgment.correctRefusal.numerator, 0);
+  missing.status = "refused"; missing.serviceFaults = ["EMBEDDING_SERVICE_UNAVAILABLE"];
+  assert.equal(summarize(data, [missing]).automatedRuleJudgment.correctRefusal.numerator, 0);
+  assert.equal(summarize(data, [missing]).failureCounts["service-failure"], 1);
   missing.status = "verification-rejected";
   assert.equal(summarize(data, [missing]).failureCounts["verification-rejection"], 1);
   assert.equal(summarize(data, [missing]).automatedRuleJudgment.correctRefusal.numerator, 0);
@@ -77,6 +80,13 @@ test("repeated text must match document version and offset; a keyword is not fac
 test("conflict requires visible disclosure and both attributed facts, not a model flag", () => {
   const row = observation("conflict"), q = data.questions.find(q => q.id === "conflict")!;
   row.claims.pop(); assert.equal(judge(data, q, row).conflictDisclosed, false);
+});
+test("unmatched paraphrases require review without an invented generation-error verdict", () => {
+  const row = observation("shared"), q = data.questions.find(q => q.id === "shared")!;
+  row.claims[0].text = "A signed receipt must accompany every transfer.";
+  const result = judge(data, q, row);
+  assert.equal(result.unassessedClaims, 1); assert.equal(result.reviewRequired, true);
+  assert.equal(result.failures.includes("generation-error"), false);
 });
 test("immutable attempt files preserve first failure after successful manual retry", async () => {
   const base = await mkdtemp(join(tmpdir(), "filemind-eval-")), store = await RunStore.create(base);

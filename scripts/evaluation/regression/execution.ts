@@ -30,7 +30,7 @@ export function assertPrivateInput(path: string, project = process.cwd()) {
 }
 export interface TransportEvent {
   request: number; phase: string; state: "started" | "completed" | "failed"; latencyMs?: number; status?: number;
-  tokens?: { prompt: number; completion: number; total: number } | null;
+  tokens?: { prompt: number | null; completion: number | null; total: number | null } | null;
 }
 export class RequestBudget {
   readonly events: TransportEvent[] = [];
@@ -64,7 +64,7 @@ export class RequestBudget {
         const usage = JSON.parse(body).usage;
         const prompt = usage?.prompt_tokens ?? usage?.input_tokens, completion = usage?.completion_tokens ?? usage?.output_tokens;
         const total = usage?.total_tokens ?? (Number.isFinite(prompt) && Number.isFinite(completion) ? prompt + completion : undefined);
-        if (Number.isFinite(total) && total >= 0) tokens = { prompt: Number.isFinite(prompt) ? prompt : 0, completion: Number.isFinite(completion) ? completion : 0, total };
+        if (Number.isFinite(total) && total >= 0) tokens = { prompt: Number.isFinite(prompt) ? prompt : null, completion: Number.isFinite(completion) ? completion : null, total };
       } catch { /* Token usage is unavailable, not zero. */ }
       if (response.ok) this.consecutiveFailures = 0;
       else if ([401, 403, 429].includes(response.status) || ++this.consecutiveFailures >= this.limits.stopAfterFailures) this.stopReason = "provider-stop";

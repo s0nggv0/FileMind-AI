@@ -28,8 +28,9 @@ export interface Observation {
   retrieved: Passage[]; claims: Claim[];
   citations: { sourceId: string; chunkId: string; documentId: string }[];
   sourceMap: Record<string, string>; reason: string | null;
+  serviceFaults?: string[];
   conflictDetected: boolean; runtimeVerification: "accepted" | "rejected" | "not-run";
-  latencyMs: number; requests: number; tokens: { prompt: number; completion: number; total: number } | null;
+  latencyMs: number; requests: number; tokens: { prompt: number | null; completion: number | null; total: number | null } | null;
 }
 
 export function validateDataset(input: unknown, authorizationId?: string): Dataset {
@@ -63,21 +64,25 @@ export function judge(data: Dataset, q: Question, row: Observation) {
   const matchedFacts = q.facts.filter(f => row.claims.some(c => factsFor(c).includes(f)));
   const retrievedDocs = new Set(row.retrieved.map(p => p.documentId));
   const comparisonComplete = q.requiredComparisonSources.every(id => retrievedDocs.has(id));
-  const conflictDisclosed = row.status === "answered" && comparisonComplete && matchedFacts.length === q.facts.length && row.claims.some(c => q.conflictStatements.some(s => normalize(s) === normalize(c.text)));
+  const comparisonCited = q.requiredComparisonSources.every(id => validCitations.some(c => c.documentId === id));
+  const conflictDisclosed = row.status === "answered" && comparisonComplete && comparisonCited && matchedFacts.length === q.facts.length && row.claims.some(c => q.conflictStatements.some(s => normalize(s) === normalize(c.text)));
   const disclosureClaims = row.claims.filter(c => q.conflictStatements.some(s => normalize(s) === normalize(c.text)));
   const unassessedClaims = row.claims.length - supportedClaims.length - disclosureClaims.length;
   const failures: string[] = [];
   if (recalled.length < q.evidence.length || q.relevantDocuments.some(id => !retrievedDocs.has(id))) failures.push("retrieval-omission");
-  if (row.status === "service-failure" || row.status === "stopped") failures.push("service-failure");
+  if (row.status === "service-failure" || row.status === "stopped" || row.serviceFaults?.length) failures.push("service-failure");
   if (row.status === "verification-rejected") failures.push("verification-rejection");
-  if (row.status === "refused" && q.answerability !== "no-answer") failures.push("false-refusal");
-  if (row.status === "answered" && (q.answerability === "no-answer" || matchedFacts.length !== q.facts.length || citedClaims.length !== supportedClaims.length || unassessedClaims > 0 || !validCitations.length || (q.answerability === "conflict" && !conflictDisclosed))) failures.push("generation-error");
+  if (row.status === "refused" && !row.serviceFaults?.length && q.answerability !== "no-answer") failures.push("false-refusal");
+  // Exact gold cannot judge arbitrary paraphrases. Unknown wording needs human
+  // review; it must not become an asserted model error or an automatic pass.
+  if (row.status === "answered" && (q.answerability === "no-answer" || citedClaims.length !== supportedClaims.length || !validCitations.length || (!unassessedClaims && (matchedFacts.length !== q.facts.length || (q.answerability === "conflict" && !conflictDisclosed))))) failures.push("generation-error");
   return {
     failures, recalledEvidence: recalled.length, expectedEvidence: q.evidence.length,
     recalledDocuments: q.relevantDocuments.filter(id => retrievedDocs.has(id)).length, expectedDocuments: q.relevantDocuments.length,
-    comparisonComplete, conflictDisclosed, matchedFacts: matchedFacts.length, expectedFacts: q.facts.length,
+    comparisonComplete, comparisonCited, conflictDisclosed, matchedFacts: matchedFacts.length, expectedFacts: q.facts.length,
     supportedClaims: supportedClaims.length, factualClaims: row.claims.length - disclosureClaims.length, citedClaims: citedClaims.length,
     unassessedClaims, validCitations: validCitations.length, citations: row.citations.length,
+    reviewRequired: unassessedClaims > 0,
     rank: retrievalMetrics(row.retrieved.map(p => ({ documentName: p.documentId })), q.relevantDocuments),
   };
 }
@@ -95,19 +100,21 @@ export function summarize(data: Dataset, rows: Observation[]) {
       documentRecall: ratio(relevant, r => r.value.recalledDocuments, r => r.value.expectedDocuments, "micro: distinct relevant documents in released retrieval evidence / gold documents"),
       evidenceRecall: ratio(relevant, r => r.value.recalledEvidence, r => r.value.expectedEvidence, "micro: gold span covered in same document hash and position / gold spans"),
       comparisonSourceCompleteness: ratio(comparisons, r => Number(r.value.comparisonComplete), () => 1, "all required comparison documents retrieved / comparison questions"),
+      comparisonCitationCompleteness: ratio(comparisons, r => Number(r.row.status === "answered" && r.value.comparisonCited), () => 1, "all required comparison sources validly cited in final answer / comparison questions"),
       citationValidity: ratio(released, r => r.value.validCitations, r => r.value.citations, "identity, scope and corpus hash valid / returned citation records; no citations yields null"),
       claimCitationSupport: ratio(released, r => r.value.citedClaims, r => r.value.factualClaims, "exact gold factual claim has supporting cited gold span / released factual claims"),
       factualSupportEstablished: ratio(released, r => r.value.supportedClaims, r => r.value.factualClaims, "exact independently authored statement and retrieved gold evidence / released factual claims; unmatched is unassessed, not proven false"),
       requestedFactCoverage: ratio(answerable, r => r.value.matchedFacts, r => r.value.expectedFacts, "exact gold statements present / requested facts; refusals and outages remain in denominator"),
-      correctRefusal: ratio(noAnswer, r => Number(r.row.status === "refused"), () => 1, "explicit refusal / no-answer questions; outage/verifier rejection never a correct refusal"),
-      falseRefusal: ratio(answerable, r => Number(r.row.status === "refused"), () => 1, "explicit refusal / answerable or conflict questions; failures reported separately"),
+      correctRefusal: ratio(noAnswer, r => Number(r.row.status === "refused" && !r.row.serviceFaults?.length), () => 1, "explicit refusal without service fault / no-answer questions; outage/verifier rejection never a correct refusal"),
+      falseRefusal: ratio(answerable, r => Number(r.row.status === "refused" && !r.row.serviceFaults?.length), () => 1, "explicit refusal without service fault / answerable or conflict questions; failures reported separately"),
       conflictDisclosure: ratio(conflicts, r => Number(r.value.conflictDisclosed), () => 1, "explicit gold disclosure plus both sides and required sources / conflict questions"),
     },
     unassessedClaims: judged.reduce((s, r) => s + r.value.unassessedClaims, 0),
+    reviewRequiredSamples: judged.filter(r => r.value.reviewRequired).length,
     failureCounts: Object.fromEntries(["retrieval-omission", "generation-error", "false-refusal", "verification-rejection", "service-failure"].map(kind => [kind, judged.filter(r => r.value.failures.includes(kind)).length])),
     latencyMs: { all: percentiles(rows.map(r => r.latencyMs)), failures: percentiles(judged.filter(r => r.value.failures.length).map(r => r.row.latencyMs)) },
     requests: { samples: rows.length, total: rows.reduce((s, r) => s + r.requests, 0) },
-    tokens: { samples: rows.length, availableSamples: rows.filter(r => r.tokens !== null).length, total: rows.some(r => r.tokens !== null) ? rows.reduce((s, r) => s + (r.tokens?.total ?? 0), 0) : null },
+    tokens: { samples: rows.length, availableSamples: rows.filter(r => r.tokens?.total != null).length, total: rows.some(r => r.tokens?.total != null) ? rows.reduce((s, r) => s + (r.tokens?.total ?? 0), 0) : null, rule: "sum of available usage only; unavailable components remain null; transport receipt gives per-request coverage" },
     modelJudgment: { performed: false, samples: 0 }, humanReview: { status: "pending", reviewed: 0, samples: rows.length },
   };
 }
