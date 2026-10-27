@@ -51,17 +51,17 @@ export class WorkspaceAgentEngine implements AgentEngine {
     else if (latest?.status === "waiting_for_review") listener(latest);
   }
   cancelRun(id: string) { this.active.cancelRun(id); }
-  private async continueMock(id: string, action: (listener: RunListener) => Promise<void>, listener: RunListener) {
+  private async continueMock(action: (listener: RunListener) => Promise<void>, listener: RunListener) {
     let final: AgentRun | undefined;
     await action(run => { final = run; if (run.status !== "waiting_for_review") listener(run); });
     if (final) { await this.persistence.saveRun({ ...final, engine: "mock" }); listener(final); }
   }
   async retryStep(id: string, step: string, listener: RunListener) {
-    if (this.active === this.mock && this.persistence.persistent) return this.continueMock(id, update => this.mock.retryStep(id, step, update), listener);
+    if (this.active === this.mock && this.persistence.persistent) return this.continueMock(update => this.mock.retryStep(id, step, update), listener);
     await this.active.retryStep(id, step, listener);
   }
   async skipStep(id: string, step: string, listener: RunListener) {
-    if (this.active === this.mock && this.persistence.persistent) return this.continueMock(id, update => this.mock.skipStep(id, step, update), listener);
+    if (this.active === this.mock && this.persistence.persistent) return this.continueMock(update => this.mock.skipStep(id, step, update), listener);
     await this.active.skipStep(id, step, listener);
   }
   async applyPlan(id: string, plan: OrganizationPlan, listener: RunListener) {

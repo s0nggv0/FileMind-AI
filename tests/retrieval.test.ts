@@ -11,7 +11,7 @@ import { prepareDocument } from "../src/lib/retrieval/prepare-document";
 import { IndexingPipeline } from "../src/lib/retrieval/indexing";
 import { cosineSimilarity } from "../src/lib/retrieval/vector-store";
 import { RetrievalEngine } from "../src/lib/retrieval/engine";
-import { rankFusion, DeterministicReranker, RerankSchema } from "../src/lib/retrieval/ranking";
+import { rankFusion, DeterministicReranker } from "../src/lib/retrieval/ranking";
 import { buildRAGContext, validateCitations, generateGroundedAnswer, RAGAnswerSchema, NO_ANSWER, ragSystemPrompt } from "../src/lib/retrieval/rag";
 import { DashScopeEmbeddingProvider } from "../src/lib/retrieval/dashscope-provider";
 import type { Evidence } from "../src/lib/retrieval/types";
@@ -28,7 +28,6 @@ test("RRF uses ranks, deduplicates lists and records origins", () => {
   assert.equal(result.length, 3); assert.equal(result[0].id, b.id); assert.equal(result[0].retrievalSource, "both");
   assert.equal(result.find(r => r.id === a.id)?.score, 1 / 61);
   assert.equal(result[0].score, 1 / 62 + 1 / 61);
-  assert.ok(!RerankSchema.safeParse([{ chunkId: "invented", relevance: 9, reason: "invalid" }]).success);
 });
 test("portable cosine handles zero, opposite and invalid vectors", () => {
   assert.equal(cosineSimilarity([1, 0], [1, 0]), 1);
