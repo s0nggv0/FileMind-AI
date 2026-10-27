@@ -1,7 +1,6 @@
 import type { Evidence } from "./types";
 import { retrievalConfig } from "./config";
 import { lexicalTokens } from "./lexical-tokens";
-import { z } from "zod";
 export function rankFusion(semantic: Evidence[], lexical: Evidence[], k = retrievalConfig.rrfK) {
   if (k < 1) throw new Error("Invalid RRF constant");
   const map = new Map<string, Evidence>();
@@ -15,7 +14,6 @@ export function rankFusion(semantic: Evidence[], lexical: Evidence[], k = retrie
   }
   return [...map.values()].sort((a, b) => b.score - a.score || a.id.localeCompare(b.id)).map((item, index) => ({ ...item, fusedRank: index + 1 }));
 }
-export const RerankSchema = z.array(z.object({ chunkId: z.uuid(), relevance: z.number().min(0).max(1), reason: z.string().max(150) }));
 export interface Reranker { rerank(query: string, candidates: Evidence[]): Promise<Evidence[]> }
 export class DeterministicReranker implements Reranker {
   async rerank(query: string, candidates: Evidence[]) {
