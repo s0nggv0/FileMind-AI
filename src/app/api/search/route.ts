@@ -6,6 +6,9 @@ import { searchService } from "@/lib/server/search";
 import { WorkspaceError } from "@/lib/workspace/authorization";
 import { SearchRequestSchema } from "@/lib/retrieval/search-contract";
 import { SearchFailure } from "@/lib/retrieval/search-failure";
+import { database } from "@/lib/server/database";
+import { CitationReader } from "@/lib/retrieval/citation-reader";
+import { parseCitationAnchor } from "@/lib/retrieval/citation-contract";
 
 function searchError(error: unknown) {
   return Response.json({ reason: error instanceof SearchFailure ? error.reason : "SEARCH_UNAVAILABLE" }, {
@@ -25,6 +28,8 @@ export async function GET(request: Request) {
     }
     const headers = { "cache-control": "no-store" };
     if (url.searchParams.has("chunkId")) {
+      const view = url.searchParams.get("view");
+      if (view === "context" || view === "full") return Response.json(await new CitationReader(database).get(userId, parseCitationAnchor(url.searchParams), view), { headers: { "cache-control": "private, no-store" } });
       return Response.json(await searchService.getSource(userId, z.uuid().parse(url.searchParams.get("chunkId"))), { headers });
     }
     if (url.searchParams.has("runId")) {
