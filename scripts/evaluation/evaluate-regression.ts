@@ -100,6 +100,7 @@ export async function runRegression(args: string[]) {
       const started = performance.now(), eventsBefore = budget?.events.length ?? 0;
       const attempt = Math.max(0, ...rows.filter(r => r.questionId === q.id).map(r => r.attempt)) + 1;
       const row: Observation = { questionId: q.id, attempt, status: "service-failure", retrieved: [], claims: [], citations: [], sourceMap: {}, reason: null, conflictDetected: false, runtimeVerification: "not-run", latencyMs: 0, requests: 0, tokens: null };
+      row.origin = { run: store.root, commit: identity.code.commit, sourceHash: identity.code.sourceHash, fingerprint, startedAt: new Date().toISOString() };
       row.serviceFaults = q.scope.some(id => indexUnavailable.has(id)) ? ["INDEX_UNAVAILABLE"] : [];
       await store.event("attempt-start", { questionId: q.id, attempt, scope: q.scope });
       if (budget) budget.phase = `${q.id}:attempt-${attempt}`;

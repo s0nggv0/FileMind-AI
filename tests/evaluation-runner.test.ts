@@ -24,6 +24,9 @@ test("actual isolated retrieval repeats, fault calibration detects failures, man
   try {
     const retry = await runRegression(["--inject-failures", "--retry-run", join(bad.root, "report.json"), "--question", "missing-fact"]);
     assert.equal(retry.report.rows.filter(r => r.questionId === "missing-fact").length, 2);
+    assert.equal(retry.report.rows.find(r => r.questionId === "missing-fact" && r.attempt === 1)?.origin?.run, bad.root);
+    assert.equal(retry.report.rows.find(r => r.questionId === "missing-fact" && r.attempt === 2)?.origin?.run, retry.root);
+    assert.equal(retry.report.rows.find(r => r.questionId === "missing-fact" && r.attempt === 2)?.origin?.sourceHash, retry.report.code.sourceHash);
     assert.equal(retry.report.first.failureCounts["service-failure"], 1);
     assert.equal(retry.report.final.failureCounts["service-failure"], 0);
     assert.equal(await readFile(join(bad.root, "report.json"), "utf8"), preserved);
