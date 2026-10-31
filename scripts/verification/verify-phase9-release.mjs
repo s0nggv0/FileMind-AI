@@ -17,7 +17,7 @@ try {
  const config=await (await fetch(environment.origin+'/api/workspace-config')).json();assert.equal(config.persistent,true);assert.equal(config.competition,true);assert.equal(config.intelligence,true);report.checks.freshPersistentCompetitionStartup=true;
  const html=await (await fetch(environment.origin+'/settings')).text();assert.ok(html.includes(artifact.build.BUILD_VERSION));assert.ok(html.includes(artifact.build.BUILD_COMMIT.slice(0,7)));report.checks.aboutBuildMatchesManifest=true;
  process.env.PORT=String(await freePort());
- const check=await run(join(root,'.filemind/runtime/node.exe'),[join(root,'.next/standalone/demo-check.cjs')],root);assert.equal(check.code,1);
+ const check=await run('powershell.exe',['-NoProfile','-ExecutionPolicy','Bypass','-File',join(root,'preflight.ps1')],root);assert.equal(check.code,1);
  const receipt=JSON.parse(await readFile(join(root,'.filemind/diagnostics/demo-preflight.json'),'utf8'));assert.equal(receipt.ready,false);assert.equal(receipt.checks.filter(x=>x.ok).length,7);assert.equal(receipt.checks.find(x=>x.name==='OCR Worker').ok,true);report.checks.compiledPortablePreflight=true;report.checks.bundledLocalOCR=true;report.preflight={ready:false,passed:7,total:12,scope:'No credentials; expected NOT READY'};
  report.passed=true;
 }catch{report.errorCode='PHASE9_RELEASE_ACCEPTANCE_FAILED';process.exitCode=1;}

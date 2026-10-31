@@ -20,7 +20,7 @@ for(const name of ['.next/standalone','.filemind/runtime','.filemind/postgresql/
 }
 await mkdir(join(root,'docs/evaluation'),{recursive:true});
 for(const name of await readdir(join(project,'docs/evaluation'))){if(/\.(?:json|md)$/.test(name)&&!name.includes('release-artifact')&&!name.includes('portable-release'))await cp(join(project,'docs/evaluation',name),join(root,'docs/evaluation',name));}
-await cp(join(project,'docs/competition/quickstart.md'),join(root,'README.md'));
+await writeFile(join(root,'README.md'),(await readFile(join(project,'docs/competition/quickstart.md'),'utf8')).replaceAll('`current-release.json`','`docs/competition/current-release.json`').replaceAll('`release-freeze.md`','`docs/competition/release-freeze.md`'));
 await copyPortableRuntimeScripts(project,root);
 let example=await readFile('.env.example','utf8');
 example=example.replace(/^AI_ENGINE=.*$/m,'AI_ENGINE=llm').replace(/^COMPETITION_MODE=.*$/m,'COMPETITION_MODE=true').replace(/^DEMO_MODE=.*$/m,'DEMO_MODE=true');
@@ -28,7 +28,7 @@ await writeFile(join(root,'.env.example'),example);
 await build({entryPoints:[join(project,'scripts/verification/demo-check.ts')],outfile:join(root,'.next/standalone/demo-check.cjs'),bundle:true,platform:'node',format:'cjs',target:'node22',packages:'external',logLevel:'silent'});
 for(const [name,args] of [['start','scripts/portable-start.mjs'],['stop','scripts/portable-start.mjs --stop'],['preflight','.next/standalone/demo-check.cjs']]) {
  const [script,...extra]=args.split(' ');
- await writeFile(join(root,`${name}.ps1`),`$ErrorActionPreference = 'Stop'\nSet-Location -LiteralPath $PSScriptRoot\n& (Join-Path $PSScriptRoot '.filemind/runtime/node.exe') (Join-Path $PSScriptRoot '${script}') ${extra.join(' ')} @args\nexit $LASTEXITCODE\n`);
+ await writeFile(join(root,`${name}.ps1`),`$ErrorActionPreference = 'Stop'\nSet-Location -LiteralPath $PSScriptRoot\n${name==='preflight'?"$env:PORT = '0'\n":''}& (Join-Path $PSScriptRoot '.filemind/runtime/node.exe') (Join-Path $PSScriptRoot '${script}') ${extra.join(' ')} @args\nexit $LASTEXITCODE\n`);
 }
 async function files(dir){const list=[];for(const item of await readdir(dir,{withFileTypes:true})){const path=join(dir,item.name);if(item.isSymbolicLink())throw new Error('Artifact must not contain symlinks');if(item.isDirectory())list.push(...await files(path));else if(item.isFile())list.push(path);}return list;}
 const paths=await files(root);
