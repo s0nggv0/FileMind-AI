@@ -34,6 +34,6 @@ try {
   report.errorCode = "RELEASE_CLEAN_STARTUP_FAILED"; process.exitCode = 1;
 } finally {
   if (environment) await disposeEnvironment(environment);
-  await writeFile("docs/evaluation/release-clean-environment.json", JSON.stringify(report, null, 2) + "\n");
+  await writeFile(process.env.FILEMIND_CLEAN_REPORT || "docs/evaluation/current-clean-environment.json", JSON.stringify(report, null, 2) + "\n");
   console.log(JSON.stringify(report));
 }

@@ -1,12 +1,12 @@
 {
   "name": "filemind-ai",
-  "version": "1.0.0-rc.1",
+  "version": "1.0.0-rc.2",
   "private": true,
   "scripts": {
     "predev": "node scripts/build/prepare-pdf-worker.mjs",
     "dev": "next dev",
     "prebuild": "node scripts/build/prepare-build.mjs",
-    "build": "next build",
+    "build": "next build --webpack",
     "postbuild": "node scripts/build/prepare-portable.mjs",
     "start": "next start",
     "lint": "eslint .",
@@ -17,7 +17,7 @@
     "portable:prepare": "node scripts/build/prepare-portable.mjs",
     "test:portable": "playwright test --config playwright.portable.config.ts",
     "test:portable:copy": "node scripts/verification/verify-portable.mjs",
-    "test": "tsx --test tests/*.test.ts",
+    "test": "tsx --test --test-concurrency=1 tests/*.test.ts",
     "test:e2e": "playwright test",
     "test:live": "playwright test --config playwright.live.config.ts",
     "test:vision": "tsx scripts/verification/verify-vision-live.ts",
@@ -33,7 +33,8 @@
     "demo:check": "tsx scripts/verification/demo-check.ts",
     "test:demo-preflight": "node scripts/verification/verify-demo-preflight.mjs",
     "test:phase9": "tsx --test tests/answer-context.test.ts tests/answer-verifier.test.ts",
-    "test:phase9:kimi": "tsx scripts/verification/verify-phase9-kimi.ts --live"
+    "test:phase9:kimi": "tsx scripts/verification/verify-phase9-kimi.ts --live",
+    "test:competition": "playwright test --config playwright.competition.config.ts"
   },
   "dependencies": {
     "@ai-sdk/openai-compatible": "3.0.62",
