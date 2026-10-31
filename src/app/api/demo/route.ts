@@ -23,7 +23,7 @@ export async function GET(request:Request) {
       const root=resolve("tests/fixtures/demo");
       const manifest=z.object({files:z.array(z.object({name:z.string().regex(/^[a-z0-9-]+\.(pdf|docx|md|txt|png|jpg)$/),sha256:z.string().regex(/^[a-f0-9]{64}$/),bytes:z.number().int().max(3_000_000),recommended:z.boolean()})).max(12)}).parse(JSON.parse(await readFile(join(root,"manifest.json"),"utf8")));
       const files:Record<string,Uint8Array>={};
-      for(const file of manifest.files.filter(f=>f.recommended)){const bytes=await readFile(join(root,"份文件",file.name));if(bytes.length!==file.bytes||createHash("sha256").update(bytes).digest("hex")!==file.sha256)throw new Error("DEMO_FIXTURE_CHANGED");files[file.name]=bytes;}
+      for(const file of manifest.files.filter(f=>f.recommended)){const bytes=await readFile(join(root,"files",file.name));if(bytes.length!==file.bytes||createHash("sha256").update(bytes).digest("hex")!==file.sha256)throw new Error("DEMO_FIXTURE_CHANGED");files[file.name]=bytes;}
       return new Response(Buffer.from(zipSync(files)),{headers:{...headers,"content-type":"application/zip","content-disposition":"attachment; filename=FileMind-demo-fixtures.zip"}});
     }
     return Response.json({enabled:true,...await demo.status(await getUserId())},{headers});
