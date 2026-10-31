@@ -1,0 +1,32 @@
+{
+  "scope": "E:\\XM\\czb\\AI_WEB\\artifacts\\release",
+  "preserved": "Current ZIP and checksum, history, failed evidence, source, user data and original edits",
+  "removed": [
+    {
+      "bytes": 376991421.0,
+      "name": "FileMind-AI-1.0.0-rc.1-windows-x64-b5a5e74b"
+    },
+    {
+      "bytes": 378197206.0,
+      "name": "FileMind-AI-1.0.0-rc.1-windows-x64-ed9fe788"
+    },
+    {
+      "bytes": 378197254.0,
+      "name": "FileMind-AI-1.0.0-rc.1-windows-x64-f7201e40"
+    },
+    {
+      "bytes": 160804344,
+      "name": "FileMind-AI-1.0.0-rc.1-windows-x64.zip"
+    },
+    {
+      "bytes": 105,
+      "name": "FileMind-AI-1.0.0-rc.1-windows-x64.zip.sha256"
+    },
+    {
+      "bytes": 388800061.0,
+      "name": "FileMind-AI-1.0.0-rc.2-windows-x64-781160d0"
+    }
+  ],
+  "checkedAt": "2026-10-31T23:21:41.5563340+08:00",
+  "verifiedNewArchive": "c25523990231d31d988909ca7681e5f7d1f223bab66e73c875c226e9c50a8ed2"
+}
