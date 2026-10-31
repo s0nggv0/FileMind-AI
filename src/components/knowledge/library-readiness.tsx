@@ -17,7 +17,7 @@ export function LibraryReadiness({ workspaceId, documentIds, onDocuments, disabl
       {state.partial > 0 && <p className="text-muted-foreground">部分能力未完成。已有文字片段可继续搜索；图片中的图形含义需对照原图核对。</p>}
       {state.replacementFailed > 0 && <p className="text-muted-foreground">{state.replacementFailed} 份替换索引失败或中断，可重试；当前可用索引仍可搜索。</p>}
       {state.total > state.searchable && !state.processing && <p className="text-muted-foreground">部分资料已保存但尚不可按内容搜索。准备搜索后再试；无可提取文字的扫描 PDF 需先转为文字或单页图片。</p>}
-      {!state.total ? <Button asChild size="sm"><Link href="/workspace">导入第一批资料</Link></Button> : state.retryable > 0 && <Button size="sm" variant="outline" disabled={disabled || isPreparing} onClick={onPrepare ?? (() => void preparation.run())}>{isPreparing ? "正在准备…" : "准备或重试未完成资料"}</Button>}
+      {!state.total ? <Button asChild size="sm"><Link href="/workspace">导入第一批资料</Link></Button> : (state.retryable > 0 || !!onPrepare) && <Button size="sm" variant="outline" disabled={disabled || isPreparing} onClick={onPrepare ?? (() => void preparation.run())}>{isPreparing ? "正在准备搜索…" : "准备搜索"}</Button>}
     </> : !error && <p>正在确认可搜索资料数量…</p>}
     {(error || preparation.error) && <div role="alert" className="space-y-2"><p className="text-destructive">{error || preparation.error}</p><Button size="sm" variant="outline" onClick={() => void refresh().catch(() => {})}>刷新准备状态</Button></div>}
   </div>;

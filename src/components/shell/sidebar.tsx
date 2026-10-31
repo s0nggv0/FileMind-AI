@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowUpRight, Settings, ChevronDown } from "lucide-react";
+import { ArrowUpRight, Settings } from "lucide-react";
 import { navItems } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 import { useUiStore } from "@/store/ui-store";
@@ -17,7 +17,6 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
     <div className="mx-2 mb-8 mt-9 flex items-center gap-3 rounded-lg border bg-card px-3 py-3">
       <span className="flex size-8 items-center justify-center rounded-md bg-secondary text-xs font-semibold">FM</span>
       <div className="min-w-0 flex-1"><p className="text-sm font-medium">我的知识空间</p><p className="mt-0.5 text-[11px] text-muted-foreground">资料整理与人工审核</p></div>
-      <ChevronDown className="size-3.5 text-muted-foreground" aria-hidden="true" />
     </div>
     <nav aria-label="主要导航" className="space-y-1">
       {navItems.map((item) => {

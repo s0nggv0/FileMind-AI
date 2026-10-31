@@ -30,7 +30,7 @@ export function CapabilitiesSection({ organize, search, nodes, edges, comparison
         <Capability number="01" title="AI 整理" description="分析文件内容，提出分类与命名建议。"><OrganizeDemo examples={organize} /></Capability>
         <Capability number="02" title="语义搜索" description="根据问题含义查找资料。"><SemanticDemo example={search} /></Capability>
         <Capability number="03" title="知识图谱" description="查看文档与概念之间的关联。"><div className="surface-secondary p-4"><RelationshipDemo nodes={nodes} edges={edges} compact /></div></Capability>
-        <Capability number="04" title="智能清理" description="查看重复文件和命名整理建议。"><CleanupDemo comparison={comparison} compact /></Capability>
+        <Capability number="04" title="重复候选" description="查看重复文件和命名整理建议。"><CleanupDemo comparison={comparison} compact /></Capability>
       </div>
     </section>
   );

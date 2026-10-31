@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { HeroSection } from "@/features/landing/hero-section";
+import { CitationDemo } from "@/features/landing/citation-demo";
 import { AgentDemo } from "@/features/landing/agent-demo";
 import { CapabilitiesSection } from "@/features/landing/capabilities-section";
 import { WorkflowSection } from "@/features/landing/workflow-section";
@@ -9,8 +10,8 @@ import { FinalCTA } from "@/features/landing/final-cta";
 import { getDemoLandingPresentation } from "@/lib/demo/presentation";
 
 export const metadata: Metadata = {
-  title: "FileMind AI · 将资料连接成知识",
-  description: "知序 AI：导入资料，体验 AI 整理、语义搜索和知识图谱演示。",
+  title: "FileMind AI · 从资料找到答案，回到原文核对",
+  description: "知序 AI：导入文档与图片，审阅整理建议，向资料提问并点击引用核对原文。",
 };
 
 export default function LandingPage() {
@@ -18,6 +19,7 @@ export default function LandingPage() {
   return (
     <>
       <HeroSection formats={data.landingFormats} />
+      <CitationDemo />
       <div id="product" className="marketing-width scroll-mt-24">
         <AgentDemo stages={data.agentStages} files={data.landingFiles} metrics={data.metrics} />
       </div>
