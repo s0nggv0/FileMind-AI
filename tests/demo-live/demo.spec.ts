@@ -1,9 +1,16 @@
 import { test, expect } from "@playwright/test";
 import { mkdir, writeFile } from "node:fs/promises";
+import { join } from "node:path";
 import { unzipSync } from "fflate";
 test("dedicated demo: bundled fixtures, mixed import/review/apply, provider mode, confirmation and scoped reset",async({page,context})=>{
   const live=process.env.FILEMIND_DEMO_LIVE==="true",headers={origin:process.env.FILEMIND_TEST_ORIGIN!};
   const report:{[k:string]:unknown}={passed:false,live,syntheticFixtures:true,checkedAt:new Date().toISOString()},start=performance.now();
+  async function capture(name: string) {
+    if (!process.env.FILEMIND_CAPTURE_DIR) return;
+    await mkdir(process.env.FILEMIND_CAPTURE_DIR, { recursive: true });
+    await page.evaluate(async () => { await document.fonts.ready; });
+    await page.screenshot({ path: join(process.env.FILEMIND_CAPTURE_DIR, name + ".png"), animations: "disabled" });
+  }
   const completedStages:string[]=[];report.completedStages=completedStages;
   const errors:string[]=[];page.on("pageerror",e=>errors.push(e.message));
   const normal=await (await context.request.post("/api/workspaces",{headers,data:{name:"Preserve normal workspace"}})).json();
@@ -23,10 +30,11 @@ test("dedicated demo: bundled fixtures, mixed import/review/apply, provider mode
     await page.getByRole("button",{name:"开始整理"}).click();await expect(page.getByRole("heading",{name:"整理建议"})).toBeVisible({timeout:300000});
     const before=await (await context.request.get(`/api/workspaces/${workspace}`)).json();expect(before.documents).toHaveLength(files.length);expect(before.run.engine).toBe(live?"llm":"mock");
     if(live){expect(before.run.result.simulation).toBe(false);expect(before.run.usage.totalTokens).toBeGreaterThan(0);report.plannerMetrics=before.run.plannerMetrics;report.plannerFallback=before.run.fallback??null;report.imageCount=before.documents.filter((d:{type:string})=>d.type==="image").length;expect(before.run.fallback).toBeFalsy();expect(before.run.plannerMetrics.llm_success).toBe(1);expect(before.run.plannerMetrics.fallback_count).toBe(0);}
-    completedStages.push("Agent","Review");
+    completedStages.push("Agent","Review");await capture("review-1920");
+    await page.setViewportSize({width:390,height:844});await capture("review-390");await page.setViewportSize({width:1920,height:1080});
     await page.getByRole("button",{name:"应用方案"}).click();await expect(page.getByRole("heading",{name:"工作区已整理"})).toBeVisible();
     report.agentThroughApplyMs=performance.now()-start;
-    completedStages.push("Apply");
+    completedStages.push("Apply");await capture("saved-batch-1920");
     if(live){
       // Apply schedules indexing. This simultaneous explicit rebuild must also
       // succeed, including the image preparation workspace revision updates.
@@ -39,16 +47,16 @@ test("dedicated demo: bundled fixtures, mixed import/review/apply, provider mode
       report.ragResponse=result;await expect(page.getByRole("button",{name:"引用 1",exact:true}).first()).toBeVisible({timeout:10000});
       expect(result.verification.status).toBe("verified");expect(result.mock).toBe(false);expect(result.sources.some((s:{fileType:string})=>s.fileType==="pdf")).toBe(true);expect(result.sources.some((s:{fileType:string})=>s.fileType==="image")).toBe(true);
       report.pdfAndImageSources=true;report.verifiedAnswer=true;
-      completedStages.push("RAG");
+      completedStages.push("RAG");await capture("answer-1920");
       const pdfCitation=result.answer.citations.find((c:{sourceId:string})=>result.sources.some((s:{sourceId:string;fileType:string})=>s.sourceId===c.sourceId&&s.fileType==="pdf"));expect(pdfCitation).toBeTruthy();
-      await page.getByRole("button",{name:`引用 ${pdfCitation.sourceId.slice(1)}`,exact:true}).first().click();await expect(page.getByRole("dialog").locator("mark")).toBeVisible();const originalLink=page.getByRole("link",{name:"打开原文件"});expect((await context.request.get((await originalLink.getAttribute("href"))!)).ok()).toBe(true);await page.getByRole("button",{name:"关闭",exact:true}).click();report.pdfCitation=true;completedStages.push("Citation");
+      await page.getByRole("button",{name:`引用 ${pdfCitation.sourceId.slice(1)}`,exact:true}).first().click();await expect(page.getByRole("dialog").locator("mark")).toBeVisible();await capture("citation-1920");const originalLink=page.getByRole("link",{name:"打开原文件"});expect((await context.request.get((await originalLink.getAttribute("href"))!)).ok()).toBe(true);await page.getByRole("button",{name:"关闭",exact:true}).click();report.pdfCitation=true;completedStages.push("Citation");
       await page.evaluate(()=>{delete (window as unknown as {demoStream?:Promise<string>}).demoStream;});await page.getByLabel("向资料提问",{exact:true}).fill("解释 Transformer 图片中的 Query、Key、Value 与注意力权重关系，引用图片。");await page.getByRole("button",{name:"搜索",exact:true}).click();await expect.poll(()=>page.evaluate(()=>!!(window as unknown as {demoStream?:Promise<string>}).demoStream)).toBe(true);
       const imageEvents=(await page.evaluate(()=>(window as unknown as {demoStream:Promise<string>}).demoStream)).split("\n\n").filter(e=>e.startsWith("data: ")).map(e=>JSON.parse(e.slice(6))),imageResult=imageEvents.find(e=>e.type==="result").data;report.imageRagResponse=imageResult;expect(imageResult.mock).toBe(false);expect(imageResult.verification.status).toBe("verified");
-      const imageCitation=imageResult.answer.citations.find((c:{sourceId:string})=>imageResult.sources.some((s:{sourceId:string;fileType:string})=>s.sourceId===c.sourceId&&s.fileType==="image"));expect(imageCitation).toBeTruthy();await page.getByRole("button",{name:`引用 ${imageCitation.sourceId.slice(1)}`,exact:true}).first().click();await expect(page.getByRole("dialog").getByRole("img",{name:/原图：/})).toBeVisible();await expect(page.getByRole("dialog").locator("mark")).toBeVisible();await expect.poll(()=>page.getByRole("dialog").getByRole("img").evaluate((img:HTMLImageElement)=>img.complete&&img.naturalWidth>0)).toBe(true);await page.getByRole("button",{name:"关闭",exact:true}).click();report.imageCitation=true;completedStages.push("Image Citation");
+      const imageCitation=imageResult.answer.citations.find((c:{sourceId:string})=>imageResult.sources.some((s:{sourceId:string;fileType:string})=>s.sourceId===c.sourceId&&s.fileType==="image"));expect(imageCitation).toBeTruthy();await page.getByRole("button",{name:`引用 ${imageCitation.sourceId.slice(1)}`,exact:true}).first().click();await expect(page.getByRole("dialog").getByRole("img",{name:/原图：/})).toBeVisible();await expect(page.getByRole("dialog").locator("mark")).toBeVisible();await expect.poll(()=>page.getByRole("dialog").getByRole("img").evaluate((img:HTMLImageElement)=>img.complete&&img.naturalWidth>0)).toBe(true);await page.getByRole("button",{name:"关闭",exact:true}).click();report.imageCitation=true;completedStages.push("Image Citation");await capture("image-answer-1920");
       await page.evaluate(()=>{delete (window as unknown as {demoStream?:Promise<string>}).demoStream;});
       await page.getByLabel("向资料提问",{exact:true}).fill("Aurora Demo 的 temporary audit records 保留多久？解释新旧文档差异，并引用双方。");await page.getByRole("button",{name:"搜索",exact:true}).click();await expect.poll(()=>page.evaluate(()=>!!(window as unknown as {demoStream?:Promise<string>}).demoStream)).toBe(true);
       const conflictEvents=(await page.evaluate(()=>(window as unknown as {demoStream:Promise<string>}).demoStream)).split("\n\n").filter(e=>e.startsWith("data: ")).map(e=>JSON.parse(e.slice(6))),conflict=conflictEvents.find(e=>e.type==="result").data;report.conflictResponse=conflict;
-      expect(conflict.verification.status).toBe("conflict");expect(conflict.answer.insufficientEvidence).toBe(false);const cited=conflict.answer.citations.map((c:{chunkId:string})=>conflict.sources.find((s:{id:string})=>s.id===c.chunkId)?.documentName);expect(cited).toContain("demo-audit-policy-v1.txt");expect(cited).toContain("demo-audit-policy-v2.txt");report.conflictDemo=true;
+      expect(conflict.verification.status).toBe("conflict");expect(conflict.answer.insufficientEvidence).toBe(false);const cited=conflict.answer.citations.map((c:{chunkId:string})=>conflict.sources.find((s:{id:string})=>s.id===c.chunkId)?.documentName);expect(cited).toContain("demo-audit-policy-v1.txt");expect(cited).toContain("demo-audit-policy-v2.txt");report.conflictDemo=true;await capture("conflict-1920");
       await page.goto("/graph");await expect(page.getByText("Service is temporarily unavailable.",{exact:true})).toHaveCount(0);await expect(page.getByRole("group",{name:/本地规则知识图谱/})).toBeVisible();await expect(page.getByRole("button",{name:/^文件：/})).toHaveCount(8);await page.getByRole("button",{name:/^文件：/}).first().click();report.graphDocumentCount=8;completedStages.push("Graph");
       await page.goto("/cleanup");await expect(page.getByRole("button",{name:/当前会话 · 8 份文件/})).toHaveAttribute("aria-pressed","true");await expect(page.getByRole("heading",{name:"待审阅的示例建议"})).toHaveCount(0);const candidates=before.run.result.duplicates.filter((d:{decision:string})=>d.decision!=="ignored");if(candidates.length)await expect(page.getByRole("heading",{name:"工作区重复候选"})).toBeVisible();else await expect(page.getByRole("heading",{name:"暂时没有整理建议"})).toBeVisible();report.cleanup={candidateCount:candidates.length,realWorkspace:true,originalsPreserved:(await (await context.request.get(`/api/workspaces/${workspace}`)).json()).documents.length===8};expect((report.cleanup as {originalsPreserved:boolean}).originalsPreserved).toBe(true);completedStages.push("Cleanup");
     }
