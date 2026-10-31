@@ -42,6 +42,8 @@ test("real mixed files → visible tools → editable review → session Library
   await capture(page, "execution-desktop");
   await expect(page.getByLabel("文件解析状态").getByText("已完成", { exact: true }).first()).toBeVisible();
   await expect(page.getByRole("heading", { name: "整理建议" })).toBeVisible({ timeout: 25_000 });
+  await expect(page.getByRole("button", { name: "应用方案", exact: true })).toBeInViewport();
+  await page.getByRole("button", { name: "展开全部资料", exact: true }).click();
   await expect(page.getByText(/已完成 · 1 页/)).toBeVisible();
   await expect(page.getByText(/Synthetic DOCX content/).first()).toBeVisible();
   await expect(page.getByText(/40 × 20/)).toBeVisible();

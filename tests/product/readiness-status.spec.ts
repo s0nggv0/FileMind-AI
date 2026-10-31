@@ -21,11 +21,11 @@ for(const width of [390,1440])test(`replacement retries and bounded visible poll
   });
   await page.goto(`/search?documents=${documents.map(d=>d.id).join(",")}`);
   await expect(page.getByText(/2 份替换索引失败或中断/)).toBeVisible();
-  await expect(page.getByRole("button",{name:"准备或重试未完成资料",exact:true})).toBeEnabled();
-  await page.getByRole("button",{name:"准备或重试未完成资料",exact:true}).click();
+  await expect(page.getByRole("button",{name:"准备搜索",exact:true})).toBeEnabled();
+  await page.getByRole("button",{name:"准备搜索",exact:true}).click();
   await expect.poll(()=>posts.length).toBe(5);
   await expect(page.getByText(/已保存 6 份 · 可搜索 6 份/)).toBeVisible();
-  await expect(page.getByRole("button",{name:"准备或重试未完成资料",exact:true})).toBeEnabled(); // image remains partial despite successful POST
+  await expect(page.getByRole("button",{name:"准备搜索",exact:true})).toBeEnabled(); // image remains partial despite successful POST
   expect(posts).not.toContain(documents[4].id);
   documents[4].buildStatus="ready";
   await page.clock.runFor(4100);await expect(page.getByText(/正在准备 1 份资料/)).toHaveCount(0);

@@ -31,6 +31,7 @@ test("persistent mock upload → review autosave → refresh review → apply �
   await page.getByRole("button", { name: "开始整理" }).click(); await expect(page.getByRole("heading", { name: "整理建议" })).toBeVisible();
   // Wait for run events to finish saving before review edits.
   await expect.poll(() => transport.snapshot()?.run?.status).toBe("waiting_for_review");
+  await page.getByRole("button", {name:"展开全部资料",exact:true}).click();
   await page.getByLabel("文件分类： Transformer Notes.txt").selectOption("Research");
   await page.getByLabel("新标签： Transformer Notes.txt").fill("Custom"); await page.getByRole("button", { name: "添加标签： Transformer Notes.txt" }).click();
   await expect(page.getByText("已保存", { exact: true })).toBeVisible();
