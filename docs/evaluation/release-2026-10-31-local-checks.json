@@ -1,0 +1,32 @@
+{
+  "build": {
+    "BUILD_VERSION": "1.0.0-rc.2",
+    "BUILD_COMMIT": "7ed9043d26c79194fdc7c103905e30e9c2d49a42",
+    "BUILD_DATE": "2026-10-31T15:10:07.034Z"
+  },
+  "buildPassed": true,
+  "typecheckPassed": true,
+  "lintPassed": true,
+  "unusedPassed": true,
+  "unit": {
+    "passed": 160,
+    "scope": "rc2 prior to fixture-directory correction; correction verified by final browser live run"
+  },
+  "browserFinal": {
+    "passed": 24,
+    "failed": 0,
+    "log": "artifacts/competition-browser-final.log"
+  },
+  "browserInitial": {
+    "passed": 22,
+    "failed": 2,
+    "correction": "Restore prepare callback in nonpersistent test environment",
+    "targetedRecheckPassed": 5
+  },
+  "pdf": {
+    "pages": 12,
+    "renderedAllPages": true,
+    "visualContactSheetReviewed": true
+  },
+  "originalUserChangesPreserved": true
+}

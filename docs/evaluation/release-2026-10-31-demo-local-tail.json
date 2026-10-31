@@ -1,0 +1,29 @@
+{
+  "passed": true,
+  "live": false,
+  "syntheticFixtures": true,
+  "checkedAt": "2026-10-31T15:17:35.559Z",
+  "completedStages": [
+    "Upload",
+    "Agent",
+    "Review",
+    "Apply",
+    "Cleanup source selection"
+  ],
+  "uploadedFiles": [
+    "database-notes.txt",
+    "demo-audit-policy-v1.txt",
+    "demo-audit-policy-v2.txt"
+  ],
+  "agentThroughApplyMs": 10943.5669,
+  "scopedReset": true,
+  "confirmation": true,
+  "elapsedMs": 12668.6347,
+  "build": {
+    "BUILD_VERSION": "1.0.0-rc.2",
+    "BUILD_COMMIT": "7ed9043d26c79194fdc7c103905e30e9c2d49a42",
+    "BUILD_DATE": "2026-10-31T15:10:07.034Z"
+  },
+  "freshDatabase": true,
+  "copiedUserData": false
+}

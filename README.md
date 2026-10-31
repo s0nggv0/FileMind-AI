@@ -4,11 +4,11 @@ FileMind AI 用来整理学习和研究资料。导入 PDF、Word、笔记和图
 
 项目使用 Next.js 16.3.8、React 19.3.0、TypeScript strict、Tailwind、shadcn/ui、Framer Motion 和 Zustand。服务端通过 AI SDK 7、Kimi 适配器和 Zod 处理模型调用；PostgreSQL 保存工作区和索引，私有文件目录保存原件。图片由 Kimi Vision 和本地 OCR 分别处理，DashScope 提供独立 Embedding。
 
-2026-10-04 的真实验收通过了 Conflict、Ambiguity、扁平 schema 和八份资料的完整 Demo，`demo:check` 为 12/12。构建、类型检查、lint、106 个单元测试及浏览器检查也已通过。完整结果见 [发布验收记录](docs/competition/release-freeze.md)，项目介绍和演示材料见 [比赛说明](docs/competition/README.md)。这些记录反映验收当天的结果，演示前仍需检查服务状态；旧 ZIP 尚未重新打包。
+当前比赛候选版为 **1.0.0-rc.2**，应用源码冻结于 `7ed9043d26c79194fdc7c103905e30e9c2d49a42`，构建于 2026-10-31。材料由后续文档提交补充，设置页、运行包 manifest 和截图索引绑定同一应用提交。
 
-2026-10-10 完成主要界面中文化，并整理工作区保存和重试代码。后续检查通过 108 项单元测试和 17 项浏览器回归，未重新调用真实模型。改动与验证范围见[开发整理记录](docs/competition/development-notes.md)。
+本轮将“答案回到原文核对”提前到首页交互示例；整理审阅的主要操作移至顶部，详情默认收起；搜索只保留一个“准备搜索”入口。示例明确标注为预设文字，真实演示另有独立记录。
 
-2026-10-21 完成一轮产品优化：保存后可直接向本批资料提问，资料详情提供原件、提取全文和分类标签修正，历史直接打开已有结果；增加比较全部、审阅筛选、重复候选决定修改、手机图谱列表及任务帮助。分类标签按当前编辑保存，命名/重复标记/关联仅应用已接受建议。验证范围、真实模型首次失败与修正、截图及未覆盖项见[产品优化验收](docs/competition/product-optimization.md)。
+评审请先看 [10 分钟复现指南](docs/competition/quickstart.md)、[当天验收与版本绑定](docs/competition/release-freeze.md)、[技术 PDF](docs/competition/technical-report.pdf) 和 [视频素材说明](docs/competition/video-script.md)。历史测试保留在 docs/evaluation，不能用作当前版本的全面准确率证明。最终 MP4 由参赛者配音剪辑，三条完整原始 AI 对话链和团队信息仍需提交前核实。
 
 ## 已准备好的本地文件夹：直接运行
 

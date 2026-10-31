@@ -1,57 +1,39 @@
-# 发布验收记录 · v1.0.0-rc.1
+# FileMind AI 当前发布验收
 
-验收时间：2026/10/4 18:55:48（Asia/Shanghai）。9 项发布检查全部通过，生产构建对应源码 `f43575dc783a0bf90447cc645f82f04c120acc9d`。随后的提交更新了验收工具和记录，应用源码与该构建一致。Release Freeze 表示本次验收后固定应用版本，发布前只处理已确认的缺陷，后续变更另行验证。
+应用版本 **1.0.0-rc.2**，源码提交 **7ed9043d26c79194fdc7c103905e30e9c2d49a42**。文档、截图和验收由后续提交补充，运行代码不随这些文档提交改变。
 
-| 检查 | 结果 |
-| --- | --- |
-| build | 生产构建与 standalone 资源准备通过 |
-| TypeScript / lint | 通过 |
-| unit tests | 106 通过，0 失败 |
-| browser tests | 17 基础 + 3 比赛模式 + 1 真实主 Demo；32 组路由/视口检查 |
-| demo:check | 真实 Kimi / Embedding / Vision 与本地服务，12/12 READY |
-| secret scan | 所有历史与当前文件、33 个浏览器产物；4 个配置密钥值；0 命中 |
-| clean-environment startup | 新数据库、新便携目录、无用户数据复制，创建与重启持久化通过 |
-| Git status | 实现提交已同步 main；最终证据单独提交。保留原有 5 份未提交文档 |
+## 检查范围
 
-## 真实 Provider 与完整主 Demo
+- 生产构建、TypeScript、lint、未使用代码检查通过；160/160 单元测试通过。
+- 浏览器首次 22 项通过、2 项失败；修复准备回调后，包含两项失败用例的 5 项定向检查通过。最终版本 24/24 浏览器回归通过，当前截图重新采集。
+- 真实预检两次 12/12，第二次确认成功生成本机 Vision 记录。它们绑定修复下载接口之前的构建，不能代替最终应用验收。
+- 第一次录屏因缺少 FFmpeg 在浏览器创建前失败，未产生外部请求。第二次暴露演示资料目录误翻译，失败 receipt 保留。7ed9043 修复后重新验证。
+- 密钥扫描：2926 objects / 1533 blobs / 736 worktree files，4 个已配置敏感值参与检查，零命中。语义私人内容不在自动扫描保证范围内。仓库已公开，无需变更可见性。
 
-当前 kimi-k2.6 的 Ambiguity 返回 3 个可选项目；Conflict 保留双方引用与显式版本替换关系，通过数值、引用新鲜度和原子事实校验。扁平 context schema 的真实 HTTP 请求成功并被产品管线解析。定向抽验不包含检索，真实主 Demo 单独覆盖检索。
+最终实时结果以 [current-release.json](current-release.json) 关联的 JSON 为准。包的解压启动验收见 `../evaluation/current-portable-release.json`，ZIP 校验见 `../evaluation/current-release-artifact.json`。这些 receipt 在打包后生成，独立于包内文档，避免自引用哈希。
 
-`上传 8 份资料 → Agent → Review → Apply → Search → RAG → Citation → 图片 Citation → Graph → Cleanup`
+## 复现与计时边界
 
-全链路耗时约 84 秒。`llm_success=1`、`fallback_count=0`、`tool_validation_failure=0`、`timeout=0`；8 份资料索引全部 ready。PDF 引用能打开原件，图片引用加载真实原图并显示引用内容。Graph 展示 8 个工作区文档；Cleanup 展示 1 个实际重复候选，原文件保留。取消重置与确认重置均验证，普通身份保留。
+[快速复现](quickstart.md) 规定 Windows x64、可写 ASCII 路径及已准备好的模型 Key。便携包内 Node、数据库与 OCR 无需另装。下载与 Key 申请时间单列；解压启动的 elapsedMs 不能冒充用户完成全部真实问答的耗时。
 
-首次链路包含确定性 Planner 回退，保留在 release-main-demo-attempt1.json；当前通过记录来自修复后的无回退运行。Conflict 的初次校验失败与额度触顶记录也保留。旧 Phase 9 六次预算不重置，本轮定向样本累计 16/24 次（包括失败）；清理临时目录仍从持久 receipt 恢复次数。
+真实请求只允许原创合成资料，所有尝试（包含失败与重试）共享 60 次上限。记录在 artifacts/competition-release/live-budget/requests.jsonl，交付时保留公开的无密钥副本。
 
-## 验收证据
+## 材料解释
 
-- [冻结机读记录](../evaluation/release-freeze.json)
-- [真实 Provider 样本](../evaluation/release-provider.json)
-- [完整主 Demo](../evaluation/release-main-demo.json)
-- [12/12 preflight](../evaluation/release-demo-preflight.json)
-- [页面/视口矩阵](../evaluation/release-browser-matrix.json)
-- [全新便携环境](../evaluation/release-clean-environment.json)
-- [完整历史扫描](../evaluation/release-secret-scan.json)
-- [最终增量及工作区扫描](../evaluation/release-final-secret-scan.json)
-- [浏览器产物密钥扫描](../evaluation/release-client-secret-boundary.json)
+当前截图见 screenshots/current。首页是明示的预设交互；其余真实服务截图需由真实 demo receipt 支持。技术 PDF 12 页，视频稿 7:20，其中 2:30 留给原始 AI 协同录屏；最终口播与剪辑由参赛者完成。
 
-## 本轮提交
+旧评测、失败记录及必要源码保留。旧生成运行包仅在新 ZIP 解压启动验证通过后删除。用户已有的其他文档修改不纳入本轮提交。
 
-- `6ee4525` fix(rag): require complete provenance for live version comparisons
-- `9aaffce` fix(cleanup): display duplicate candidates from applied workspaces
-- `fc38568` fix(agent): constrain organization output to owned IDs and allowed categories
-- `f43575d` test(release): require real planner and verify every demo stage
-- `2608319` test(security): scan client assets for session and database secrets
-- `65511c9` fix(test): retain live acceptance budget after artifact cleanup
+## 最终真实运行结果
 
-最终验收记录在以上提交后单独 Commit / Push。2026-10-04 验收时，原有 README 与 4 份架构/配置文档的本地改动保留，未纳入当轮提交。
+7ed9043 的真实运行已完成八份资料、无回退 Planner、保存索引、语义查找、核验回答、PDF 原件、图片引用、冲突双方证据和八节点图谱。整项测试仍记为失败：最后的重复候选页断言使用旧名称“当前会话”，实际页面为“已保存工作区”，因此尚未执行该次运行的重置断言。原始 receipt 和录屏保留，不把部分通过写为整项通过。修正后的非收费持久化流程另有独立 receipt。
 
-## 范围与复现
+累计收费请求 **44/60**，包含两次预检；不再重跑收费全链路。新预算记录不覆盖历史独立预算。最终浏览器 **24/24** 通过，当前公开历史扫描为 2994 objects / 1566 blobs，零密钥命中。
 
-12 个检索实现文件和原始评测数据保持冻结。本次验收覆盖当前源码；额外备用问题、补充 deadline 场景线上 UI、新的 20 问整体评测和旧 ZIP 重新打包不在此次范围内。分发 ZIP 前需核对其构建记录，并重新打包当前版本。
+修正断言后的无收费独立数据库演示已通过（13.8 秒），覆盖真实持久化、重复候选来源选择、取消/确认重置以及普通工作区保留；模型使用 Mock，不能据此宣称真实模型质量。记录：`../evaluation/release-2026-10-31-demo-local-tail.json`。
 
-基础检查使用 npm run build / typecheck / lint，npm test 和 npm run test:e2e。比赛模式浏览器配置为 playwright.phase9.config.ts。真实链路使用 node scripts/verify-demo.mjs --live，12 项 preflight 使用 node scripts/verify-demo-preflight.mjs；分别设置 FILEMIND_DEMO_REPORT 和 FILEMIND_PREFLIGHT_REPORT 为本轮 release 记录路径，以保留旧记录。
+## 运行包验收与清理
 
-全新启动使用 node scripts/verify-release-clean.mjs。密钥扫描使用 node scripts/verify-secret-boundary.mjs 与 node scripts/phase9-security-audit.mjs；后者可用 FILEMIND_SECURITY_REPORT / FILEMIND_LICENSE_REPORT 指定独立记录。最终核对 git status --short --branch 与 HEAD...origin/main。
+最终 ZIP 已实际解压，4384 个 manifest 文件校验通过，空数据库启动、设置版本、包内 PowerShell 预检和本地 OCR 通过。耗时 36.0 秒，仅代表本机解压启动检查。无 Key 的预检为预期 7/12 NOT READY，不是完整 AI 复现。ZIP SHA-256：`c25523990231d31d988909ca7681e5f7d1f223bab66e73c875c226e9c50a8ed2`。
 
-真实脚本和 preflight 会使用当前配置发送服务请求，只提交合成资料。调用预算到顶后脚本停止，不清除历史记录。
+已删除三个 rc.1 展开副本、旧 ZIP 和校验文件，以及本次打包的重复展开目录，释放约 1.68 GB。保留当前 ZIP、校验文件、原始失败和预算记录。清理清单见 `../evaluation/release-2026-10-31-cleanup.json`。

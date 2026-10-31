@@ -1,0 +1,106 @@
+{
+  "version": "demo-preflight-v1",
+  "checkedAt": "2026-10-31T15:09:44.109Z",
+  "ready": true,
+  "syntheticSmoke": true,
+  "checks": [
+    {
+      "name": "Database",
+      "ok": true,
+      "durationMs": 29.25510000000031,
+      "detail": {
+        "reachable": true
+      }
+    },
+    {
+      "name": "Storage",
+      "ok": true,
+      "durationMs": 16.485599999999977
+    },
+    {
+      "name": "Kimi Key",
+      "ok": true,
+      "durationMs": 0.03719999999975698
+    },
+    {
+      "name": "DashScope Key",
+      "ok": true,
+      "durationMs": 0.018299999999726424
+    },
+    {
+      "name": "Kimi Smoke",
+      "ok": true,
+      "durationMs": 928.7503999999999,
+      "detail": {
+        "model": "kimi-k2.6"
+      }
+    },
+    {
+      "name": "Embedding Smoke",
+      "ok": true,
+      "durationMs": 294.97760000000017,
+      "detail": {
+        "provider": "dashscope",
+        "model": "qwen3.7-text-embedding-flash",
+        "dimensions": 1024
+      }
+    },
+    {
+      "name": "Demo Data",
+      "ok": true,
+      "durationMs": 79.46229999999923,
+      "detail": {
+        "documents": 10,
+        "recommended": 8
+      }
+    },
+    {
+      "name": "Vision Smoke",
+      "ok": true,
+      "durationMs": 6870.6119,
+      "detail": {
+        "model": "kimi-k2.6",
+        "localVerificationWritten": true
+      }
+    },
+    {
+      "name": "OCR Worker",
+      "ok": true,
+      "durationMs": 1079.250100000001,
+      "detail": {
+        "engine": "tesseract.js",
+        "confidence": 0.95
+      }
+    },
+    {
+      "name": "Disk Space",
+      "ok": true,
+      "durationMs": 0.2577000000001135,
+      "detail": {
+        "availableBytes": 240019005440
+      }
+    },
+    {
+      "name": "Port",
+      "ok": true,
+      "durationMs": 2.3847999999998137,
+      "detail": {
+        "port": 65463,
+        "available": true
+      }
+    },
+    {
+      "name": "Build Version",
+      "ok": true,
+      "durationMs": 0.4596000000001368,
+      "detail": {
+        "buildId": "uvyyU3WuaCZURdCILF5Rp"
+      }
+    }
+  ],
+  "build": {
+    "BUILD_VERSION": "1.0.0-rc.2",
+    "BUILD_COMMIT": "59318c28281eb87c05a89560126612b32dd44c22",
+    "BUILD_DATE": "2026-10-31T06:53:53.684Z"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "passed": false,
+  "live": true,
+  "syntheticFixtures": true,
+  "checkedAt": "2026-10-31T15:08:34.093Z",
+  "completedStages": [],
+  "build": {
+    "BUILD_VERSION": "1.0.0-rc.2",
+    "BUILD_COMMIT": "59318c28281eb87c05a89560126612b32dd44c22",
+    "BUILD_DATE": "2026-10-31T06:53:53.684Z"
+  },
+  "freshDatabase": true,
+  "copiedUserData": false
+}

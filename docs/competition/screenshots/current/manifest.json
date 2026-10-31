@@ -1,0 +1,63 @@
+{
+  "build": {
+    "BUILD_VERSION": "1.0.0-rc.2",
+    "BUILD_COMMIT": "7ed9043d26c79194fdc7c103905e30e9c2d49a42",
+    "BUILD_DATE": "2026-10-31T15:10:07.034Z"
+  },
+  "screenshots": [
+    {
+      "file": "answer-1920.png",
+      "sha256": "62bd81db02f37e0abdd4a4251466ca1ba51712bcba3e45c0943f999492b210d6",
+      "source": "live synthetic demo",
+      "applicationCommit": "7ed9043d26c79194fdc7c103905e30e9c2d49a42"
+    },
+    {
+      "file": "citation-1920.png",
+      "sha256": "fdb66620f0d99600d299633faf3510493334ae91bcacb1eb484b53aee818da72",
+      "source": "live synthetic demo",
+      "applicationCommit": "7ed9043d26c79194fdc7c103905e30e9c2d49a42"
+    },
+    {
+      "file": "conflict-1920.png",
+      "sha256": "6400ed54bae5384368dd1d8fc3cf31004deb49a51127af21f17fffac38a46af0",
+      "source": "live synthetic demo",
+      "applicationCommit": "7ed9043d26c79194fdc7c103905e30e9c2d49a42"
+    },
+    {
+      "file": "image-answer-1920.png",
+      "sha256": "6cec20652dbc548803aaa117dca6ce977d01b6348e2fc01ee43678e5f43855bd",
+      "source": "live synthetic demo",
+      "applicationCommit": "7ed9043d26c79194fdc7c103905e30e9c2d49a42"
+    },
+    {
+      "file": "landing-citation-1440.png",
+      "sha256": "8d2b626dffc9792f2a0224277d8df85f6c6987ef8de68a16227dad18a6e8c5ff",
+      "source": "preset example, no model call",
+      "applicationCommit": "7ed9043d26c79194fdc7c103905e30e9c2d49a42"
+    },
+    {
+      "file": "landing-citation-390.png",
+      "sha256": "cd4964d6a511ab18f06cd54087aee1612ae69ff6f94ab45720236f2a9a153093",
+      "source": "preset example, no model call",
+      "applicationCommit": "7ed9043d26c79194fdc7c103905e30e9c2d49a42"
+    },
+    {
+      "file": "review-1920.png",
+      "sha256": "be234aa8a4c17f33ddee9f1125da1199894070113d7eb13555f7b7280defaa67",
+      "source": "live synthetic demo",
+      "applicationCommit": "7ed9043d26c79194fdc7c103905e30e9c2d49a42"
+    },
+    {
+      "file": "review-390.png",
+      "sha256": "680a6c96dcdd705463636581cd34dc676f4a6843e52d788b312b216ecafc51ac",
+      "source": "live synthetic demo",
+      "applicationCommit": "7ed9043d26c79194fdc7c103905e30e9c2d49a42"
+    },
+    {
+      "file": "saved-batch-1920.png",
+      "sha256": "82c1b2bb5c652c1b1926891b109c21de73c6f5c437f7b976f65926906dabbffe",
+      "source": "live synthetic demo",
+      "applicationCommit": "7ed9043d26c79194fdc7c103905e30e9c2d49a42"
+    }
+  ]
+}

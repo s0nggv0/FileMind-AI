@@ -1,0 +1,105 @@
+{
+  "version": "demo-preflight-v1",
+  "checkedAt": "2026-10-31T06:58:30.054Z",
+  "ready": true,
+  "syntheticSmoke": true,
+  "checks": [
+    {
+      "name": "Database",
+      "ok": true,
+      "durationMs": 31.1216,
+      "detail": {
+        "reachable": true
+      }
+    },
+    {
+      "name": "Storage",
+      "ok": true,
+      "durationMs": 19.644900000000007
+    },
+    {
+      "name": "Kimi Key",
+      "ok": true,
+      "durationMs": 0.041999999999916326
+    },
+    {
+      "name": "DashScope Key",
+      "ok": true,
+      "durationMs": 0.014699999999947977
+    },
+    {
+      "name": "Kimi Smoke",
+      "ok": true,
+      "durationMs": 10068.8819,
+      "detail": {
+        "model": "kimi-k2.6"
+      }
+    },
+    {
+      "name": "Embedding Smoke",
+      "ok": true,
+      "durationMs": 275.84729999999945,
+      "detail": {
+        "provider": "dashscope",
+        "model": "qwen3.7-text-embedding-flash",
+        "dimensions": 1024
+      }
+    },
+    {
+      "name": "Demo Data",
+      "ok": true,
+      "durationMs": 134.9955000000009,
+      "detail": {
+        "documents": 10,
+        "recommended": 8
+      }
+    },
+    {
+      "name": "Vision Smoke",
+      "ok": true,
+      "durationMs": 8279.8857,
+      "detail": {
+        "model": "kimi-k2.6"
+      }
+    },
+    {
+      "name": "OCR Worker",
+      "ok": true,
+      "durationMs": 1621.8181000000004,
+      "detail": {
+        "engine": "tesseract.js",
+        "confidence": 0.95
+      }
+    },
+    {
+      "name": "Disk Space",
+      "ok": true,
+      "durationMs": 0.2878999999993539,
+      "detail": {
+        "availableBytes": 240030220288
+      }
+    },
+    {
+      "name": "Port",
+      "ok": true,
+      "durationMs": 2.074899999999616,
+      "detail": {
+        "port": 64547,
+        "available": true
+      }
+    },
+    {
+      "name": "Build Version",
+      "ok": true,
+      "durationMs": 0.4379000000008091,
+      "detail": {
+        "buildId": "uvyyU3WuaCZURdCILF5Rp"
+      }
+    }
+  ],
+  "build": {
+    "BUILD_VERSION": "1.0.0-rc.2",
+    "BUILD_COMMIT": "59318c28281eb87c05a89560126612b32dd44c22",
+    "BUILD_DATE": "2026-10-31T06:53:53.684Z"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "applicationCommit": "7ed9043d26c79194fdc7c103905e30e9c2d49a42",
+  "videoResolution": "1920x1080",
+  "videoHasNarration": false,
+  "videoContainsAICollaborationChat": false,
+  "files": [
+    {
+      "path": "docs/competition/technical-report.pdf",
+      "bytes": 591521,
+      "sha256": "905cd716f36512452f46459ffcda51bd2ed601204a03bd5f9fc2d22ea74efa4a"
+    },
+    {
+      "path": "docs/competition/video-narration.srt",
+      "bytes": 1221,
+      "sha256": "a354742d70df8f41502cf195b3624edaef204e1cd06e6430310fe83747a0002d"
+    },
+    {
+      "path": "artifacts/competition-release/recordings/2026-10-31T15-11-24-766Z/demo-dedicated-demo-bundle-8bd97-nfirmation-and-scoped-reset/video.webm",
+      "bytes": 16583600,
+      "sha256": "8e4b230bf74f97b9fe9da5cef0a2aa68c15f410d154313ef3bfdfd2f9d917d3f"
+    }
+  ]
+}

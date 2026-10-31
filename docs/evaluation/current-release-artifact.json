@@ -1,0 +1,18 @@
+{
+  "version": "1.0.0-rc.2",
+  "candidateStatus": "PACKAGED; see dated acceptance receipts",
+  "archive": "artifacts/release/FileMind-AI-1.0.0-rc.2-7ed9043-windows-x64.zip",
+  "folder": "artifacts/release/FileMind-AI-1.0.0-rc.2-windows-x64-781160d0",
+  "bytes": 167332146,
+  "sha256": "c25523990231d31d988909ca7681e5f7d1f223bab66e73c875c226e9c50a8ed2",
+  "files": 4385,
+  "build": {
+    "BUILD_VERSION": "1.0.0-rc.2",
+    "BUILD_COMMIT": "7ed9043d26c79194fdc7c103905e30e9c2d49a42",
+    "BUILD_DATE": "2026-10-31T15:10:07.034Z"
+  },
+  "privatePathsExcluded": true,
+  "configuredSecretsExcluded": true,
+  "runtimeLicensesIncluded": true,
+  "kimiCalls": 0
+}
