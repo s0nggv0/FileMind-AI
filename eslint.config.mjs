@@ -6,6 +6,18 @@ export default defineConfig([
   ...nextVitals,
   ...nextTs,
   {
+    files: ["src/components/{ui,common,knowledge}/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": ["error", {
+        patterns: [{
+          group: ["@/features", "@/features/**", "**/features", "**/features/**"],
+          allowTypeImports: true,
+          message: "Shared UI and knowledge components must not depend on feature implementations.",
+        }],
+      }],
+    },
+  },
+  {
     files: ["src/lib/**/*.{ts,tsx}"],
     rules: {
       "no-restricted-imports": ["error", {

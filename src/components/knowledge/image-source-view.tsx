@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { KnowledgeIndex } from "@/features/library/knowledge-index";
+import { KnowledgeIndex } from "./knowledge-index";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { MultimodalAnalysis } from "@/lib/multimodal/schemas";

@@ -15,7 +15,7 @@ import { formatDocumentDate } from "@/features/library/document-presentation";
 import type { DocumentViewModel } from "@/types";
 import { DocumentReading } from "./document-reader";
 import { useRouter } from "next/navigation";
-import { KnowledgeIndex } from "./knowledge-index";
+import { KnowledgeIndex } from "@/components/knowledge/knowledge-index";
 import { ImageSourceView } from "@/components/knowledge/image-source-view";
 import type { CitationAnchor } from "@/lib/retrieval/citation-contract";
 import { returnToSearchURL } from "@/lib/retrieval/citation-contract";
