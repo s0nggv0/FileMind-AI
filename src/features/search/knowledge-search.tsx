@@ -12,8 +12,9 @@ import type { ReadinessDocument } from "@/lib/retrieval/readiness";
 import { useSearchPreparation } from "@/lib/retrieval/use-search-preparation";
 import { stateLabel, systemMessage } from "@/lib/ui-labels";
 import type { SearchResult } from "@/lib/retrieval/search-contract";
-import { hasVerifiedAnswer, searchIssues, SearchIssueSchema, type SearchIssue } from "@/lib/retrieval/search-outcome";
+import { hasVerifiedAnswer, searchIssues, type SearchIssue } from "@/lib/retrieval/search-outcome";
 import { PreviousSearchResult, SearchRecovery } from "./search-recovery";
+import { getSearchRun, listRecentSearches, SearchClientError, submitSearch, type RecentSearch } from "./search-client";
 import type { RAGSource } from "@/lib/retrieval/rag";
 const suggestions = ["我哪些资料讲过 Transformer 的 Query、Key、Value？", "找出与数据库索引优化相关的资料", "哪些资料讲过注意力机制？"];
 const successfulResult = (data: SearchResult) => hasVerifiedAnswer(data) || data.mode === "find" && data.sources.length > 0;
@@ -26,7 +27,7 @@ export function KnowledgeSearch({ persistent, mock, initialWorkspace, initialDoc
   const [busy, setBusy] = useState(false); const [error, setError] = useState("");
   const [failure, setFailure] = useState<SearchIssue | null>(null);
   const [retainedSuccess, setRetainedSuccess] = useState<SearchResult | null>(null);
-  const [recent, setRecent] = useState<{ id: string; query: string; mode: "ask" | "find" }[]>([]);
+  const [recent, setRecent] = useState<RecentSearch[]>([]);
   const [selected, setSelected] = useState<RAGSource | null>(null);
   const [selectedRunId, setSelectedRunId] = useState<string | undefined>();
   const preparation = useSearchPreparation({ workspaceId, documentIds });
@@ -37,10 +38,10 @@ export function KnowledgeSearch({ persistent, mock, initialWorkspace, initialDoc
   const restoredCitation = useRef("");
   useEffect(() => {
     const abort = new AbortController();
-    void fetch("/api/search", { signal: abort.signal }).then(r => r.json()).then(data => setRecent(data.recent ?? [])).catch(() => {});
+    void listRecentSearches({ signal: abort.signal }).then(setRecent).catch(() => {});
     const params = new URLSearchParams(window.location.search);
     const runId = params.get("run");
-    if (runId) void fetch(`/api/search?runId=${encodeURIComponent(runId)}`, { signal: abort.signal }).then(async r => { if (!r.ok) throw new Error("这条搜索记录已不可用，请重新搜索。"); return r.json(); }).then((data: SearchResult) => { setResult(data); setQuery(data.query); setMode(data.mode); setWorkspaceId(data.workspaceId); setDocumentIds(data.selectedDocumentIds); }).catch(e => { if (!abort.signal.aborted) setError(e.message); });
+    if (runId) void getSearchRun(runId, { signal: abort.signal }).then(data => { setResult(data); setQuery(data.query); setMode(data.mode); setWorkspaceId(data.workspaceId); setDocumentIds(data.selectedDocumentIds); }).catch(e => { if (!abort.signal.aborted) setError(e.message); });
     return () => { abort.abort(); controller.current?.abort(); };
   }, []);
   async function indexLibrary() {
@@ -55,9 +56,7 @@ export function KnowledgeSearch({ persistent, mock, initialWorkspace, initialDoc
   async function openHistory(id: string) {
     controller.current?.abort(); const abort = new AbortController(); controller.current = abort; setError(""); setFailure(null); setBusy(true); setStage("正在加载历史记录");
     try {
-      const response = await fetch(`/api/search?runId=${encodeURIComponent(id)}`, { signal: abort.signal });
-      if (!response.ok) throw new Error("这条搜索记录已不可用，请重新搜索。");
-      const data: SearchResult = await response.json(); if (abort.signal.aborted) return;
+      const data = await getSearchRun(id, { signal: abort.signal }); if (abort.signal.aborted) return;
       setResult(data); setRetainedSuccess(null); setQuery(data.query); setMode(data.mode); setWorkspaceId(data.workspaceId); setDocumentIds(data.selectedDocumentIds); window.history.replaceState(null, "", `/search?run=${data.id}`);
     } catch { if (!abort.signal.aborted) setFailure("SEARCH_UNAVAILABLE"); } finally { if (controller.current === abort) { setBusy(false); setStage(""); } }
   }
@@ -67,31 +66,18 @@ export function KnowledgeSearch({ persistent, mock, initialWorkspace, initialDoc
     setBusy(true); setError(""); setFailure(null); setStage("正在搜索资料");
     const previousRunId = result?.id;
     try {
-      const response = await fetch("/api/search", { method: "POST", signal: abort.signal, headers: { "content-type": "application/json" }, body: JSON.stringify({ query, mode, ...(workspaceId ? { workspaceId } : {}), ...(documentIds ? { documentIds } : {}), ...(previousRunId ? { previousRunId } : {}), ...(clarificationOption !== undefined ? { clarificationOption } : {}), ...(compareAll ? { compareAll: true } : {}) }) });
-      if (!response.ok) { const data = await response.json(); const reason = SearchIssueSchema.safeParse(data.reason); setFailure(reason.success ? reason.data : "SEARCH_UNAVAILABLE"); return; }
-      const reader = response.body?.getReader(); if (!reader) throw new Error("搜索连接不可用，请重试。");
-      const decoder = new TextDecoder(); let buffer = ""; let completed = false;
-      while (true) {
-        const { value, done } = await reader.read(); if (done) break;
-        abort.signal.throwIfAborted();
-        buffer += decoder.decode(value, { stream: true }); const events = buffer.split("\n\n"); buffer = events.pop() ?? "";
-        for (const event of events) {
-          const line = event.split("\n").find(l => l.startsWith("data: ")); if (!line) continue;
-          const payload = JSON.parse(line.slice(6));
-          if (payload.type === "stage") setStage(systemMessage(payload.data));
-          if (payload.type === "error") { const reason = SearchIssueSchema.safeParse(payload.data?.reason); setFailure(reason.success ? reason.data : "SEARCH_UNAVAILABLE"); return; }
-          if (payload.type === "result") {
-            abort.signal.throwIfAborted(); const data = payload.data as SearchResult;
-            if (result && successfulResult(result) && !successfulResult(data)) setRetainedSuccess(result);
-            else if (successfulResult(data)) setRetainedSuccess(null);
-            setResult(data); setDocumentIds(data.selectedDocumentIds ?? documentIds); completed = true;
-            window.history.replaceState(null, "", `/search?run=${data.id}`);
-            setRecent(old => [{ id: data.id, query: data.query, mode: data.mode }, ...old.filter(r => r.id !== data.id)].slice(0, 10));
-          }
-        }
-      }
-      if (!completed) throw new Error("搜索已中断，请重试。");
-    } catch { if (!abort.signal.aborted) setFailure("SEARCH_UNAVAILABLE"); }
+      await submitSearch({ query, mode, ...(workspaceId ? { workspaceId } : {}), ...(documentIds ? { documentIds } : {}), ...(previousRunId ? { previousRunId } : {}), ...(clarificationOption !== undefined ? { clarificationOption } : {}), ...(compareAll ? { compareAll: true } : {}) }, {
+        signal: abort.signal,
+        onStage: stage => setStage(systemMessage(stage)),
+        onResult: data => {
+          if (result && successfulResult(result) && !successfulResult(data)) setRetainedSuccess(result);
+          else if (successfulResult(data)) setRetainedSuccess(null);
+          setResult(data); setDocumentIds(data.selectedDocumentIds ?? documentIds);
+          window.history.replaceState(null, "", `/search?run=${data.id}`);
+          setRecent(old => [{ id: data.id, query: data.query, mode: data.mode }, ...old.filter(r => r.id !== data.id)].slice(0, 10));
+        },
+      });
+    } catch (error) { if (!abort.signal.aborted) setFailure(error instanceof SearchClientError ? error.reason : "SEARCH_UNAVAILABLE"); }
     finally { if (controller.current === abort) { setBusy(false); setStage(""); } }
   }
   function preview(item: RAGSource, runId = result?.id) {
