@@ -5,3 +5,9 @@ tests/fixtures/demo/** -text
 tests/fixtures/rag-blind/** -text
 # Competition PDFs are delivery documents; preserve binary offsets on Windows.
 docs/competition/*.pdf -text -diff
+# Hashed delivery text must have the same bytes on Windows and other systems.
+docs/competition/technical-report.md text eol=lf
+docs/competition/video-script.md text eol=lf
+docs/competition/video-narration.srt text eol=lf
+docs/competition/architecture.svg text eol=lf
+docs/competition/media-manifest.json text eol=lf
