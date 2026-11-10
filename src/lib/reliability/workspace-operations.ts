@@ -59,6 +59,8 @@ export class WorkspaceOperations {
     }, row => this.recovery.rollback(row).then(() => {}));
   }
   async apply(userId: string, snapshot: WorkspaceSnapshot) {
+    // The application service has already validated/transformed the snapshot.
+    // This layer only recovers, journals and atomically persists that result.
     await this.recovery.recover(userId);
     return this.recovery.journal.run(userId, "workspace_apply", snapshot.id, { workspaceId: snapshot.id, expectedRevision: snapshot.revision }, async op => {
       await op.stage("saving_review");

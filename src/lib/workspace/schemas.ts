@@ -41,6 +41,11 @@ export const WorkspaceSnapshotSchema = z.object({ id: z.uuid(), name: z.string()
   if (ids.size !== s.documents.length || Object.keys(s.texts).some(id => !ids.has(id)) || s.run?.documents.some(d => !ids.has(d.id)) || s.proposal?.documents.some(d => !ids.has(d.id))) ctx.addIssue({ code: "custom", message: "Workspace references are invalid" });
 });
 export type WorkspaceSnapshot = z.infer<typeof WorkspaceSnapshotSchema>;
+export const WorkspaceUpdateSchema = z.object({
+  action: z.enum(["review", "apply", "resume"]),
+  revision: z.number().int().nonnegative(),
+  proposal: OrganizationProposalSchema.optional(),
+});
 export function recoverSnapshot(snapshot: WorkspaceSnapshot): WorkspaceSnapshot {
   const recovered = structuredClone(snapshot);
   if (recovered.run && ["planning", "running", "applying"].includes(recovered.run.status)) {
