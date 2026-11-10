@@ -8,7 +8,7 @@ import { LibraryReadiness } from "@/components/knowledge/library-readiness";
 import type { ReadinessDocument } from "@/lib/retrieval/readiness";
 import { useSearchPreparation } from "@/lib/retrieval/use-search-preparation";
 import { SearchRecovery } from "./search-recovery";
-import type { RAGSource } from "@/lib/retrieval/rag";
+import type { RAGSource } from "@/lib/retrieval/answer-contract";
 import { useKnowledgeSearch } from "./use-knowledge-search";
 import { SearchResults } from "./search-results";
 import { SearchCitation } from "./search-citation";

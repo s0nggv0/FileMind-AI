@@ -1,15 +1,7 @@
+import type { EvidenceAssessment } from "./search-contract";
+export type { EvidenceAssessment } from "./search-contract";
 import type { Evidence } from "./types";
 export interface StructuredEvidenceDecision { supported: boolean; missingInformation: string[] }
-export interface EvidenceAssessment {
-  sufficient: boolean;
-  confidence: "high" | "medium" | "low";
-  reasons: string[];
-  evidenceCount: number;
-  documentDiversity: number;
-  topSemanticScore: number | null;
-  topEvidenceGap: number | null;
-  topLexicalCoverage: number;
-}
 export class EvidenceSufficiencyEvaluator {
   evaluate(evidence: Evidence[], decision?: StructuredEvidenceDecision): EvidenceAssessment {
     const scores = evidence.map(e => e.semanticScore ?? (e.retrievalSource !== "lexical" && e.fusedRank === undefined ? e.score : undefined)).filter((s): s is number => s !== undefined).sort((a, b) => b - a);

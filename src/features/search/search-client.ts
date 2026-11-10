@@ -1,5 +1,5 @@
 import type { SearchRequest, SearchResult } from "@/lib/retrieval/search-contract";
-import { SearchIssueSchema, type SearchIssue } from "@/lib/retrieval/search-outcome";
+import { SearchIssueSchema, type SearchIssue } from "@/lib/retrieval/search-contract";
 
 export type RecentSearch = Pick<SearchResult, "id" | "query" | "mode">;
 

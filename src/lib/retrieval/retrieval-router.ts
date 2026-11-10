@@ -1,5 +1,5 @@
-import type { QueryProfile } from "./query-analyzer";
-export type RetrievalStrategy = "VECTOR_ONLY" | "VECTOR_WITH_LEXICAL_BOOST" | "LEXICAL_FIRST" | "FILENAME_SEARCH" | "FALLBACK";
+import type { QueryProfile, RetrievalStrategy } from "./search-contract";
+export type { RetrievalStrategy } from "./search-contract";
 export interface RetrievalRoute { strategy: RetrievalStrategy; reason: string }
 export class RetrievalRouter {
   route(profile: QueryProfile, embeddingsAvailable = true): RetrievalRoute {

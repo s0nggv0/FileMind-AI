@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { AIProvider } from "../ai/provider";
-import type { RAGAnswer, RAGSource } from "./rag";
+import type { RAGAnswer, RAGSource, AnswerVerificationSummary } from "./answer-contract";
 import type { AnswerContext } from "./answer-context";
 export const VERIFIER_VERSION="answer-verifier-v4", CLAIM_PROMPT_VERSION="atomic-claims-v2", SUPPORT_PROMPT_VERSION="evidence-support-v4";
 const sourceId=z.string().regex(/^S[1-9]\d*$/);
@@ -12,10 +12,10 @@ export const SupportCheckSchema=z.object({
 }).strict();
 export interface AnswerUnit {id:string;text:string;citedSourceIds:string[]}
 export interface VerifiedClaim {id:string;unitId:string;text:string;status:"supported"|"partially_supported"|"unsupported"|"conflicting";supportingSourceIds:string[];contradictingSourceIds:string[];numericSupport:boolean;cited:boolean}
-export interface VerificationReport {
-  version:string;claimPromptVersion:string;supportPromptVersion:string;provider:string;model:string;method:"semantic"|"extractive_mock";
-  accepted:boolean;claims:VerifiedClaim[];conflicts:z.infer<typeof SupportCheckSchema>["conflicts"];
-  completeness:number|null;faithfulness:number|null;reason?:string;durationMs:number;
+export interface VerificationReport extends AnswerVerificationSummary {
+  claimPromptVersion:string;supportPromptVersion:string;provider:string;model:string;method:"semantic"|"extractive_mock";
+  claims:VerifiedClaim[];conflicts:z.infer<typeof SupportCheckSchema>["conflicts"];
+  durationMs:number;
 }
 export class AnswerVerificationError extends Error {constructor(public readonly code:string){super(code);}}
 // The model cannot skip part of an answer by labelling it nonfactual. Every

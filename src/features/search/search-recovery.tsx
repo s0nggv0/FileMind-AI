@@ -2,7 +2,7 @@ import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { searchIssueCopy, type SearchIssue } from "@/lib/retrieval/search-outcome";
 import type { SearchResult } from "@/lib/retrieval/search-contract";
-import type { RAGSource } from "@/lib/retrieval/rag";
+import type { RAGSource } from "@/lib/retrieval/answer-contract";
 
 export function SearchRecovery({ issues, busy, preparing, canPrepare, hasSources, onPrepare, onEdit, onSources, onRetry }: {
   issues: SearchIssue[]; busy: boolean; preparing: boolean; canPrepare: boolean; hasSources: boolean;

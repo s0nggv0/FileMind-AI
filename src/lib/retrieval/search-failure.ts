@@ -1,4 +1,4 @@
-import type { SearchIssue } from "./search-outcome";
+import type { SearchIssue } from "./search-contract";
 import { WorkspaceError } from "../workspace/authorization";
 
 export class SearchFailure extends WorkspaceError {

@@ -1,13 +1,7 @@
-import { z } from "zod";
-import type { SearchResult } from "./search-contract";
+import { SearchIssueSchema, type SearchIssue, type SearchResult } from "./search-contract";
+export { SearchIssueSchema } from "./search-contract";
+export type { SearchIssue } from "./search-contract";
 
-// Public, version-independent outcomes. Never derive these from error messages.
-export const SearchIssueSchema = z.enum([
-  "PREPARATION_INCOMPLETE", "NO_RELEVANT_CONTENT", "MISSING_REQUESTED_FACTS",
-  "VERIFICATION_FAILED", "ANSWER_SERVICE_UNAVAILABLE", "SOURCES_CHANGED",
-  "INSUFFICIENT_EVIDENCE", "SEARCH_UNAVAILABLE", "HISTORY_UNVERIFIED", "SEMANTIC_UNAVAILABLE",
-]);
-export type SearchIssue = z.infer<typeof SearchIssueSchema>;
 export type SearchRecovery = "prepare" | "edit" | "sources" | "retry";
 
 export const searchIssueCopy: Record<SearchIssue, { title: string; description: string; actions: SearchRecovery[] }> = {

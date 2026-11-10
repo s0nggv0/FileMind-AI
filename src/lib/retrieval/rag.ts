@@ -8,15 +8,13 @@ import { normalizeAIError } from "../ai/errors";
 import { EvidenceSufficiencyEvaluator } from "./evidence-sufficiency";
 import { AnswerVerifier, AnswerVerificationError, answerUnits, type VerificationReport } from "./answer-verifier";
 import { verifyAnswerContext, emptyAnswerContext, type AnswerContext } from "./answer-context";
-import type { SearchIssue } from "./search-outcome";
-export const AnswerStateSchema = z.enum(["answered", "no_answer", "needs_clarification", "conflicting", "error"]);
-export const ConflictSchema = z.object({ detected: z.boolean(), claims: z.array(z.object({ topic: z.string(), sourceIds: z.array(z.string()), values: z.array(z.string()) })) });
-export const ClarificationSchema = z.object({ required: z.boolean(), question: z.string().optional(), options: z.array(z.object({ label: z.string(), documentIds: z.array(z.uuid()) })).optional() });
+import type { SearchIssue } from "./search-contract";
+import { RAGAnswerSchema, type RAGAnswer, type RAGSource } from "./answer-contract";
+// Preserve existing Node callers while browser code imports the contract directly.
+export { AnswerStateSchema, ConflictSchema, ClarificationSchema, RAGAnswerSchema } from "./answer-contract";
+export type { RAGAnswer, RAGSource } from "./answer-contract";
 export const NO_ANSWER = "我没有在你的资料中找到足够依据回答这个问题。";
-export const RAGAnswerSchema = z.object({ answer: z.string().min(1).max(16000), citations: z.array(z.object({ sourceId: z.string().regex(/^S[1-9]\d*$/), chunkId: z.uuid(), documentId: z.uuid() })).max(20), confidence: z.enum(["high", "medium", "low"]), insufficientEvidence: z.boolean(), evidenceDecision: z.object({ supported: z.boolean(), missingInformation: z.array(z.string().max(300)).max(10) }).optional(), answerState: AnswerStateSchema.optional(), conflict: ConflictSchema.optional(), clarification: ClarificationSchema.optional() });
-export type RAGAnswer = z.infer<typeof RAGAnswerSchema>;
 export const RAGDraftSchema=z.object({statements:z.array(z.object({text:z.string().min(1).max(3000).regex(/^(?![\s\S]*\[S\d+\])[\s\S]*$/),sourceIds:z.array(z.string().regex(/^S[1-9]\d*$/)).max(20)}).strict()).max(40),confidence:z.enum(["high","medium","low"]),insufficientEvidence:z.boolean(),evidenceDecision:z.object({supported:z.boolean(),missingInformation:z.array(z.string().max(300)).max(10)}).strict()}).strict();
-export interface RAGSource extends Evidence { sourceId: string; location: string }
 export class CitationValidationError extends Error {
   constructor(public readonly code: "UNGROUNDED" | "MISSING_METADATA" | "OUTSIDE_CONTEXT" | "EXPIRED_SOURCE") { super(code); }
 }

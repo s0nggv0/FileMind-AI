@@ -1,18 +1,5 @@
-export type QueryType = "semantic" | "exact" | "mixed" | "filename" | "code" | "identifier" | "short_ambiguous" | "followup";
-export interface QueryProfile {
-  language: "zh" | "en" | "mixed" | "other";
-  tokenCount: number;
-  containsCodeToken: boolean;
-  containsVersion: boolean;
-  containsErrorCode: boolean;
-  containsQuotedPhrase: boolean;
-  containsFilename: boolean;
-  containsAcronym: boolean;
-  exactTerms: string[];
-  exactnessScore: number;
-  semanticScore: number;
-  type: QueryType;
-}
+import type { QueryType, QueryProfile } from "./search-contract";
+export type { QueryType, QueryProfile } from "./search-contract";
 // Scores count deterministic routing signals, never probabilities.
 export class QueryAnalyzer {
   analyze(query: string): QueryProfile {

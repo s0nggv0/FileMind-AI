@@ -1,7 +1,7 @@
 import { CitationReading } from "@/components/knowledge/citation-reader";
 import { citationAnchor } from "@/lib/retrieval/citation-contract";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import type { RAGSource } from "@/lib/retrieval/rag";
+import type { RAGSource } from "@/lib/retrieval/answer-contract";
 
 export function SearchCitation({ selected, selectedRunId, onClose }: { selected: RAGSource | null; selectedRunId?: string; onClose(): void }) {
   return (

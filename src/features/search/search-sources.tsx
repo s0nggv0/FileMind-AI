@@ -1,5 +1,5 @@
 import { FileText } from "lucide-react";
-import type { RAGSource } from "@/lib/retrieval/rag";
+import type { RAGSource } from "@/lib/retrieval/answer-contract";
 
 type SourceListProps = { sources: RAGSource[]; nearestOnly: boolean; onPreview(source: RAGSource): void };
 

@@ -1,7 +1,7 @@
 import { questionIntent } from "./question-intent";
 import { z } from "zod";
 import type { AIProvider } from "../ai/provider";
-import type { RAGSource } from "./rag";
+import type { RAGSource } from "./answer-contract";
 const sourceId = z.string().regex(/^S[1-9]\d*$/);
 export const AnswerContextSchema = z.object({
   clarification: z.object({ required: z.boolean(), question: z.string().max(500), options: z.array(z.object({ label: z.string().min(1).max(150), sourceIds: z.array(sourceId).min(1).max(20) }).strict()).max(8) }).strict(),

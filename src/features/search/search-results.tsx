@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { stateLabel } from "@/lib/ui-labels";
 import type { SearchResult } from "@/lib/retrieval/search-contract";
 import { hasVerifiedAnswer, type SearchIssue } from "@/lib/retrieval/search-outcome";
-import type { RAGSource } from "@/lib/retrieval/rag";
+import type { RAGSource } from "@/lib/retrieval/answer-contract";
 import { PreviousSearchResult } from "./search-recovery";
 import { SearchPassages, SearchSources } from "./search-sources";
 
