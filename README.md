@@ -76,12 +76,16 @@ npm run dev
 ```powershell
 npm run typecheck
 npm run lint
+npm run check:imports
+npm run check:renderers
 npm run test
 npm run build
 npm run test:e2e
 ```
 
 单元测试覆盖 PostgreSQL WASM 迁移、仓库与 FORCE RLS、事务和跨用户拒绝、私有文件写入、Kimi 请求格式及流式响应，以及结构校验、不可信资料边界、重试和降级。浏览器测试在独立的 3074 端口启动当前生产构建，使用预设接口响应，不请求收费模型。
+
+`npm test` 同时运行根目录 `.test.ts` 和 `.test.mjs`，包含新增导入边界规则测试。隔离的搜索交互与租户恢复检查见 [脚本导航](scripts/README.md#结构调整后的日常检查)。
 
 准备好本地便携运行环境后，还可运行不收费的实际数据库验收：
 
