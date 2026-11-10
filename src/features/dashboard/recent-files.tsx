@@ -3,9 +3,9 @@ import { ArrowUpRight, GitBranch } from "lucide-react";
 import { DocumentTypeIcon } from "@/components/common/document-type-icon";
 import { EmptyState } from "@/components/feedback/empty-state";
 import { formatDocumentDate } from "@/features/library/document-presentation";
-import type { DocumentViewModel } from "@/types";
+import type { RecentDocument } from "@/lib/workspace/presentation-reads";
 
-export function RecentFiles({ documents }: { documents: DocumentViewModel[] }) {
+export function RecentFiles({ documents }: { documents: RecentDocument[] }) {
   return (
     <section aria-labelledby="recent-files-heading">
       <div className="mb-4 flex items-center justify-between"><h2 id="recent-files-heading" className="text-sm font-semibold">最近文件</h2><Link href="/library" className="flex min-h-11 items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground">查看资料库 <ArrowUpRight size={13} /></Link></div>

@@ -2,6 +2,7 @@ import { z } from "zod";
 import { DatabaseTimestampSchema, WorkspaceSnapshotSchema, type WorkspaceSnapshot } from "./schemas";
 import { WorkspaceError } from "./authorization";
 import type { WorkspaceRepository } from "./repository";
+import { WORKSPACE_HISTORY_LIMIT } from "./presentation-limits";
 
 export interface TenantDatabase { query(userId: string, sql: string, values?: unknown[]): Promise<{ rows: unknown[] }> }
 export interface TransactionQuery { query(sql: string, values?: unknown[]): Promise<{ rows: unknown[] }> }
@@ -12,6 +13,13 @@ export interface TransactionalTenantDatabase extends TenantDatabase {
 export const PostgresDateSchema = z.preprocess(value => value instanceof Date ? value.toISOString() : value, DatabaseTimestampSchema);
 const WorkspaceRow = z.object({ snapshot: z.record(z.string(), z.unknown()), revision: z.number().int(), updated_at: PostgresDateSchema });
 const DocumentRow = z.object({ id: z.uuid(), text_content: z.string(), storage_path: z.string().nullable(),storage_status:z.enum(["available","missing","not_stored"]) });
+const Count = z.coerce.number().int().nonnegative();
+const HistoryOverview = z.object({
+  totalDocuments: Count, totalWorkspaces: Count, recentReviewWorkspaces: Count,
+  workspaces: z.array(z.object({ id: z.uuid(), name: z.string(), documentCount: Count, status: z.string(), updatedAt: PostgresDateSchema })),
+  activity: z.array(z.object({ id: z.uuid(), workspaceId: z.uuid(), at: z.number(), message: z.string() })),
+});
+export type WorkspaceHistoryOverview = z.infer<typeof HistoryOverview>;
 export function storageFailure(error: unknown): WorkspaceError {
   if (error instanceof WorkspaceError) return error;
   const message = error instanceof Error ? error.message : "";
@@ -44,6 +52,28 @@ export class PostgresWorkspaceRepository implements WorkspaceRepository {
     z.uuid().parse(userId);
     const result = await this.db.query(userId, "select snapshot,revision,updated_at from filemind.workspaces where user_id=$1 order by updated_at desc limit 50", [userId]);
     return z.array(WorkspaceRow).parse(result.rows).map(row => WorkspaceSnapshotSchema.parse({ ...row.snapshot, revision: row.revision, updatedAt: row.updated_at, texts: {} }));
+  }
+  async readHistoryOverview(userId: string): Promise<WorkspaceHistoryOverview> {
+    z.uuid().parse(userId);
+    const result = await this.db.query(userId, `with recent as (
+      select id,name,updated_at,coalesce(snapshot->'run'->>'status','draft') as status,
+        jsonb_array_length(snapshot->'documents') as document_count,
+        coalesce(snapshot->'run'->'activity','[]'::jsonb) as activity
+      from filemind.workspaces where user_id=$1 order by updated_at desc,id desc limit $2
+    ), events as (
+      select r.id as workspace_id,e.value,r.updated_at,e.position from recent r
+      cross join lateral jsonb_array_elements(r.activity) with ordinality e(value,position)
+      where e.position > jsonb_array_length(r.activity)-3
+      order by (e.value->>'at')::numeric desc,r.updated_at desc,r.id desc,e.position asc limit 10
+    ) select
+      (select count(*) from filemind.documents where user_id=$1) as "totalDocuments",
+      (select count(*) from filemind.workspaces where user_id=$1) as "totalWorkspaces",
+      (select count(*) from recent where status='waiting_for_review') as "recentReviewWorkspaces",
+      coalesce((select jsonb_agg(jsonb_build_object('id',id,'name',name,'updatedAt',updated_at,
+        'status',status,'documentCount',document_count) order by updated_at desc,id desc) from recent),'[]'::jsonb) as workspaces,
+      coalesce((select jsonb_agg(value || jsonb_build_object('workspaceId',workspace_id)
+        order by (value->>'at')::numeric desc,updated_at desc,workspace_id desc,position asc) from events),'[]'::jsonb) as activity`, [userId, WORKSPACE_HISTORY_LIMIT]);
+    return HistoryOverview.parse(result.rows[0]);
   }
   async save(userId: string, snapshot: WorkspaceSnapshot) {
     z.uuid().parse(userId); const checked = WorkspaceSnapshotSchema.parse(snapshot);

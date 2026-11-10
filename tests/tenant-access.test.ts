@@ -169,11 +169,14 @@ test("anonymous document/search entries preserve empty/404 semantics without rec
 });
 
 test("Server Component tenant presentation stops on recovery failure; identity-only pages do no recovery", async () => {
-  const { getWorkspacePresentation } = require("../src/lib/server/workspace-presentation") as typeof import("../src/lib/server/workspace-presentation");
+  const { getWorkspaceOverview, getLibraryDocuments, getAppliedPlans } = require("../src/lib/server/workspace-presentation") as typeof import("../src/lib/server/workspace-presentation");
   const state = fixture(), failure = new Error("Synthetic presentation recovery failure");
   state.query = async () => { throw failure; };
-  await requests.run(state, () => assert.rejects(getWorkspacePresentation(), error => error === failure));
-  assert.equal(state.queries.length, 1);
+  for (const read of [getWorkspaceOverview, getLibraryDocuments, getAppliedPlans]) {
+    state.queries = [];
+    await requests.run(state, () => assert.rejects(read(), error => error === failure));
+    assert.equal(state.queries.length, 1);
+  }
   for (const name of ["search", "settings"]) {
     const page = require(`../src/app/(product)/${name}/page.tsx`) as { default(props: unknown): Promise<unknown> };
     const pure = fixture(); pure.query = async () => { throw failure; };
