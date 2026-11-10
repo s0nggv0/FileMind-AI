@@ -24,7 +24,7 @@
 | `/api/identity` POST recover | 保留恢复密钥验证与限流后签发 Cookie 的流程，不在签发函数中执行存储恢复；后续数据入口自行恢复 |
 | `/api/maintenance` GET/POST；`/api/demo` GET 状态、POST reset | Cookie 身份读取后；维护与 reset 操作内部原有恢复、租约和提交后处理保留 |
 | `/api/demo` POST open | 无 Cookie 身份可用；`DemoWorkspaceService.open()` 验证服务端演示身份文件后，在租户表查询/注册前恢复该身份。固定演示素材下载不访问租户数据 |
-| dashboard / library / graph / cleanup Server Components | 共用 `getWorkspacePresentation()`：读取请求身份后恢复，再查询工作区和文档 |
+| dashboard / library / graph / cleanup Server Components | 分别调用 `getWorkspaceOverview()`、`getLibraryDocuments()`、`getAppliedPlans()`；共用内部身份与恢复屏障，再执行对应页面的有界读取，详见 [页面读模型](workspace-presentation.md) |
 | search / settings Server Components | 只读身份以保留请求时渲染，不访问租户数据，因此不恢复；浏览器后续 API 请求各自经过屏障 |
 | `/api/workspace-config`、产品布局、营销页 | 只读配置或组合 UI，不访问租户数据，无恢复调用 |
 

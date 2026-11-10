@@ -21,6 +21,25 @@
 
 公共 Playwright 设置位于 `tests/config/playwright.ts`。根目录的 `playwright*.config.ts` 保留为各验收场景的入口，分别指定测试目录、超时和环境。独立验收场景仍要求 `FILEMIND_TEST_ROOT` 和 `FILEMIND_TEST_ORIGIN`，由对应验证脚本准备。
 
+## 结构调整后的日常检查
+
+```powershell
+npm run typecheck
+npm run lint
+npm run check:imports
+npm run check:renderers
+npm test
+```
+
+`npm test` 包含根目录的 TypeScript 和 `.mjs` 测试；`npm run test:imports` 可单独复核导入规则。`check:renderers` 扫描 search、library 和 knowledge 目录的全部 TSX（含子目录），禁止 `dangerouslySetInnerHTML`，自动覆盖拆出的结果、来源和历史展示；它只是源码检查，不代替浏览器或 HTTP 安全验收。`verify-phase8-security.mjs` 复用同一检查。
+
+- `node scripts/verification/verify-search-interaction.mjs`：创建临时的纯客户端 Next.js 验收壳，模拟 HTTP/SSE，覆盖取消、旧结果保留、历史范围、澄清、比较及引用回跳；不加载项目环境文件、不连接业务数据库或模型，结束后清理自身目录。
+- `node scripts/verification/verify-tenant-access.mjs`：临时工作目录、内存 PGlite 与合成原件，验证身份读取、恢复屏障、租约、备份及演示恢复；不访问用户数据库、原件或项目环境文件。
+
+`verify-release-provider.ts` 后续真实验收的源码哈希包含提取后的 `answer-contract.ts`；它仍要求 `--live` 且有累计请求预算，本轮配套调整不运行它。常规 `evaluate-regression.ts` 已按检索目录收集源码，自动包含新增契约。
+
+`freeze-phase8.mjs`、`freeze-phase9.mjs` 和 `record-phase9-checks.mjs` 是历史阶段入口，分别依赖当时的源码、日志与计数。不能修改旧冻结哈希或固定通过数来证明当前版本；新发布应另建绑定当前应用提交的验收记录。
+
 
 2026-10-21 产品优化的复核入口：
 
