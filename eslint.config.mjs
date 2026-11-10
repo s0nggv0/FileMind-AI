@@ -1,10 +1,16 @@
 import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
+import { boundaryPlugin } from "./scripts/verification/import-boundaries.mjs";
 
 export default defineConfig([
   ...nextVitals,
   ...nextTs,
+  {
+    files: ["src/**/*.{ts,tsx}"],
+    plugins: { boundaries: boundaryPlugin },
+    rules: { "boundaries/browser-imports": "error" },
+  },
   {
     files: ["src/components/{ui,common,knowledge}/**/*.{ts,tsx}"],
     rules: {

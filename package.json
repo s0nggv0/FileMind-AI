@@ -11,6 +11,8 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
+    "check:imports": "node scripts/verification/import-boundaries.mjs",
+    "test:imports": "node --test tests/import-boundaries.test.mjs",
     "check:unused": "tsc --noEmit --noUnusedLocals --noUnusedParameters",
     "db:migrate": "node scripts/database/migrate-database.mjs",
     "portable:start": "node scripts/portable-start.mjs",
