@@ -1,3 +1,4 @@
+import { recoverTenantBeforeAccess } from "@/lib/server/reliability";
 import { z } from "zod";
 import { apiError, readJSON, sameOrigin } from "@/lib/server/http";
 import { getUserId } from "@/lib/server/identity";
@@ -19,6 +20,7 @@ function searchError(error: unknown) {
 export async function GET(request: Request) {
   try {
     const userId = await getUserId();
+    await recoverTenantBeforeAccess(userId);
     const url = new URL(request.url);
     if (!userId || !persistenceConfigured()) {
       if (url.searchParams.has("chunkId") || url.searchParams.has("runId")) {
@@ -44,6 +46,7 @@ export async function POST(request: Request) {
     sameOrigin(request);
     const input = SearchRequestSchema.parse(await readJSON(request, 8192));
     const userId = await getUserId();
+    await recoverTenantBeforeAccess(userId);
     if (!userId || !persistenceConfigured()) {
       throw new WorkspaceError("NOT_FOUND", "请先在工作区导入并保存资料。", 404);
     }

@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { z } from "zod";
 import { uploadConfig } from "@/config/upload";
 import { getUserId } from "@/lib/server/identity";
-import { workspaceOperations } from "@/lib/server/reliability";
+import { workspaceOperations, recoverTenantBeforeAccess } from "@/lib/server/reliability";
 import { workspaceRepository } from "@/lib/server/workspace-repository";
 import { sameOrigin, apiError } from "@/lib/server/http";
 import { WorkspaceError } from "@/lib/workspace/authorization";
@@ -12,6 +12,7 @@ export const runtime = "nodejs";
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
     sameOrigin(request); const id = z.uuid().parse((await context.params).id); const user = await getUserId();
+    await recoverTenantBeforeAccess(user);
     if (!user) throw new WorkspaceError("NOT_FOUND", "工作区不存在或无法访问。", 404);
     const snapshot = await workspaceRepository.get(user, id);
     const limit = uploadConfig.maxFileBytes + 65536;

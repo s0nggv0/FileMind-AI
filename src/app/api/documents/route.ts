@@ -1,9 +1,11 @@
+import { recoverTenantBeforeAccess } from "@/lib/server/reliability";
 import { database, persistenceConfigured } from "@/lib/server/database";
 import { getUserId } from "@/lib/server/identity";
 import { apiError } from "@/lib/server/http";
 export async function GET() {
   try {
     const userId = await getUserId();
+    await recoverTenantBeforeAccess(userId);
     if (!userId || !persistenceConfigured()) return Response.json({ documents: [] });
     const result = await database.query(userId, `select d.id,d.display_name as name,coalesce(d.summary,'') as summary,
       coalesce((select array_agg(t.tag) from filemind.document_tags t where t.user_id=$1 and t.document_id=d.id),'{}') as tags

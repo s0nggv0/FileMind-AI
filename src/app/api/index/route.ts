@@ -1,3 +1,4 @@
+import { recoverTenantBeforeAccess } from "@/lib/server/reliability";
 import { realAIRequired } from "@/lib/competition";
 import { z } from "zod";
 import { apiError, readJSON, sameOrigin } from "@/lib/server/http";
@@ -12,6 +13,7 @@ export async function GET(request: Request) {
   try {
     const { cursor, limit, ...selection } = parseIndexQuery(request.url);
     const userId = await getUserId();
+    await recoverTenantBeforeAccess(userId);
     if (!userId || !persistenceConfigured()) return Response.json({ documents: [], summary: readiness([]), nextCursor: null });
     const scope = { userId, ...selection };
     await refreshIndexVersions(scope);
@@ -22,6 +24,7 @@ export async function POST(request: Request) {
   try {
     sameOrigin(request);
     const userId = await getUserId();
+    await recoverTenantBeforeAccess(userId);
     if (!userId || !persistenceConfigured()) throw new WorkspaceError("NOT_FOUND", "请先导入并保存资料。", 404);
     const body = z.object({ workspaceId: z.uuid().optional(), documentId: z.uuid().optional(), unfinishedOnly: z.boolean().optional() }).strict().refine(value => !value.unfinishedOnly || !!value.documentId).parse(await readJSON(request, 4096));
     const scope = { userId, workspaceId: body.workspaceId };

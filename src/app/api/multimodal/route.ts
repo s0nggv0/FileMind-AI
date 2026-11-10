@@ -1,3 +1,4 @@
+import { recoverTenantBeforeAccess } from "@/lib/server/reliability";
 import { z } from "zod";
 import { getUserId } from "@/lib/server/identity";
 import { workspaceRepository } from "@/lib/server/workspace-repository";
@@ -7,7 +8,9 @@ import { WorkspaceError } from "@/lib/workspace/authorization";
 export const maxDuration = 300;
 export async function POST(request: Request) {
   try {
-    sameOrigin(request); const userId = await getUserId(); if (!userId) throw new WorkspaceError("NOT_FOUND", "工作区不存在或无法访问。", 404);
+    sameOrigin(request); const userId = await getUserId();
+    await recoverTenantBeforeAccess(userId);
+    if (!userId) throw new WorkspaceError("NOT_FOUND", "工作区不存在或无法访问。", 404);
     const input = z.object({ workspaceId: z.uuid(), documentId: z.uuid().optional() }).strict().parse(await readJSON(request, 2048));
     const snapshot = await workspaceRepository.get(userId, input.workspaceId);
     if (snapshot.run && ["planning", "running", "applying"].includes(snapshot.run.status)) throw new WorkspaceError("CONFLICT", "图片分析正在执行。", 409);

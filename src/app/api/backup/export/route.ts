@@ -1,3 +1,4 @@
+import { recoverTenantBeforeAccess } from "@/lib/server/reliability";
 import { backupService, backupError, backupHeaders } from "@/lib/server/backup";
 import { sameOrigin } from "@/lib/server/http";
 import { getUserId } from "@/lib/server/identity";
@@ -7,6 +8,7 @@ export const runtime = "nodejs";
 export async function POST(request: Request) {
   try {
     sameOrigin(request); const service = backupService(); const userId = await getUserId();
+    await recoverTenantBeforeAccess(userId);
     if (!userId) throw new BackupError("导出前请先创建或恢复知识空间。");
     let cancelled = false;
     const stream = new ReadableStream<Uint8Array>({

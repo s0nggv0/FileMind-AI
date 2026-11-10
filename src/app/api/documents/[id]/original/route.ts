@@ -1,3 +1,4 @@
+import { recoverTenantBeforeAccess } from "@/lib/server/reliability";
 import { z } from "zod";
 import { createHash } from "node:crypto";
 import { database } from "@/lib/server/database";
@@ -8,7 +9,9 @@ import { WorkspaceError } from "@/lib/workspace/authorization";
 export const runtime = "nodejs";
 export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
-    const userId = await getUserId(); if (!userId) throw new WorkspaceError("NOT_FOUND", "原文件不存在或无法访问。", 404);
+    const userId = await getUserId();
+    await recoverTenantBeforeAccess(userId);
+    if (!userId) throw new WorkspaceError("NOT_FOUND", "原文件不存在或无法访问。", 404);
     const id = z.uuid().parse((await context.params).id);
     const result = await database.query(userId, "select workspace_id,original_name,file_type,content_hash from filemind.documents where user_id=$1 and id=$2 and storage_path is not null and storage_status='available'", [userId, id]);
     const doc = result.rows[0] as { workspace_id: string; original_name: string; file_type: string; content_hash: string } | undefined;

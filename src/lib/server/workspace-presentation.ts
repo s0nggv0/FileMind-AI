@@ -1,4 +1,5 @@
 import "server-only";
+import { recoverTenantBeforeAccess } from "./reliability";
 import { z } from "zod";
 import { formatFileSize } from "@/config/upload";
 import type { DocumentViewModel } from "@/types";
@@ -9,6 +10,7 @@ import { workspaceRepository } from "./workspace-repository";
 export async function getWorkspacePresentation() {
   // Always read request identity: pages must not freeze empty data at build time.
   const persistent = persistenceConfigured(); const user = await getUserId();
+  await recoverTenantBeforeAccess(user);
   if (!persistent || !user) return { persistent, workspaces: [], documents: [] as DocumentViewModel[], plans: [], totalDocuments: 0, totalWorkspaces: 0 };
   const workspaces = await workspaceRepository.list(user);
   const counts = await database.query(user, `select (select count(*) from filemind.workspaces where user_id=$1) as total_workspaces,

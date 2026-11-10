@@ -1,7 +1,8 @@
+import { recoverTenantBeforeAccess } from "@/lib/server/reliability";
 import { z } from "zod";
 import { apiError, readJSON, sameOrigin } from "@/lib/server/http";
 import { database, persistenceConfigured } from "@/lib/server/database";
-import { getUserId, issueIdentityCookie } from "@/lib/server/identity";
+import { getUserId, getOrCreateUserId, issueIdentityCookie } from "@/lib/server/identity";
 import { IdentityRecoveryService, RecoveryError, INVALID_RECOVERY_KEY } from "@/lib/workspace/identity-recovery";
 import { WorkspaceError } from "@/lib/workspace/authorization";
 const headers = { "cache-control": "no-store", "referrer-policy": "no-referrer" };
@@ -9,6 +10,7 @@ const service = new IdentityRecoveryService(database);
 export async function GET() {
   try {
     const userId = await getUserId();
+    await recoverTenantBeforeAccess(userId);
     if (!persistenceConfigured() || !userId) return Response.json({ available: persistenceConfigured(), configured: false, lastBackupAt: null }, { headers });
     return Response.json({ available: true, ...await service.status(userId) }, { headers });
   } catch (error) { return apiError(error); }
@@ -22,7 +24,8 @@ export async function POST(request: Request) {
       await issueIdentityCookie(await service.recover(typeof input.key === "string" ? input.key : ""));
       return Response.json({ recovered: true }, { headers });
     }
-    const userId = await getUserId(input.action === "create");
+    const userId = input.action === "create" ? await getOrCreateUserId() : await getUserId();
+    await recoverTenantBeforeAccess(userId);
     if (!userId) throw new WorkspaceError("NOT_FOUND", "请先创建当前浏览器身份。", 401);
     const key = await service.create(userId, input.action === "rotate");
     return Response.json({ key, configured: true }, { headers });

@@ -1,3 +1,4 @@
+import { recoverTenantBeforeAccess } from "@/lib/server/reliability";
 import { z } from "zod";
 import { getUserId } from "@/lib/server/identity";
 import { imageSource, multimodalRepository } from "@/lib/server/multimodal";
@@ -7,7 +8,9 @@ import { WorkspaceError } from "@/lib/workspace/authorization";
 export const runtime = "nodejs";
 export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
-    const userId = await getUserId(); if (!userId) throw new WorkspaceError("NOT_FOUND", "图片不存在或无法访问。", 404);
+    const userId = await getUserId();
+    await recoverTenantBeforeAccess(userId);
+    if (!userId) throw new WorkspaceError("NOT_FOUND", "图片不存在或无法访问。", 404);
     const id = z.uuid().parse((await context.params).id); const doc = await imageSource({ userId }, id);
     if (new URL(request.url).searchParams.get("original") === "1") {
       if(doc.storage_status!=="available")throw new WorkspaceError("NOT_FOUND","原图不可用，仍可查看已保存的分析结果。",404);

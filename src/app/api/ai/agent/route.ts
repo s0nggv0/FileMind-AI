@@ -1,3 +1,4 @@
+import { recoverTenantBeforeAccess } from "@/lib/server/reliability";
 import { realAIRequired } from "@/lib/competition";
 import { z } from "zod";
 import { getAIProvider } from "@/lib/ai/get-provider";
@@ -13,7 +14,9 @@ export async function POST(request: Request) {
   try {
     sameOrigin(request); const input = z.object({ workspaceId: z.uuid(), runId: z.uuid(), revision: z.number().int().nonnegative() }).parse(await readJSON(request, 1024));
     if (!realAIRequired()) throw new WorkspaceError("INVALID_STATE", "当前环境未启用 AI 整理服务。", 409);
-    const userId = await getUserId(); if (!userId) throw new WorkspaceError("NOT_FOUND", "工作区不存在或无法访问。", 404);
+    const userId = await getUserId();
+    await recoverTenantBeforeAccess(userId);
+    if (!userId) throw new WorkspaceError("NOT_FOUND", "工作区不存在或无法访问。", 404);
     let snapshot = await workspaceRepository.get(userId, input.workspaceId);
     if (snapshot.revision !== input.revision) throw new WorkspaceError("CONFLICT", "工作区已更新，请刷新页面后再分析。", 409);
     if (snapshot.run && !["failed", "cancelled"].includes(snapshot.run.status)) throw new WorkspaceError("INVALID_STATE", "此工作区已有正在执行或已完成的整理记录。", 409);

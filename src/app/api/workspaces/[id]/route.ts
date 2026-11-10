@@ -6,10 +6,11 @@ import { recoverSnapshot, OrganizationProposalSchema, WorkspaceSnapshotSchema } 
 import { validateReview, WorkspaceError } from "@/lib/workspace/authorization";
 import { sanitizeFilename } from "@/lib/ai/input-guard";
 import { scheduleKnowledgeIndex } from "@/lib/server/knowledge";
-import { workspaceOperations } from "@/lib/server/reliability";
+import { workspaceOperations, recoverTenantBeforeAccess } from "@/lib/server/reliability";
 type Context = { params: Promise<{ id: string }> };
 async function owned(context: Context) {
   const id = z.uuid().parse((await context.params).id); const user = await getUserId();
+  await recoverTenantBeforeAccess(user);
   if (!user) throw new WorkspaceError("NOT_FOUND", "工作区不存在或无法访问。", 404);
   return { user, snapshot: await workspaceRepository.get(user, id) };
 }
