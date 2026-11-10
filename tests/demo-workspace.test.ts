@@ -38,7 +38,10 @@ test("demo reset rejects normal users and other workspaces, and repairs committe
     await assert.rejects(repo.save(identity.userId,beforeReset),/changed/);
     const file={userId:identity.userId,workspaceId:identity.workspaceId,documentId:doc,extension:"txt"};
     assert.ok((await new PrivateFileStorage(recovery.storageRoot).readOriginal(file)).equals(bytes));
-    assert.equal((await recovery.recover(identity.userId)).recovered,1);
+    // Reopening uses a server-managed identity, so it must repair before
+    // returning the tenant even without a Cookie-based request entry.
+    assert.deepEqual(await demo.open(),identity);
+    assert.equal((await recovery.recover(identity.userId)).recovered,0);
     await assert.rejects(new PrivateFileStorage(recovery.storageRoot).readOriginal(file),/not found/);
     assert.equal((await recovery.recover(identity.userId)).recovered,0);
     assert.equal((await repo.get(ordinary,normal.id)).name,normal.name);

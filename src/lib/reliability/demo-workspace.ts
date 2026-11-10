@@ -32,6 +32,8 @@ export class DemoWorkspaceService {
   private snapshot(id:string) {return WorkspaceSnapshotSchema.parse({id,name:"FileMind Competition Demo",revision:0,documents:[],run:null,proposal:null,texts:{},updatedAt:new Date().toISOString()});}
   async open() {
     const identity=await this.identity();
+    // This entry uses the server-managed demo identity rather than a Cookie.
+    await this.recovery.recover(identity.userId);
     await this.recovery.journal.lock(identity.userId,"demo_registration",()=>this.recovery.db.transaction(identity.userId,async tx=>{
       const existing=await tx.query("select workspace_id from filemind.demo_registration where user_id=$1",[identity.userId]);
       if(existing.rows.length) {if(z.object({workspace_id:z.uuid()}).parse(existing.rows[0]).workspace_id!==identity.workspaceId)throw new Error("DEMO_IDENTITY_MISMATCH");return;}
