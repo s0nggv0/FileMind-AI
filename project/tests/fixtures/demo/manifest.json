@@ -1,0 +1,67 @@
+{
+  "version": "demo-fixtures-v1",
+  "copyright": "All text and diagrams are original synthetic teaching fixtures.",
+  "documents": 10,
+  "files": [
+    {
+      "name": "ai-attention-notes.pdf",
+      "sha256": "3c604ad5dd17a2944b4411f630e49d20a6097812d8f0c1ff97ebee98779f305f",
+      "bytes": 969,
+      "recommended": true
+    },
+    {
+      "name": "database-notes.txt",
+      "sha256": "41d7800cb135a7112997a6614fb87750d4e4eae7854117d5eb1054fa2e7b1f61",
+      "bytes": 370,
+      "recommended": true
+    },
+    {
+      "name": "web-development.md",
+      "sha256": "03880aaa93588a07d2e3d29b5d541add6a38dec08d79076ec489c814bcc06fb0",
+      "bytes": 475,
+      "recommended": true
+    },
+    {
+      "name": "project-plan.docx",
+      "sha256": "f6a356ee7df4227e81166917562f34bea2ef1f2a887e8d3e9796c87985dc2b68",
+      "bytes": 1133,
+      "recommended": true
+    },
+    {
+      "name": "research-notes.txt",
+      "sha256": "0270b5aaaf01f079e906cc33de7df9c288f52cf3a60c88d520d41282d189ebd4",
+      "bytes": 283,
+      "recommended": false
+    },
+    {
+      "name": "research-notes-copy.md",
+      "sha256": "0270b5aaaf01f079e906cc33de7df9c288f52cf3a60c88d520d41282d189ebd4",
+      "bytes": 283,
+      "recommended": false
+    },
+    {
+      "name": "demo-audit-policy-v1.txt",
+      "sha256": "efa288709e58bf75442faff72704e2102b7b274aa296fb543f8d664d97b9dfcb",
+      "bytes": 182,
+      "recommended": true
+    },
+    {
+      "name": "demo-audit-policy-v2.txt",
+      "sha256": "f8049291302c56913f7cd0223b6e431fb897371e47a9550f8005d6c388a3017a",
+      "bytes": 283,
+      "recommended": true
+    },
+    {
+      "name": "transformer-slide.png",
+      "sha256": "4375aab9461646bed17cd9c932124870f407c1ac21c8753a378881353cd8c826",
+      "bytes": 77423,
+      "recommended": true
+    },
+    {
+      "name": "linear-algebra-whiteboard.jpg",
+      "sha256": "d1dbb5c2d49c14dff0a876698a3e0e085d4f061f2320503d638c38a7a4eecb31",
+      "bytes": 59705,
+      "recommended": true
+    }
+  ]
+}

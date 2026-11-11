@@ -1,19 +1,7 @@
-# Hash manifests and PDF byte offsets must survive Git checkouts unchanged.
+# Synthetic test fixtures must survive Git checkouts byte-for-byte.
 *.bat text eol=crlf
-项目/tests/fixtures/rag-holdout/files/* -text
-项目/tests/fixtures/demo/** -text
-项目/tests/fixtures/rag-blind/** -text
-项目/tests/fixtures/phase9-demo/*.txt text eol=lf
-项目介绍/测试文件/01-主流程-8份/* -text
-项目介绍/测试文件/01-主流程-8份/*.pdf -diff
-项目介绍/测试文件/02-重复资料-2份/* -text
-项目介绍/测试文件/03-冲突与澄清-3份/* -text
-项目介绍/测试文件/files-manifest.json text eol=lf
-# Competition PDFs are delivery documents; preserve binary offsets on Windows.
-项目介绍/03-比赛材料/*.pdf -text -diff
-# Hashed delivery text must have the same bytes on Windows and other systems.
-项目介绍/03-比赛材料/technical-report.md text eol=lf
-项目介绍/03-比赛材料/video-script.md text eol=lf
-项目介绍/03-比赛材料/video-narration.srt text eol=lf
-项目介绍/03-比赛材料/architecture.svg text eol=lf
-项目介绍/03-比赛材料/media-manifest.json text eol=lf
+project/tests/fixtures/rag-holdout/files/* -text
+project/tests/fixtures/demo/** -text
+project/tests/fixtures/demo/files/*.pdf -diff
+project/tests/fixtures/rag-blind/** -text
+project/tests/fixtures/phase9-demo/*.txt text eol=lf

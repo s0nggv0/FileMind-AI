@@ -10,8 +10,21 @@ coverage/
 playwright-report/
 test-results/
 artifacts/
-项目/public/pdf.worker.min.mjs
-项目/public/pdfjs/
+/project/public/pdf.worker.min.mjs
+/project/public/pdfjs/
+
+# Local presentation, design, and verification records.
+/materials/
+/docs/
+/project/docs/
+/project/.impeccable/
+/project/DESIGN.md
+/project/PRODUCT.md
+/project/usage.md
+/project/scripts/release/build-phase9-architecture.mjs
+/project/scripts/release/build-phase9-report.py
+/project/scripts/release/record-phase9-checks.mjs
+/project/scripts/shared/presentation-paths.mjs
 .DS_Store
 Thumbs.db
 

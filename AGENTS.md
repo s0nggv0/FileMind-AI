@@ -8,9 +8,11 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
-## Git 提交历史
+## Git 提交与公开范围
 
-应用工作目录已整理到 `项目/`；运行 npm、Next.js、开发与验收脚本前进入该目录。安装版本指南位于 `项目/node_modules/next/dist/docs/`。`项目介绍/` 保存对外介绍、操作说明。Git 仓库根目录仍是本文件所在目录。
+应用工作目录为 `project/`；运行 npm、Next.js 和开发脚本前进入该目录。安装版本指南位于 `project/node_modules/next/dist/docs/`。Git 仓库根目录仍是本文件所在目录，新增目录与文件使用英文路径。
+
+公开仓库只跟踪代码、运行配置、必要的合成测试样本和代码说明。`materials/`、`project/docs/`、设计过程和验收记录留在本地，禁止强制添加这些忽略路径。公开 README 不链接仅在本地存在的材料。
 
 用户明确要求持续 Commit，保留完整 Git 提交历史。此约定适用于后续所有开发阶段。
 
