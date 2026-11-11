@@ -1,7 +1,10 @@
 import { execFileSync } from "node:child_process";
 import { readFile, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
-const git=(...args)=>execFileSync("git",args,{windowsHide:true,maxBuffer:100*1024*1024});
+import { resolve } from "node:path";
+import { projectRoot } from "../shared/presentation-paths.mjs";
+const repository=resolve(projectRoot,"..");
+const git=(...args)=>execFileSync("git",args,{cwd:repository,windowsHide:true,maxBuffer:100*1024*1024});
 const dotenv=await readFile(".env.local","utf8").catch(()=>"");
 const values=Object.fromEntries(dotenv.split(/\r?\n/).filter(s=>s.includes("=")&&!s.startsWith("#")).map(s=>[s.slice(0,s.indexOf("=")),s.slice(s.indexOf("=")+1).replace(/^['"]|['"]$/g,"")]));
 const configured=Object.entries(values).filter(([key,value])=>/KEY|SECRET|PASSWORD/.test(key)&&value.length>=16).map(([,v])=>v);
@@ -18,7 +21,7 @@ for(const object of objects){if(git("cat-file","-t",object.oid).toString().trim(
  inspect(bytes,{oid:object.oid,path:object.path,scope:"history"});
 }
 const worktree=git("ls-files","--cached","--others","--exclude-standard","-z").toString().split("\0").filter(Boolean);
-for(const path of worktree){const bytes=await readFile(path).catch(error=>{if(error.code==="ENOENT")return null;throw error;});if(bytes)inspect(bytes,{path,scope:"worktree"});}
+for(const path of worktree){const bytes=await readFile(resolve(repository,path)).catch(error=>{if(error.code==="ENOENT")return null;throw error;});if(bytes)inspect(bytes,{path,scope:"worktree"});}
 const lock=JSON.parse(await readFile("package-lock.json","utf8"));
 const licenses=Object.entries(lock.packages).filter(([path])=>path).map(([path,pkg])=>({package:path.replace(/^.*node_modules\//,""),version:pkg.version,license:pkg.license??"UNRECORDED",development:!!pkg.dev}));
 await writeFile(process.env.FILEMIND_LICENSE_REPORT||"docs/evaluation/phase9-dependency-licenses.json",JSON.stringify({checkedAt:new Date().toISOString(),packages:licenses.length,unrecorded:licenses.filter(x=>x.license==="UNRECORDED").length,licenses},null,2)+"\n");

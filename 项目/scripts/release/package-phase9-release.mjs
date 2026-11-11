@@ -6,6 +6,7 @@ import { join, resolve, relative } from 'node:path';
 import { Zip, ZipDeflate } from 'fflate';
 import { build } from 'esbuild';
 import { copyPortableRuntimeScripts } from './runtime-assets.mjs';
+import { competitionRoot, demoMaterialsRoot } from '../shared/presentation-paths.mjs';
 import { execFileSync } from 'node:child_process';
 import assert from 'node:assert/strict';
 const project=resolve('.'), output=join(project,'artifacts/release');
@@ -15,12 +16,26 @@ assert.equal(buildInfo.BUILD_VERSION,version,'Rebuild after changing the release
 execFileSync('git',['diff','--exit-code',buildInfo.BUILD_COMMIT,'--','src','database','package.json','package-lock.json','next.config.ts','scripts/runtime','scripts/build','scripts/database'],{stdio:'pipe',windowsHide:true});
 const root=join(output,`FileMind-AI-${version}-windows-x64-${randomUUID().slice(0,8)}`);
 await mkdir(root,{recursive:true});
-for(const name of ['.next/standalone','.filemind/runtime','.filemind/postgresql/runtime','database/migrations','tests/fixtures/demo','tests/fixtures/phase9-demo','docs/competition','LICENSE']) {
+for(const name of ['.next/standalone','.filemind/runtime','.filemind/postgresql/runtime','database/migrations','tests/fixtures/demo','tests/fixtures/phase9-demo','LICENSE']) {
  await cp(join(project,name),join(root,name),{recursive:true,dereference:true,filter:path=>!/(?:^|\/)\.env(?:\.|$)/.test(path.replaceAll('\\','/'))});
 }
-await mkdir(join(root,'docs/evaluation'),{recursive:true});
-for(const name of await readdir(join(project,'docs/evaluation'))){if(/\.(?:json|md)$/.test(name)&&!name.includes('release-artifact')&&!name.includes('portable-release'))await cp(join(project,'docs/evaluation',name),join(root,'docs/evaluation',name));}
-await writeFile(join(root,'README.md'),(await readFile(join(project,'docs/competition/quickstart.md'),'utf8')).replaceAll('`current-release.json`','`docs/competition/current-release.json`').replaceAll('`release-freeze.md`','`docs/competition/release-freeze.md`'));
+// Keep the materials' relative links and manifest paths; the executable stays at the ZIP root.
+const competitionPath='项目介绍/03-比赛材料', demoMaterialsPath='项目介绍/测试文件', evidencePath='项目/docs/evaluation';
+const publicFile=path=>!/(?:^|\/)\.env(?:\.|$)/.test(path.replaceAll('\\','/'));
+await cp(competitionRoot,join(root,competitionPath),{recursive:true,filter:publicFile});
+await cp(demoMaterialsRoot,join(root,demoMaterialsPath),{recursive:true,filter:publicFile});
+await mkdir(join(root,evidencePath),{recursive:true});
+for(const name of await readdir(join(project,'docs/evaluation'))){if(/\.(?:json|md)$/.test(name)&&!name.includes('release-artifact')&&!name.includes('portable-release'))await cp(join(project,'docs/evaluation',name),join(root,evidencePath,name));}
+await writeFile(join(root,'README.md'),[
+ '# FileMind AI Windows x64',
+ '',
+ '在解压目录中运行 `powershell -ExecutionPolicy Bypass -File .\\start.ps1`，打开终端显示的本机网址。',
+ '',
+ `- [配置与快速复现](${competitionPath}/quickstart.md)`,
+ `- [可上传的演示资料](${demoMaterialsPath}/README.md)`,
+ `- [录屏步骤](${competitionPath}/video-script.md)`,
+ '',
+].join('\n'));
 await copyPortableRuntimeScripts(project,root);
 let example=await readFile('.env.example','utf8');
 example=example.replace(/^AI_ENGINE=.*$/m,'AI_ENGINE=llm').replace(/^COMPETITION_MODE=.*$/m,'COMPETITION_MODE=true').replace(/^DEMO_MODE=.*$/m,'DEMO_MODE=true');

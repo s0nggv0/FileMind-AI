@@ -10,6 +10,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## Git 提交历史
 
+应用工作目录已整理到 `项目/`；运行 npm、Next.js、开发与验收脚本前进入该目录。安装版本指南位于 `项目/node_modules/next/dist/docs/`。`项目介绍/` 保存对外介绍、操作说明。Git 仓库根目录仍是本文件所在目录。
+
 用户明确要求持续 Commit，保留完整 Git 提交历史。此约定适用于后续所有开发阶段。
 
 - 将可独立审阅、验收的改动作为一个提交单元，例如基础配置、共用组件、页面功能、测试与文档更新；不要等整个 Phase 完成才集中提交。
