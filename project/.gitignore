@@ -1,0 +1,27 @@
+/node_modules/
+/.next/
+/.npm-cache/
+/.filemind/
+/out/
+*.tsbuildinfo
+.env*
+!.env.example
+/coverage/
+/playwright-report/
+/test-results/
+/artifacts/
+/public/pdf.worker.min.mjs
+/public/pdfjs/
+.DS_Store
+Thumbs.db
+
+# Local guides and reports are not application inputs.
+/docs/
+/.impeccable/
+/DESIGN.md
+/PRODUCT.md
+/usage.md
+/scripts/release/build-phase9-architecture.mjs
+/scripts/release/build-phase9-report.py
+/scripts/release/record-phase9-checks.mjs
+/scripts/shared/presentation-paths.mjs

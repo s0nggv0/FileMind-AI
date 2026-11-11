@@ -1,0 +1,7 @@
+# Keep synthetic test fixtures unchanged across platforms.
+*.bat text eol=crlf
+tests/fixtures/rag-holdout/files/* -text
+tests/fixtures/demo/** -text
+tests/fixtures/demo/files/*.pdf -diff
+tests/fixtures/rag-blind/** -text
+tests/fixtures/phase9-demo/*.txt text eol=lf

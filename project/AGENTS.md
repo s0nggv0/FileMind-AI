@@ -10,7 +10,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## Git 提交与公开范围
 
-本目录为应用工作目录 `project/`，Git 仓库位于上一层。新增目录与文件使用英文路径。公开范围及本地资料忽略规则见 [仓库约定](../AGENTS.md)；只提交代码、运行配置、必要的合成测试样本和代码说明。
+本目录为应用工作目录 `project/`，Git 仓库位于上一层。新增目录与文件使用英文路径。只提交本目录内的代码、运行配置、必要的合成测试样本和代码说明；本地忽略规则见 [.gitignore](.gitignore)。
 
 用户明确要求持续 Commit，保留完整 Git 提交历史。此约定适用于后续所有开发阶段。
 

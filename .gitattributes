@@ -1,7 +1,0 @@
-# Synthetic test fixtures must survive Git checkouts byte-for-byte.
-*.bat text eol=crlf
-project/tests/fixtures/rag-holdout/files/* -text
-project/tests/fixtures/demo/** -text
-project/tests/fixtures/demo/files/*.pdf -diff
-project/tests/fixtures/rag-blind/** -text
-project/tests/fixtures/phase9-demo/*.txt text eol=lf
