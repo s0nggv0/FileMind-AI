@@ -4,7 +4,7 @@ FileMind AI 支持导入 PDF、DOCX、TXT、Markdown、PNG 和 JPEG。程序提�
 
 ## 本地运行
 
-源码依赖 Node.js 22.13 或更高版本。在 `project/` 运行：
+源码依赖 Node.js 22.13 或更高版本。在仓库根目录运行：
 
 ```powershell
 npm ci
@@ -17,7 +17,7 @@ npm run dev
 
 1. 为项目准备独立的 PostgreSQL 数据库和普通应用用户。首次配置时复制 [环境模板](.env.example) 为本地的 `.env.local`。
 2. 填写 `DATABASE_URL`，并设置长期保留的 `WORKSPACE_SESSION_SECRET`。可用 `node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"` 生成密钥。
-3. 在 `project/` 执行 `npm run db:migrate`，然后启动应用。保持 `AI_ENGINE=mock` 可先核对上传、审阅、保存和刷新。
+3. 在仓库根目录执行 `npm run db:migrate`，然后启动应用。保持 `AI_ENGINE=mock` 可先核对上传、审阅、保存和刷新。
 4. 启用真实模型时按模板设置 `AI_ENGINE=llm`、Kimi 模型和 `KIMI_API_KEY`。语义搜索还需要配置 Embedding 服务。图片可使用本地 OCR；配置 Vision 后会区分图片文字与模型解读。
 
 部署时将数据库与原文件目录放在可持久写入的存储中。原件默认保存在 `.filemind/storage`，可用 `FILE_STORAGE_ROOT` 修改。备份时同时保存数据库和原文件；身份恢复密钥用于找回同一数据库里的身份。环境文件、凭据和用户数据留在本机。
